@@ -1,0 +1,6 @@
+{
+  "name": "Tilt Filter",
+  "description": "Disciplined trade execution and tilt filter with interactive pre-trade checklist rules, inline editable tags, risk sizing calculator, and emotional risk monitoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
