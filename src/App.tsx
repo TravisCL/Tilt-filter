@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { SessionView } from './components/SessionView';
 import { TrackerView } from './components/TrackerView';
@@ -7,14 +7,87 @@ import { BoardView } from './components/BoardView';
 import { ProfileView } from './components/ProfileView';
 import { InvitesView } from './components/InvitesView';
 import { AppState, CompletedTrade, TierLevel } from './types';
-import { loadAppState, saveAppState, resetToCleanSlate } from './utils/initialData';
+import { loadAppState, resetToCleanSlate, isMorningCheckInCompleted, deduplicateTrades } from './utils/initialData';
+import {
+  broadcastStateChange,
+  broadcastTradeLogged,
+  requestStateSync,
+  subscribeToStateSync,
+} from './utils/syncService';
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
+  const isRemoteUpdateRef = useRef<boolean>(false);
+  const hasMountedRef = useRef<boolean>(false);
+  const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
 
-  // Sync state to local storage
+  // Ensure responsive layouts recalculate and request freshest state on initial popup mount
   useEffect(() => {
-    saveAppState(state);
+    const triggerReflow = () => {
+      window.dispatchEvent(new Event('resize'));
+    };
+    requestAnimationFrame(triggerReflow);
+    const t1 = setTimeout(triggerReflow, 50);
+    const t2 = setTimeout(triggerReflow, 200);
+
+    // Request freshest sync state from any active peer window or parent opener
+    requestStateSync();
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  // Subscribe to real-time state and trade journal synchronization from popped-out windows, tabs, and parent
+  useEffect(() => {
+    const unsubscribe = subscribeToStateSync((syncedState, _sourceId, eventDetail) => {
+      isRemoteUpdateRef.current = true;
+      setState((current) => {
+        // Defensive safeguard 1: Prevent empty accounts broadcasts from overwriting active user accounts
+        let mergedAccounts = syncedState.accounts;
+        if ((!mergedAccounts || mergedAccounts.length === 0) && current.accounts.length > 0) {
+          mergedAccounts = current.accounts;
+        }
+
+        // Defensive safeguard 2: Complete deduplicated trade journal synchronization
+        const candidateTrades: CompletedTrade[] = [
+          ...(current.trades || []),
+          ...(syncedState.trades || []),
+          ...(eventDetail?.trade ? [eventDetail.trade] : []),
+          ...(Array.isArray(eventDetail?.trades) ? eventDetail.trades : []),
+        ];
+
+        const mergedTrades = deduplicateTrades(candidateTrades);
+
+        // Preserve current window's active view so popped-out windows don't jump away from the journal
+        const nextState: AppState = {
+          ...syncedState,
+          accounts: mergedAccounts,
+          trades: mergedTrades,
+          activeAccountId: syncedState.activeAccountId || current.activeAccountId,
+          currentView: current.currentView,
+        };
+
+        return nextState;
+      });
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Broadcast state changes and save to local storage (skip initial mount to avoid racing existing windows)
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
+    broadcastStateChange(state);
   }, [state]);
 
   const handleSelectView = (view: AppState['currentView']) => {
@@ -37,25 +110,56 @@ export default function App() {
   const handleLogTrade = (
     tradeData: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>
   ) => {
+    // Debounce & deduplicate rapid double-submits within 1500ms
+    const now = Date.now();
+    const fingerprint = `${tradeData.accountId || ''}_${tradeData.pnl}_${tradeData.name || ''}_${tradeData.outcome || ''}_${tradeData.symbol || ''}_${tradeData.emotionalState || ''}`;
+    if (now - lastTradeSubmitRef.current.time < 1500 && lastTradeSubmitRef.current.fingerprint === fingerprint) {
+      console.warn('[Debounce Guard] Ignored duplicate trade submit burst:', fingerprint);
+      return;
+    }
+    lastTradeSubmitRef.current = { time: now, fingerprint };
+
     setState((prev) => {
-      const activeAccount = prev.accounts.find((a) => a.id === prev.activeAccountId) || prev.accounts[0];
+      // Check if identical trade was already recorded in state within the last few seconds
+      const isDuplicateInState = (prev.trades || []).some(
+        (t) =>
+          t.accountId === (tradeData.accountId || prev.activeAccountId) &&
+          t.pnl === tradeData.pnl &&
+          t.name === tradeData.name &&
+          t.emotionalState === tradeData.emotionalState
+      );
+
+      if (isDuplicateInState && now - lastTradeSubmitRef.current.time < 3000) {
+        console.warn('[Duplicate Guard] Prevented duplicate state injection of trade');
+        return prev;
+      }
+
+      // Explicitly bind the trade to the specified account or the currently active selected account ID
+      const targetAccountId = tradeData.accountId || prev.activeAccountId || (prev.accounts[0]?.id ?? '');
+      const targetAccount = prev.accounts.find((a) => a.id === targetAccountId) || prev.accounts[0];
+      const boundAccountId = targetAccount?.id || targetAccountId || 'default-account';
+      const boundAccountName = targetAccount?.name || tradeData.accountName || 'Primary Account';
+
       const newTrade: CompletedTrade = {
         ...tradeData,
-        id: `tr-${Date.now()}`,
+        id: `tr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         orderNumber: prev.trades.length + 1,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        accountId: tradeData.accountId || activeAccount?.id,
-        accountName: tradeData.accountName || activeAccount?.name,
+        date: tradeData.date || new Date().toISOString().split('T')[0],
+        accountId: boundAccountId,
+        accountName: boundAccountName,
       };
 
-      const updatedTrades = [...prev.trades, newTrade];
+      const updatedTrades = deduplicateTrades([...prev.trades, newTrade]);
 
+      // Update exclusively the ledger of the specific target account this trade belongs to
       let updatedAccounts = prev.accounts;
-      if (activeAccount && typeof newTrade.pnl === 'number') {
+      if (targetAccount && typeof newTrade.pnl === 'number') {
         updatedAccounts = prev.accounts.map((acc) => {
-          if (acc.id === activeAccount.id) {
-            const newBal = acc.currentBalance + newTrade.pnl;
-            const newPeak = Math.max(acc.highWaterMark ?? 0, newBal);
+          if (acc.id === targetAccount.id) {
+            const currentBal = typeof acc.currentBalance === 'number' ? acc.currentBalance : acc.size;
+            const newBal = currentBal + newTrade.pnl;
+            const newPeak = Math.max(acc.highWaterMark ?? acc.size ?? 0, newBal);
             return {
               ...acc,
               currentBalance: newBal,
@@ -129,7 +233,7 @@ export default function App() {
         }
       }
 
-      return {
+      const nextState: AppState = {
         ...prev,
         trades: updatedTrades,
         accounts: updatedAccounts,
@@ -138,45 +242,117 @@ export default function App() {
         tiltEvents: newTiltEvents,
         deskMessages: newDeskMessages,
       };
+
+      // Instantly broadcast the trade payload directly across all windows
+      broadcastTradeLogged(newTrade, nextState);
+
+      return nextState;
+    });
+  };
+
+  const handleDeleteTrade = (tradeId: string) => {
+    setState((prev) => {
+      const tradeToDelete = (prev.trades || []).find((t) => t.id === tradeId);
+      if (!tradeToDelete) return prev;
+
+      const remainingTrades = deduplicateTrades(
+        (prev.trades || []).filter((t) => t.id !== tradeId)
+      );
+
+      // Revert account balance impact
+      const updatedAccounts = (prev.accounts || []).map((acc) => {
+        if (acc.id === tradeToDelete.accountId && typeof tradeToDelete.pnl === 'number') {
+          const revertedBal = (acc.currentBalance ?? acc.size) - tradeToDelete.pnl;
+          return {
+            ...acc,
+            currentBalance: revertedBal,
+          };
+        }
+        return acc;
+      });
+
+      // Filter out tilt events associated with this deleted trade
+      const updatedTiltEvents = (prev.tiltEvents || []).filter((ev) => ev.tradeId !== tradeId);
+
+      const nextState: AppState = {
+        ...prev,
+        trades: remainingTrades,
+        accounts: updatedAccounts,
+        tiltEvents: updatedTiltEvents,
+      };
+
+      broadcastStateChange(nextState);
+      return nextState;
+    });
+  };
+
+  const handleCleanDuplicates = () => {
+    setState((prev) => {
+      const cleanedTrades = deduplicateTrades(prev.trades || []);
+      const nextState: AppState = {
+        ...prev,
+        trades: cleanedTrades,
+      };
+      broadcastStateChange(nextState);
+      return nextState;
     });
   };
 
   const handleCallItADay = () => {
-    setState((prev) => ({
-      ...prev,
-      cleanStreak: prev.cleanStreak + 1,
-      deskMessages: [
-        ...prev.deskMessages,
-        {
-          id: `m-day-call-${Date.now()}`,
-          sender: 'BUDDY',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: '🏁 Session concluded cleanly. All rules respected. Rest and reset for tomorrow.',
-        },
-      ],
-    }));
+    setState((prev) => {
+      const nextDay = (prev.dayCounter || 1) + 1;
+      return {
+        ...prev,
+        cleanStreak: (prev.cleanStreak || 0) + 1,
+        dayCounter: nextDay,
+        deskMessages: [
+          ...prev.deskMessages,
+          {
+            id: `m-day-call-${Date.now()}`,
+            sender: 'BUDDY',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            text: `🏁 Day ${prev.dayCounter || 1} session concluded cleanly. All rules respected. Day ${nextDay} ready for tomorrow.`,
+          },
+        ],
+      };
+    });
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#060e11] text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-black">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#060f17] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
+      {/* Mobile Top Header */}
+      <div className="md:hidden flex items-center justify-between px-3 py-2.5 bg-[#081522] border-b border-[#132c3f]">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+          <span className="text-white font-black text-xs uppercase">Trader Status</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0c1e30] border border-[#173752] text-[10px] font-mono font-black text-sky-300">
+          <span>{state.cleanStreak || 0} NO TILT DAYS</span>
+        </div>
+      </div>
+
       {/* Desktop Left Sidebar */}
       <div className="hidden md:block shrink-0">
         <Sidebar
+          state={state}
           currentView={state.currentView}
           onSelectView={handleSelectView}
           syncVersion="9.68"
           onCleanSlate={handleCleanSlate}
+          isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
         />
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#071115] overflow-x-hidden min-h-screen">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#07121b] overflow-x-hidden min-h-screen">
         {(state.currentView === 'session' || state.currentView === 'checkin') && (
           <SessionView
             state={state}
             onUpdateState={setState}
             onCallItADay={handleCallItADay}
             onLogTrade={handleLogTrade}
+            onDeleteTrade={handleDeleteTrade}
+            onCleanDuplicates={handleCleanDuplicates}
           />
         )}
 
@@ -186,6 +362,7 @@ export default function App() {
             onUpdateEmotionalTracker={handleUpdateEmotionalTracker}
             onUpdateState={setState}
             onGoToSession={() => handleSelectView('session')}
+            onCleanSlate={handleCleanSlate}
           />
         )}
 

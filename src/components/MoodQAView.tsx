@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Activity,
   Moon,
@@ -15,7 +15,7 @@ import {
   ThumbsUp,
 } from 'lucide-react';
 import { AppState, DailyScoreRecord } from '../types';
-import { FEEL_SCALE, DEFAULT_SCOREBOARD_TALLY } from '../utils/initialData';
+import { FEEL_SCALE, DEFAULT_SCOREBOARD_TALLY, isMorningCheckInCompleted } from '../utils/initialData';
 
 interface MoodQAViewProps {
   state: AppState;
@@ -105,38 +105,61 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
     day: 'numeric',
   });
 
-  const isCheckedInToday =
-    state.emotionalTracker.morningCheckInCompleted &&
-    state.emotionalTracker.morningCheckInDate === todayStr;
+  const isCheckedInToday = isMorningCheckInCompleted(state?.emotionalTracker, todayStr);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedFeel, setSelectedFeel] = useState<number>(
-    state.emotionalTracker.feelLevel ?? 5
+    state?.emotionalTracker?.feelLevel ?? 5
   );
   const [selectedSleep, setSelectedSleep] = useState<string>(
-    state.emotionalTracker.sleepQuality || 'Well Rested'
+    state?.emotionalTracker?.sleepQuality || 'Well Rested'
   );
   const [sleepNote, setSleepNote] = useState<string>(
-    state.emotionalTracker.morningNotes || ''
+    state?.emotionalTracker?.morningNotes || ''
   );
   const [selectedFocusRule, setSelectedFocusRule] = useState<string>(
-    state.emotionalTracker.focusIntention || PRESET_RULES[0]
+    state?.emotionalTracker?.focusIntention || PRESET_RULES[0]
   );
   const [customFocusRule, setCustomFocusRule] = useState<string>('');
   const [selectedTrigger, setSelectedTrigger] = useState<string>(
-    state.emotionalTracker.triggersDistractions || DISTRACTION_OPTIONS[0].title
+    state?.emotionalTracker?.triggersDistractions || DISTRACTION_OPTIONS[0].title
   );
   const [triggerNote, setTriggerNote] = useState<string>('');
 
   // Outcome wrap-up state
   const [sessionOutcome, setSessionOutcome] = useState<'clean' | 'minor_slip' | 'tilted'>(
-    (state.emotionalTracker.sessionOutcome as 'clean' | 'minor_slip' | 'tilted') || 'clean'
+    (state?.emotionalTracker?.sessionOutcome as 'clean' | 'minor_slip' | 'tilted') || 'clean'
   );
   const [reflectionNote, setReflectionNote] = useState<string>(
-    state.emotionalTracker.sessionReflection || ''
+    state?.emotionalTracker?.sessionReflection || ''
   );
   const [outcomeSavedMessage, setOutcomeSavedMessage] = useState(false);
+
+  // Sync wizard state with incoming state updates (e.g. from popped-out window)
+  useEffect(() => {
+    if (state?.emotionalTracker?.feelLevel !== null && state?.emotionalTracker?.feelLevel !== undefined) {
+      setSelectedFeel(state.emotionalTracker.feelLevel);
+    }
+    if (state?.emotionalTracker?.sleepQuality) {
+      setSelectedSleep(state.emotionalTracker.sleepQuality);
+    }
+    if (state?.emotionalTracker?.morningNotes !== undefined) {
+      setSleepNote(state.emotionalTracker.morningNotes || '');
+    }
+    if (state?.emotionalTracker?.focusIntention) {
+      setSelectedFocusRule(state.emotionalTracker.focusIntention);
+    }
+    if (state?.emotionalTracker?.triggersDistractions) {
+      setSelectedTrigger(state.emotionalTracker.triggersDistractions);
+    }
+    if (state?.emotionalTracker?.sessionOutcome) {
+      setSessionOutcome(state.emotionalTracker.sessionOutcome as 'clean' | 'minor_slip' | 'tilted');
+    }
+    if (state?.emotionalTracker?.sessionReflection !== undefined) {
+      setReflectionNote(state.emotionalTracker.sessionReflection || '');
+    }
+  }, [state?.emotionalTracker]);
 
   const selectedFeelItem =
     FEEL_SCALE.find((f) => f.level === selectedFeel) || FEEL_SCALE[4];

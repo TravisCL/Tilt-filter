@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ChevronUp,
   ChevronDown,
@@ -34,11 +34,15 @@ import {
   Tag,
   Edit3,
   Download,
+  Lock,
+  BookOpen,
+  XCircle,
 } from 'lucide-react';
 import {
   AppState,
   RuleItem,
   CompletedTrade,
+  TradeQualityGrade,
   TradingAccount,
   AccountCategory,
   AccountDrawdownType,
@@ -46,13 +50,16 @@ import {
   LossFeeling,
   TiltRiskLevel,
 } from '../types';
-import { FEEL_SCALE, SLEEP_SCALE, DEFAULT_SCOREBOARD_TALLY, DEFAULT_SYSTEM_TAGS } from '../utils/initialData';
+import { FEEL_SCALE, SLEEP_SCALE, DEFAULT_SCOREBOARD_TALLY, DEFAULT_SYSTEM_TAGS, isMorningCheckInCompleted } from '../utils/initialData';
+import { broadcastTradeUpdated } from '../utils/syncService';
 
 interface SessionViewProps {
   state: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
   onCallItADay: () => void;
   onLogTrade: (trade: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>) => void;
+  onDeleteTrade?: (tradeId: string) => void;
+  onCleanDuplicates?: () => void;
 }
 
 export interface BuddyCoachInfo {
@@ -175,7 +182,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
   onUpdateState,
   onCallItADay,
   onLogTrade,
+  onDeleteTrade,
+  onCleanDuplicates,
 }) => {
+  const isSubmittingTradeRef = useRef<boolean>(false);
   const activeAccount: TradingAccount | null =
     state.accounts.find((a) => a.id === state.activeAccountId && a.status !== 'blown') ||
     state.accounts.find((a) => a.id === state.activeAccountId) ||
@@ -250,19 +260,44 @@ export const SessionView: React.FC<SessionViewProps> = ({
     setShowAddAccountModal(false);
   };
 
+  // Ensure activeAccountId is properly set when accounts exist
+  useEffect(() => {
+    if (state.accounts.length > 0) {
+      const activeExists = state.accounts.some((a) => a.id === state.activeAccountId);
+      if (!state.activeAccountId || !activeExists) {
+        const preferred = state.accounts.find((a) => a.status !== 'blown') || state.accounts[0];
+        if (preferred && preferred.id !== state.activeAccountId) {
+          onUpdateState((prev) => ({ ...prev, activeAccountId: preferred.id }));
+        }
+      }
+    }
+  }, [state.accounts, state.activeAccountId, onUpdateState]);
+
   // Morning Emotional Check-In State (Anchor 5: Cool as a Cucumber, Sleep Notes via Memo)
   const todayStr = new Date().toISOString().split('T')[0];
-  const isCheckInCompletedToday = Boolean(
-    state.emotionalTracker.morningCheckInCompleted &&
-    state.emotionalTracker.morningCheckInDate === todayStr &&
-    state.emotionalTracker.feelLevel !== null
-  );
+  const isCheckInCompletedToday = isMorningCheckInCompleted(state?.emotionalTracker, todayStr);
 
   // Trigger morning check-in prompt automatically at the start of the trading day or session view if not completed today
   const [showMorningCheckInModal, setShowMorningCheckInModal] = useState<boolean>(() => !isCheckInCompletedToday);
-  const [morningFeelLevel, setMorningFeelLevel] = useState<number>(() => state.emotionalTracker.feelLevel ?? 5);
-  const [morningNotesInput, setMorningNotesInput] = useState<string>(() => state.emotionalTracker.morningNotes || '');
+  const [morningFeelLevel, setMorningFeelLevel] = useState<number>(() => state?.emotionalTracker?.feelLevel ?? 5);
+  const [morningNotesInput, setMorningNotesInput] = useState<string>(() => state?.emotionalTracker?.morningNotes || '');
   const [morningCheckInDismissed, setMorningCheckInDismissed] = useState<boolean>(false);
+
+  // Auto-dismiss or sync modal if check-in was completed in another window
+  useEffect(() => {
+    if (isCheckInCompletedToday) {
+      setShowMorningCheckInModal(false);
+    }
+  }, [isCheckInCompletedToday]);
+
+  useEffect(() => {
+    if (state?.emotionalTracker?.feelLevel !== null && state?.emotionalTracker?.feelLevel !== undefined) {
+      setMorningFeelLevel(state.emotionalTracker.feelLevel);
+    }
+    if (state?.emotionalTracker?.morningNotes !== undefined) {
+      setMorningNotesInput(state.emotionalTracker.morningNotes || '');
+    }
+  }, [state?.emotionalTracker?.feelLevel, state?.emotionalTracker?.morningNotes]);
 
   const handleCompleteMorningCheckIn = () => {
     const timeStr = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -475,6 +510,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [customRiskInput, setCustomRiskInput] = useState('');
   const [optionalTakeProfitInput, setOptionalTakeProfitInput] = useState('');
   const [filterSavedFeedback, setFilterSavedFeedback] = useState(false);
+  const [skipTradeFeedback, setSkipTradeFeedback] = useState(false);
   const [unplannedFeedback, setUnplannedFeedback] = useState(false);
 
   // Outcome Tracker state
@@ -536,6 +572,21 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editingRuleText, setEditingRuleText] = useState<string>('');
 
+  // Quick Restore & Manual Add Trade Modal State
+  const [showRestoreTradeModal, setShowRestoreTradeModal] = useState(false);
+  const [restoreTradeName, setRestoreTradeName] = useState('Trade #1');
+  const [restoreTradePnl, setRestoreTradePnl] = useState('-250');
+  const [restoreTradeQuality, setRestoreTradeQuality] = useState<TradeQualityGrade>('A_PLUS');
+  const [restoreTradeDiscipline, setRestoreTradeDiscipline] = useState<'managed_well' | 'exited_emotionally'>('managed_well');
+  const [restoreTradePlanned, setRestoreTradePlanned] = useState<'planned' | 'unplanned'>('planned');
+  const [restoreTradeAccountId, setRestoreTradeAccountId] = useState(activeAccount?.id || '');
+  const [restoreTradeNotes, setRestoreTradeNotes] = useState('');
+  const [restoreTradeFeeling, setRestoreTradeFeeling] = useState<LossFeeling>('fine');
+
+  // Inline Risk Editing State for Running Trade Log
+  const [editingRiskTradeId, setEditingRiskTradeId] = useState<string | null>(null);
+  const [editRiskDraft, setEditRiskDraft] = useState<string>('');
+
   // Centralized System Tag Editing & Creation State (Max 10 total across system)
   const [editingSystemTagIndex, setEditingSystemTagIndex] = useState<number | null>(null);
   const [editingSystemTagText, setEditingSystemTagText] = useState<string>('');
@@ -568,6 +619,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Quick Action Take A Trade
   const handleCallAPlus = () => {
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
     if (!hasValidAccountAndDrawdown) {
       resetAndOpenAddAccountModal('live');
       return;
@@ -590,6 +645,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Quick Action Unplanned
   const handleCallUnplanned = () => {
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       tiltScore: prev.tiltScore + 1,
@@ -616,10 +675,123 @@ export const SessionView: React.FC<SessionViewProps> = ({
     q4Risk === true &&
     q5NotFomo === true;
 
-  // Handle "TAKE THE TRADE" - smoothly delegates to the Sizing Calculator without popup alerts
+  // Helper to determine the first unverified question in sequence
+  const getFirstUnverifiedQuestion = () => {
+    for (let i = 0; i < state.rules.length; i++) {
+      const rule = state.rules[i];
+      const ans = ruleCheckboxes[rule.id];
+      const isOverridden = overriddenRules[rule.id] === true;
+      if (ans === undefined || ans === null || (ans === false && !isOverridden)) {
+        return {
+          id: rule.id,
+          stepNum: i + 1,
+          title: `Rule ${i + 1}`,
+          text: rule.text,
+          isNoUnconfirmed: ans === false && !isOverridden,
+        };
+      }
+    }
+    if (
+      q4Risk === undefined ||
+      q4Risk === null ||
+      (q4Risk === false && !overriddenRules['q4']) ||
+      (q4Risk === true && (!explicitRiskAmount || explicitRiskAmount <= 0))
+    ) {
+      return {
+        id: 'q4',
+        stepNum: state.rules.length + 1,
+        title: `Question ${state.rules.length + 1} (Risk)`,
+        text: 'Have you calculated your risk?',
+        isNoUnconfirmed: q4Risk === false && !overriddenRules['q4'],
+      };
+    }
+    if (
+      q5NotFomo === undefined ||
+      q5NotFomo === null ||
+      (q5NotFomo === false && !overriddenRules['q5'])
+    ) {
+      return {
+        id: 'q5',
+        stepNum: state.rules.length + 2,
+        title: `Question ${state.rules.length + 2} (FOMO)`,
+        text: 'This is not a revenge or FOMO click',
+        isNoUnconfirmed: q5NotFomo === false && !overriddenRules['q5'],
+      };
+    }
+    return null;
+  };
+
+  const firstUnverifiedQuestion = getFirstUnverifiedQuestion();
+
+  // Handle "TAKE THE TRADE" - strictly enforces verifying checklist rules sequentially (Rule 1 through Rule 5)
   const handleTakeTheTrade = () => {
-    // If risk is not yet set, smoothly delegate to the Sizing Calculator without an abrupt alert
-    if (!explicitRiskAmount || explicitRiskAmount <= 0) {
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
+
+    // 1. Enforce verifying setup rules (Rule 1, Rule 2, Rule 3...) sequentially
+    for (let i = 0; i < state.rules.length; i++) {
+      const rule = state.rules[i];
+      const ans = ruleCheckboxes[rule.id];
+      const isOverridden = overriddenRules[rule.id] === true;
+
+      // If this rule hasn't been answered yet (pending)
+      if (ans === undefined || ans === null) {
+        setActiveRuleFocus(rule.id);
+        setOverridePromptFor(null);
+        const ruleEl =
+          document.getElementById(`rule-card-${rule.id}`) ||
+          document.getElementById('consolidated-interactive-control-box');
+        if (ruleEl) {
+          ruleEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      // If answered NO without an override, prompt override confirmation
+      if (ans === false && !isOverridden) {
+        setActiveRuleFocus(rule.id);
+        setOverridePromptFor(rule.id);
+        const ruleEl =
+          document.getElementById('inline-override-prompt') ||
+          document.getElementById(`rule-card-${rule.id}`) ||
+          document.getElementById('consolidated-interactive-control-box');
+        if (ruleEl) {
+          ruleEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+    }
+
+    // 2. Enforce Question 4: Risk Sizing (Have you calculated your risk?)
+    if (q4Risk === undefined || q4Risk === null) {
+      setActiveRuleFocus('q4');
+      setOverridePromptFor(null);
+      const calcEl =
+        document.getElementById('account-sizing-tier-cards') ||
+        document.getElementById('consolidated-interactive-control-box');
+      if (calcEl) {
+        calcEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    if (q4Risk === false && !overriddenRules['q4']) {
+      setActiveRuleFocus('q4');
+      setOverridePromptFor('q4');
+      const calcEl =
+        document.getElementById('inline-override-prompt') ||
+        document.getElementById('account-sizing-tier-cards') ||
+        document.getElementById('consolidated-interactive-control-box');
+      if (calcEl) {
+        calcEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    // If Q4 is marked YES but risk is not yet set, scroll to sizing tiers
+    if (q4Risk === true && (!explicitRiskAmount || explicitRiskAmount <= 0)) {
       setActiveRuleFocus('q4');
       const calcEl = document.getElementById('account-sizing-tier-cards');
       if (calcEl) {
@@ -628,14 +800,36 @@ export const SessionView: React.FC<SessionViewProps> = ({
       return;
     }
 
-    if (q5NotFomo === false && !overriddenRules['q5']) {
-      alert('Trade BLOCKED: You marked this as FOMO or Revenge! Step away from the workstation.');
+    // 3. Enforce Question 5: Emotional Filter (This is not a revenge or FOMO click)
+    if (q5NotFomo === undefined || q5NotFomo === null) {
+      setActiveRuleFocus('q5');
+      setOverridePromptFor(null);
+      const q5El =
+        document.getElementById('rule-card-q5') ||
+        document.getElementById('consolidated-interactive-control-box');
+      if (q5El) {
+        q5El.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
+    if (q5NotFomo === false && !overriddenRules['q5']) {
+      setActiveRuleFocus('q5');
+      setOverridePromptFor('q5');
+      const q5El =
+        document.getElementById('inline-override-prompt') ||
+        document.getElementById('rule-card-q5') ||
+        document.getElementById('consolidated-interactive-control-box');
+      if (q5El) {
+        q5El.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    // All checklist rules and risk sizing have been verified in sequence!
     setTradeInPosition(true);
     setFilterSavedFeedback(true);
-    const riskToUse = explicitRiskAmount;
+    const riskToUse = explicitRiskAmount || (riskAmounts[selectedQuality] ?? 200);
     if (!winAmountInput) {
       if (optionalTakeProfitInput && parseFloat(optionalTakeProfitInput) > 0) {
         setWinAmountInput(optionalTakeProfitInput);
@@ -657,8 +851,52 @@ export const SessionView: React.FC<SessionViewProps> = ({
     setTimeout(() => setFilterSavedFeedback(false), 2500);
   };
 
+  // Handle "SKIPPED THE TRADE" - cancel the current trade setup and reset checklist
+  const handleSkipTheTrade = () => {
+    // 1. Reset all checklist rule verification states and overrides
+    setRuleCheckboxes({});
+    setOverriddenRules({});
+    setOverridePromptFor(null);
+    setQ4Risk(null);
+    setQ5NotFomo(null);
+    setActiveRuleFocus('r1');
+    setConsolidatedNote('');
+    setRuleNotes({});
+    setTradeInPosition(false);
+    setFilterSavedFeedback(false);
+
+    // 2. Clear out manual/staged pricing or outcome inputs
+    setOutcomeMode('idle');
+    setOutcomeStatus(null);
+    setWinAmountInput('');
+    setLossAmountInput('');
+    setCustomRiskInput('');
+    setOptionalTakeProfitInput('');
+
+    // 3. Show clear confirmation banner
+    setSkipTradeFeedback(true);
+    setTimeout(() => setSkipTradeFeedback(false), 3500);
+
+    // 4. Record disciplined standing down note to Buddy message stream
+    const timeStr = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const deskMsg: DeskMessage = {
+      id: `m-skip-${Date.now()}`,
+      sender: 'BUDDY',
+      time: timeStr,
+      text: `🛡️ Trade setup cancelled / skipped. Deciding to stand down and protect your capital is an essential disciplined trading habit. Missing a move costs $0.`,
+    };
+    onUpdateState((prev) => ({
+      ...prev,
+      deskMessages: [...prev.deskMessages, deskMsg],
+    }));
+  };
+
   // Outcome Tracker: Select Winner
   const handleSelectWin = () => {
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
     if (!winAmountInput) {
       if (optionalTakeProfitInput && parseFloat(optionalTakeProfitInput) > 0) {
         setWinAmountInput(optionalTakeProfitInput);
@@ -671,11 +909,21 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Outcome Tracker: Confirm Win
   const handleConfirmWin = () => {
+    if (isSubmittingTradeRef.current) return;
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
     const winAmount = parseFloat(winAmountInput);
     if (isNaN(winAmount) || winAmount <= 0) {
       alert('Please enter a valid profit amount (e.g. 200).');
       return;
     }
+
+    isSubmittingTradeRef.current = true;
+    setTimeout(() => {
+      isSubmittingTradeRef.current = false;
+    }, 1200);
 
     const riskPercent =
       selectedQuality === 'A_PLUS' ? 15 : selectedQuality === 'A' ? 10 : 5;
@@ -739,6 +987,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Outcome Tracker: Select Loss
   const handleSelectLoss = (overrideAmount?: number) => {
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
     const amt = overrideAmount !== undefined ? overrideAmount : acceptedRisk;
     setLossAmountInput(String(amt));
     setOutcomeMode('loser');
@@ -746,6 +998,17 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Outcome Tracker: Confirm Loss & Honest Emotional State
   const handleConfirmLoss = (feeling: LossFeeling) => {
+    if (isSubmittingTradeRef.current) return;
+    if (!isCheckInCompletedToday) {
+      setShowMorningCheckInModal(true);
+      return;
+    }
+
+    isSubmittingTradeRef.current = true;
+    setTimeout(() => {
+      isSubmittingTradeRef.current = false;
+    }, 1200);
+
     const lossAmount = parseFloat(lossAmountInput) || acceptedRisk;
     const riskPercent =
       selectedQuality === 'A_PLUS' ? 15 : selectedQuality === 'A' ? 10 : 5;
@@ -839,17 +1102,62 @@ export const SessionView: React.FC<SessionViewProps> = ({
         }
         return t;
       });
-      return { ...prev, trades: updated };
+      const nextState = { ...prev, trades: updated };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
     });
   };
 
   // Save Trade Name
   const handleSaveTradeName = (tradeId: string) => {
     const updatedName = tradeNames[tradeId] || '';
-    onUpdateState((prev) => ({
-      ...prev,
-      trades: prev.trades.map((t) => (t.id === tradeId ? { ...t, name: updatedName } : t)),
-    }));
+    onUpdateState((prev) => {
+      const updated = prev.trades.map((t) => (t.id === tradeId ? { ...t, name: updatedName } : t));
+      const nextState = { ...prev, trades: updated };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
+  };
+
+  // Inline Risk Editing Handlers in Session Log
+  const handleStartEditTradeRisk = (trade: CompletedTrade) => {
+    setEditingRiskTradeId(trade.id);
+    setEditRiskDraft(String(trade.riskDollars || ''));
+  };
+
+  const handleCancelEditTradeRisk = () => {
+    setEditingRiskTradeId(null);
+    setEditRiskDraft('');
+  };
+
+  const handleSaveTradeRisk = (tradeId: string, customVal?: number) => {
+    const valToUse = typeof customVal === 'number' ? customVal : parseFloat(editRiskDraft);
+    if (isNaN(valToUse) || valToUse <= 0) return;
+
+    onUpdateState((prev) => {
+      const updated = prev.trades.map((t) => {
+        if (t.id === tradeId) {
+          const acc = prev.accounts.find((a) => a.id === t.accountId);
+          const maxDD = acc?.maxDrawdown || (activeAccount?.maxDrawdown || 2000);
+          const newRiskPercent = Number(((valToUse / maxDD) * 100).toFixed(1));
+          const newRMultiple =
+            typeof t.pnl === 'number' ? Number((t.pnl / valToUse).toFixed(2)) : t.rMultiple;
+          return {
+            ...t,
+            riskDollars: Math.round(valToUse),
+            riskPercent: newRiskPercent,
+            rMultiple: newRMultiple,
+          };
+        }
+        return t;
+      });
+      const nextState = { ...prev, trades: updated };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
+
+    setEditingRiskTradeId(null);
+    setEditRiskDraft('');
   };
 
   // Rule up/down reorder
@@ -1077,40 +1385,78 @@ export const SessionView: React.FC<SessionViewProps> = ({
         </div>
       )}
 
-      {/* Pending Morning Check-In Banner */}
-      {!isCheckInCompletedToday && !showMorningCheckInModal && (
-        <div className="p-3.5 bg-[#091b22] border border-amber-500/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Sun className="w-4 h-4" />
+      {/* PENDING / LOCKED MORNING CHECK-IN PROMINENT BANNER */}
+      {!isCheckInCompletedToday && (
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/90 via-[#142329] to-[#0a181e] border-2 border-amber-500/70 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+              <Lock className="w-6 h-6" />
             </div>
-            <div>
-              <div className="text-xs font-black text-amber-300 flex items-center gap-2">
-                <span>Morning Check-In Pending</span>
-                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">&bull; Calibrate emotional baseline & sleep memo</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-md bg-amber-500 text-black font-black text-[10px] uppercase tracking-wider">
+                  Trading Locked
+                </span>
+                <span className="text-xs font-bold text-amber-300">
+                  Morning Mood Check-In Required for Today
+                </span>
               </div>
-              <p className="text-[11px] text-slate-300">
-                Anchor your mental state at <span className="text-emerald-300 font-bold">Level 5: Cool as a Cucumber 🥒</span> and record any sleep notes via memo before taking your first trade.
+              <h3 className="text-sm sm:text-base font-black text-white">
+                Answer today's 1-question mindset check-in to unlock trading &amp; logging
+              </h3>
+              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                Calibrate your emotional baseline (Anchor 5: <span className="text-emerald-300 font-bold">Cool as a Cucumber 🥒</span>) before trading. Checklist rules, position sizing, and trade logging are locked until submitted.
               </p>
             </div>
           </div>
           <button
+            type="button"
+            id="unlock-session-banner-btn"
             onClick={() => setShowMorningCheckInModal(true)}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-xl cursor-pointer shadow-xs whitespace-nowrap self-start sm:self-auto"
+            className="w-full md:w-auto px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
           >
-            ☀️ Complete Check-In Now
+            <Sun className="w-4 h-4 fill-black" />
+            <span>Answer Check-In (1 Question) &amp; Unlock →</span>
           </button>
         </div>
       )}
 
       {/* TOP DESK CONTROL BAR */}
-      <div className="p-4 bg-[#0b161b] border border-[#162b34] rounded-2xl space-y-3.5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#142630] pb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-black tracking-wider text-emerald-400 uppercase">
-              READY
-            </span>
+      <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-3.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#143247] pb-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {isCheckInCompletedToday ? (
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+                <span className="text-xs font-black tracking-wider text-sky-400 uppercase">
+                  READY
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-[#0e273a] border border-sky-500/30 text-sky-200 font-mono text-[11px] font-bold">
+                  Day {state.dayCounter || 1}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span className="text-xs font-black tracking-wider text-amber-400 uppercase flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  LOCKED &bull; CHECK-IN REQUIRED
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-[#221a0d] border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold">
+                  Day {state.dayCounter || 1}
+                </span>
+              </div>
+            )}
+
+            {/* Status Symbol Badge & No Tilt Days Tracker */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#061420] border border-[#153850] text-[11px] font-bold text-slate-200">
+              <Shield className="w-3.5 h-3.5 text-sky-400" />
+              <span className="text-sky-300 font-black">Status:</span>
+              <span className="text-white capitalize">{state.currentTier || 'Rules Student'}</span>
+              <span className="text-slate-500">&bull;</span>
+              <Flame className="w-3.5 h-3.5 text-sky-400" />
+              <span className="font-mono text-sky-300 font-black">{state.cleanStreak || 0} No Tilt Days</span>
+            </div>
           </div>
 
           {/* Account Indicator & Two Distinct Action Buttons */}
@@ -1122,17 +1468,17 @@ export const SessionView: React.FC<SessionViewProps> = ({
               className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 isCheckInCompletedToday
                   ? 'bg-[#0a232b] hover:bg-[#0f2e38] text-emerald-300 border border-emerald-500/40 shadow-xs'
-                  : 'bg-amber-950/80 hover:bg-amber-900/90 text-amber-300 border border-amber-500/50 animate-pulse'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black border border-amber-400 font-black shadow-md animate-pulse'
               }`}
               title="Record or review your morning emotional check-in & sleep memo"
             >
-              <Sun className={`w-3.5 h-3.5 ${isCheckInCompletedToday ? 'text-emerald-400' : 'text-amber-400'}`} />
+              <Sun className={`w-3.5 h-3.5 ${isCheckInCompletedToday ? 'text-emerald-400' : 'text-black fill-black'}`} />
               {isCheckInCompletedToday ? (
                 <span>
                   Check-In: {state.emotionalTracker.feelLevel === 5 ? '🥒 Cool as a Cucumber (5)' : `Level ${state.emotionalTracker.feelLevel}/10`}
                 </span>
               ) : (
-                <span>☀️ Morning Check-In: Pending</span>
+                <span>🔒 Complete Check-In to Unlock</span>
               )}
             </button>
 
@@ -1299,7 +1645,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
           <button
             type="button"
             onClick={() => setShowMorningCheckInModal(true)}
@@ -1307,6 +1653,15 @@ export const SessionView: React.FC<SessionViewProps> = ({
           >
             <Sun className="w-3 h-3 text-amber-400" />
             <span>{isCheckInCompletedToday ? 'Update Mood' : 'Take Morning Check-In'}</span>
+          </button>
+          <button
+            type="button"
+            id="call-it-a-day-top-btn"
+            onClick={onCallItADay}
+            className="px-2.5 py-1 bg-[#142832] hover:bg-[#1a3542] text-cyan-300 border border-[#234352] rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1.5"
+          >
+            <Moon className="w-3 h-3 text-cyan-400" />
+            <span>Call it a day</span>
           </button>
           <button
             type="button"
@@ -1318,13 +1673,13 @@ export const SessionView: React.FC<SessionViewProps> = ({
           </button>
         </div>
       </div>
-      <div id="trade-filter-section" className="bg-[#0b161b] border border-[#162a33] rounded-2xl p-4 lg:p-6 space-y-5">
+      <div id="trade-filter-section" className="bg-[#0b1a26] border border-[#16354d] rounded-2xl p-4 lg:p-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#152731] pb-3">
+        <div className="flex items-center justify-between border-b border-[#142f45] pb-3">
           <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2">
-            <span>The trade filter</span>
+            <span>THE TRADER FILTER</span>
           </h2>
-          <span className="text-[11px] font-mono font-bold text-slate-400 bg-[#071318] px-2.5 py-1 rounded-lg border border-[#152933]">
+          <span className="text-[11px] font-mono font-bold text-slate-400 bg-[#071520] px-2.5 py-1 rounded-lg border border-[#173752]">
             {state.rules.length}/5 RULES ACTIVE
           </span>
         </div>
@@ -1397,96 +1752,80 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons & Direct Sizing Calculator Delegation */}
-              <div className="flex items-center justify-between gap-2.5 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* TAKE THE TRADE */}
-                  <button
-                    id="take-the-trade-top-btn"
-                    type="button"
-                    onClick={handleTakeTheTrade}
-                    className={`px-4 py-2 text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer ${
-                      filterSavedFeedback
-                        ? 'bg-emerald-400 text-black'
-                        : tradeInPosition
-                        ? 'bg-amber-400 hover:bg-amber-300 text-black ring-2 ring-amber-400/50'
-                        : explicitRiskAmount
-                        ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/40'
-                        : 'bg-emerald-600/80 hover:bg-emerald-500 text-black shadow-emerald-950/40'
-                    }`}
-                  >
-                    {filterSavedFeedback ? (
-                      <>
-                        <Check className="w-4 h-4 stroke-[3]" />
-                        <span>TRADE TAKEN!</span>
-                      </>
-                    ) : tradeInPosition ? (
-                      <>
-                        <Activity className="w-4 h-4 animate-pulse" />
-                        <span>
-                          POSITION ACTIVE ({explicitRiskAmount ? `$${explicitRiskAmount} Risk` : 'Active'})
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                        <span>
-                          TAKE THE TRADE ({activeAccount ? activeAccount.name : 'Account'} &bull;{' '}
-                          {explicitRiskAmount ? `$${explicitRiskAmount} Risk` : 'Set Risk in Calculator'})
-                        </span>
-                      </>
-                    )}
-                  </button>
+              {/* Action Buttons: TAKE THE TRADE and SKIPPED THE TRADE */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* TAKE THE TRADE */}
+                <button
+                  id="take-the-trade-top-btn"
+                  type="button"
+                  onClick={handleTakeTheTrade}
+                  className={`px-4 py-2 text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer ${
+                    !isCheckInCompletedToday
+                      ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/40 ring-2 ring-amber-400/60 animate-pulse'
+                      : filterSavedFeedback
+                      ? 'bg-emerald-400 text-black'
+                      : tradeInPosition
+                      ? 'bg-amber-400 hover:bg-amber-300 text-black ring-2 ring-amber-400/50'
+                      : explicitRiskAmount
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/40'
+                      : 'bg-emerald-600/80 hover:bg-emerald-500 text-black shadow-emerald-950/40'
+                  }`}
+                >
+                  {!isCheckInCompletedToday ? (
+                    <>
+                      <Lock className="w-4 h-4 stroke-[2.5]" />
+                      <span>🔒 COMPLETE MORNING CHECK-IN TO UNLOCK TRADING</span>
+                    </>
+                  ) : filterSavedFeedback ? (
+                    <>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>TRADE TAKEN!</span>
+                    </>
+                  ) : tradeInPosition ? (
+                    <>
+                      <Activity className="w-4 h-4 animate-pulse" />
+                      <span>
+                        POSITION ACTIVE ({explicitRiskAmount ? `$${explicitRiskAmount} Risk` : 'Active'})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                      <span>
+                        TAKE THE TRADE ({activeAccount ? activeAccount.name : 'Account'} &bull;{' '}
+                        {firstUnverifiedQuestion
+                          ? `Verify ${firstUnverifiedQuestion.title}`
+                          : explicitRiskAmount
+                          ? `$${explicitRiskAmount} Risk`
+                          : 'Set Risk in Calculator'}
+                        )
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
 
-                  {/* Sizing Calculator Shortcut Button */}
-                  <button
-                    type="button"
-                    id="open-sizing-calc-top-btn"
-                    onClick={() => {
-                      setActiveRuleFocus('q4');
-                      const calcEl = document.getElementById('account-sizing-tier-cards');
-                      if (calcEl) {
-                        calcEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                      explicitRiskAmount
-                        ? 'bg-[#0a1e28] hover:bg-[#102b39] text-teal-300 border-teal-500/40 hover:border-teal-400'
-                        : 'bg-[#151710] hover:bg-[#212415] text-amber-300 border-amber-500/40 hover:border-amber-400'
-                    }`}
-                    title="All trade sizing and risk amounts are handled directly by the Max Drawdown & Sizing calculator"
-                  >
-                    <Calculator className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                    <span>
-                      {explicitRiskAmount
-                        ? `Sizing: $${explicitRiskAmount} (${selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality})`
-                        : 'Set Risk in Calculator'}
+              {/* Skipped Trade Banner Confirmation */}
+              {skipTradeFeedback && (
+                <div
+                  id="skip-trade-alert-banner"
+                  className="p-2.5 rounded-xl bg-[#091b24] border border-sky-500/50 text-sky-200 text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in"
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span className="font-bold">
+                      Trade Skipped & Setup Cancelled: Account drawdown & capital protected. Checklist reset to fresh state.
                     </span>
-                  </button>
-
-                  {/* Unplanned Trade */}
+                  </div>
                   <button
                     type="button"
-                    id="unplanned-trade-top-btn"
-                    onClick={handleCallUnplanned}
-                    className="px-3.5 py-1.5 bg-[#251f16] hover:bg-[#342b1f] text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    onClick={() => setSkipTradeFeedback(false)}
+                    className="p-1 text-slate-400 hover:text-white cursor-pointer"
                   >
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Unplanned Trade</span>
-                  </button>
-
-                  {/* Call it a day */}
-                  <button
-                    type="button"
-                    id="call-it-a-day-top-btn"
-                    onClick={onCallItADay}
-                    className="px-3.5 py-1.5 bg-[#142832] hover:bg-[#1a3542] text-slate-200 border border-[#234352] rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Moon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Call it a day</span>
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
@@ -1511,6 +1850,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 return (
                   <div
                     key={rule.id}
+                    id={`rule-card-${rule.id}`}
                     onClick={() => setActiveRuleFocus(rule.id)}
                     className={`p-3.5 rounded-xl text-xs transition-all space-y-2 cursor-pointer ${
                       isActive
@@ -1783,14 +2123,17 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     <div className="grid grid-cols-3 gap-2">
                       {/* B (5%) */}
                       <div
+                        id="preset-risk-tier-b"
                         onClick={() => {
+                          const val = riskAmounts.B;
                           setSelectedQuality('B');
-                          setCustomRiskInput(String(riskAmounts.B));
+                          setCustomRiskInput(String(val));
                           setQ4Risk(true);
                           setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'B'
+                          selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
                             ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
                             : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
                         }`}
@@ -1804,13 +2147,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = Math.max(5, riskAmounts.B - 25);
                                 setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                if (selectedQuality === 'B') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Decrease B tier risk by $25"
                             >
                               -
                             </button>
@@ -1820,13 +2164,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = riskAmounts.B + 25;
                                 setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                if (selectedQuality === 'B') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Increase B tier risk by $25"
                             >
                               +
                             </button>
@@ -1840,14 +2185,17 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
                       {/* A (10%) */}
                       <div
+                        id="preset-risk-tier-a"
                         onClick={() => {
+                          const val = riskAmounts.A;
                           setSelectedQuality('A');
-                          setCustomRiskInput(String(riskAmounts.A));
+                          setCustomRiskInput(String(val));
                           setQ4Risk(true);
                           setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A'
+                          selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
                             ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
                             : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
                         }`}
@@ -1861,13 +2209,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = Math.max(10, riskAmounts.A - 50);
                                 setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                if (selectedQuality === 'A') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Decrease A tier risk by $50"
                             >
                               -
                             </button>
@@ -1877,13 +2226,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = riskAmounts.A + 50;
                                 setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                if (selectedQuality === 'A') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Increase A tier risk by $50"
                             >
                               +
                             </button>
@@ -1897,14 +2247,17 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
                       {/* A+ (15%) */}
                       <div
+                        id="preset-risk-tier-aplus"
                         onClick={() => {
+                          const val = riskAmounts.A_PLUS;
                           setSelectedQuality('A_PLUS');
-                          setCustomRiskInput(String(riskAmounts.A_PLUS));
+                          setCustomRiskInput(String(val));
                           setQ4Risk(true);
                           setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A_PLUS'
+                          selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
                             ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
                             : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
                         }`}
@@ -1918,13 +2271,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = Math.max(15, riskAmounts.A_PLUS - 50);
                                 setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                if (selectedQuality === 'A_PLUS') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Decrease A+ tier risk by $50"
                             >
                               -
                             </button>
@@ -1934,13 +2288,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                 e.stopPropagation();
                                 const nextVal = riskAmounts.A_PLUS + 50;
                                 setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                if (selectedQuality === 'A_PLUS') {
-                                  setCustomRiskInput(String(nextVal));
-                                  setQ4Risk(true);
-                                  setOverriddenRules((p) => ({ ...p, q4: false }));
-                                }
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
                               }}
                               className="px-1 hover:text-white"
+                              title="Increase A+ tier risk by $50"
                             >
                               +
                             </button>
@@ -1969,7 +2324,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                             </span>
                           ) : (
                             <span className="text-amber-400 font-semibold text-xs">
-                              Select a setup tier above or enter custom risk below
+                              Select a preset risk box above or click a quick-fill button below
                             </span>
                           )}
                         </div>
@@ -1983,10 +2338,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
                     {/* Sizing & Target Inputs (Custom Risk + Optional Take Profit) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {/* Custom Risk Input */}
-                      <div className="space-y-1">
+                      {/* Custom Risk Input & Quick-Fill Presets */}
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400">Custom Risk:</span>
+                          <span className="text-[10px] font-bold text-slate-400">Risk Amount ($):</span>
                           <span className="text-[10px] text-slate-500 font-mono">
                             Active: {explicitRiskAmount ? `$${explicitRiskAmount}` : 'Not set'}
                           </span>
@@ -2003,11 +2358,62 @@ export const SessionView: React.FC<SessionViewProps> = ({
                               if (!isNaN(val) && val > 0) {
                                 setQ4Risk(true);
                                 setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(e.target.value);
                               }
                             }}
                             placeholder="Input risk $"
                             className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
                           />
+                        </div>
+
+                        {/* Quick-Fill Preset Risk Buttons */}
+                        <div className="space-y-1 pt-0.5">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                            <span>Quick-Fill Presets:</span>
+                            <span className="text-slate-500 font-normal">Click to auto-input</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {[
+                              { label: 'B ($' + riskAmounts.B + ')', val: riskAmounts.B, tier: 'B' as const },
+                              { label: 'A ($' + riskAmounts.A + ')', val: riskAmounts.A, tier: 'A' as const },
+                              { label: 'A+ ($' + riskAmounts.A_PLUS + ')', val: riskAmounts.A_PLUS, tier: 'A_PLUS' as const },
+                              { label: '$50', val: 50 },
+                              { label: '$100', val: 100 },
+                              { label: '$150', val: 150 },
+                              { label: '$200', val: 200 },
+                              { label: '$250', val: 250 },
+                              { label: '$300', val: 300 },
+                              { label: '$500', val: 500 },
+                            ].map((preset, pIdx) => {
+                              const isSelected = customRiskInput === String(preset.val);
+                              return (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomRiskInput(String(preset.val));
+                                    if (preset.tier) {
+                                      setSelectedQuality(preset.tier);
+                                    } else {
+                                      if (preset.val === riskAmounts.B) setSelectedQuality('B');
+                                      else if (preset.val === riskAmounts.A) setSelectedQuality('A');
+                                      else if (preset.val === riskAmounts.A_PLUS) setSelectedQuality('A_PLUS');
+                                    }
+                                    setQ4Risk(true);
+                                    setOverriddenRules((p) => ({ ...p, q4: false }));
+                                    setLossAmountInput(String(preset.val));
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
+                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 
@@ -2086,6 +2492,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               const isQ5Overridden = overriddenRules['q5'] === true;
               return (
                 <div
+                  id="rule-card-q5"
                   onClick={() => setActiveRuleFocus('q5')}
                   className={`p-3.5 rounded-xl text-xs transition-all space-y-2 cursor-pointer ${
                     isQ5Active
@@ -2146,22 +2553,32 @@ export const SessionView: React.FC<SessionViewProps> = ({
               );
             })()}
 
-            {/* Take The Trade Button - Positioned directly after Question 5 final discipline check */}
-            <div className="pt-2">
+            {/* Execution Buttons: EXECUTION TRADE and SKIPPED THE TRADE */}
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch gap-2.5">
+              {/* EXECUTION TRADE */}
               <button
                 id="execute-filtered-trade-btn"
                 type="button"
                 onClick={handleTakeTheTrade}
-                className={`w-full py-3.5 text-xs font-black rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  tradeInPosition
+                className={`flex-1 py-3.5 px-4 text-xs font-black rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  !isCheckInCompletedToday
+                    ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/40 ring-2 ring-amber-400/60 animate-pulse'
+                    : filterSavedFeedback
+                    ? 'bg-emerald-400 text-black'
+                    : tradeInPosition
                     ? 'bg-amber-400 hover:bg-amber-300 text-black ring-2 ring-amber-400/50 shadow-amber-950/40'
                     : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/40'
                 }`}
               >
-                {filterSavedFeedback ? (
+                {!isCheckInCompletedToday ? (
+                  <>
+                    <Lock className="w-4 h-4 stroke-[2.5]" />
+                    <span>🔒 COMPLETE MORNING CHECK-IN TO UNLOCK TRADING</span>
+                  </>
+                ) : filterSavedFeedback ? (
                   <>
                     <Check className="w-4 h-4 stroke-[3]" />
-                    <span>TRADE TAKEN! RECORD OUTCOME BELOW</span>
+                    <span>TRADE EXECUTED! RECORD OUTCOME BELOW</span>
                   </>
                 ) : tradeInPosition ? (
                   <>
@@ -2172,16 +2589,55 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                    <Zap className="w-4 h-4 fill-current stroke-[2.5]" />
                     <span>
-                      TAKE THE TRADE (
+                      EXECUTION TRADE (
                       {activeAccount ? activeAccount.name : 'Manual Sizing'} &bull;{' '}
-                      {explicitRiskAmount ? `$${explicitRiskAmount} Risk` : 'Set Risk in Calculator'})
+                      {firstUnverifiedQuestion
+                        ? `Verify ${firstUnverifiedQuestion.title}`
+                        : explicitRiskAmount
+                        ? `$${explicitRiskAmount} Risk`
+                        : 'Set Risk in Calculator'}
+                      )
                     </span>
                   </>
                 )}
               </button>
+
+              {/* SKIPPED THE TRADE */}
+              <button
+                id="execute-skip-trade-btn"
+                type="button"
+                onClick={handleSkipTheTrade}
+                className="py-3.5 px-5 bg-[#14222b] hover:bg-[#1c303d] text-slate-200 hover:text-white border border-[#234354] hover:border-slate-400 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                title="Chickened out or decided to pass? Cancel trade setup and reset checklist"
+              >
+                <XCircle className="w-4 h-4 text-slate-400" />
+                <span>SKIPPED THE TRADE</span>
+              </button>
             </div>
+
+            {/* Skipped Trade Banner Confirmation (Bottom) */}
+            {skipTradeFeedback && (
+              <div
+                id="skip-trade-bottom-alert-banner"
+                className="p-3 rounded-xl bg-[#091b24] border border-sky-500/50 text-sky-200 text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in"
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span className="font-bold">
+                    Trade Skipped & Setup Cancelled: Account drawdown & capital protected. Checklist reset to fresh state.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSkipTradeFeedback(false)}
+                  className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Outcome Status Banner (Routing feedback to Board Tab) */}
             {outcomeStatus && (
@@ -2219,7 +2675,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
             <div
               id="outcome-tracker-box"
               className={`p-4 rounded-2xl bg-[#09151b] border-2 transition-all space-y-3.5 shadow-xl ${
-                tradeInPosition
+                !isCheckInCompletedToday
+                  ? 'border-amber-500/40 shadow-black/40'
+                  : tradeInPosition
                   ? 'border-amber-500/60 shadow-amber-950/30 ring-1 ring-amber-500/30'
                   : 'border-[#172d38] shadow-black/40'
               }`}
@@ -2227,15 +2685,19 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {/* Header */}
               <div className="flex items-center justify-between gap-2 border-b border-[#142833] pb-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                    ⚡
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs ${
+                    !isCheckInCompletedToday ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    {!isCheckInCompletedToday ? '🔒' : '⚡'}
                   </div>
                   <div>
                     <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                      Outcome Tracker
+                      Outcome Tracker {!isCheckInCompletedToday && <span className="text-amber-400 font-bold">(Locked)</span>}
                     </h3>
                     <p className="text-[10px] text-slate-400">
-                      Post-trade resolution &amp; honest emotional check
+                      {!isCheckInCompletedToday
+                        ? 'Locked until morning check-in is complete'
+                        : 'Post-trade resolution & honest emotional check'}
                     </p>
                   </div>
                 </div>
@@ -2246,6 +2708,22 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {!isCheckInCompletedToday && (
+                <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Trade outcome logging locked. Complete today's morning check-in to log trades.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMorningCheckInModal(true)}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-black rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Unlock
+                  </button>
+                </div>
+              )}
 
               {/* IDLE STATE: Clear choices for Winner or Loser + Quick-action exact risk button */}
               {outcomeMode === 'idle' && (
@@ -2406,18 +2884,48 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Optional loss amount adjustment */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                    <span>Loss Amount:</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-rose-400 font-mono font-bold">-$</span>
-                      <input
-                        type="number"
-                        value={lossAmountInput}
-                        onChange={(e) => setLossAmountInput(e.target.value)}
-                        placeholder={String(acceptedRisk)}
-                        className="w-20 px-2 py-1 rounded bg-[#0b171c] border border-slate-700 text-white font-mono font-bold text-xs focus:outline-none focus:border-rose-500"
-                      />
+                  {/* Optional loss amount adjustment with quick-fill presets */}
+                  <div className="space-y-1.5 pt-0.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Loss Amount:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-rose-400 font-mono font-bold">-$</span>
+                        <input
+                          type="number"
+                          id="loss-amount-input"
+                          value={lossAmountInput}
+                          onChange={(e) => setLossAmountInput(e.target.value)}
+                          placeholder={String(acceptedRisk || 200)}
+                          className="w-24 px-2 py-1 rounded bg-[#0b171c] border border-rose-500/50 text-white font-mono font-bold text-xs focus:outline-none focus:border-rose-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick-fill preset loss buttons */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[9px] text-slate-400 font-medium">Quick Loss:</span>
+                      {[
+                        { label: `Exact ($${acceptedRisk || 200})`, val: acceptedRisk || 200 },
+                        { label: `0.5x ($${Math.round((acceptedRisk || 200) * 0.5)})`, val: Math.round((acceptedRisk || 200) * 0.5) },
+                        { label: `1.5x ($${Math.round((acceptedRisk || 200) * 1.5)})`, val: Math.round((acceptedRisk || 200) * 1.5) },
+                        { label: `2x ($${Math.round((acceptedRisk || 200) * 2)})`, val: Math.round((acceptedRisk || 200) * 2) },
+                        { label: `B ($${riskAmounts.B})`, val: riskAmounts.B },
+                        { label: `A ($${riskAmounts.A})`, val: riskAmounts.A },
+                        { label: `A+ ($${riskAmounts.A_PLUS})`, val: riskAmounts.A_PLUS },
+                      ].map((preset, lIdx) => (
+                        <button
+                          key={lIdx}
+                          type="button"
+                          onClick={() => setLossAmountInput(String(preset.val))}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
+                            lossAmountInput === String(preset.val)
+                              ? 'bg-rose-500/30 border-rose-400 text-rose-200'
+                              : 'bg-[#0b181f] hover:bg-rose-500/20 border-slate-700 hover:border-rose-500/50 text-slate-300 hover:text-rose-300'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -2518,11 +3026,11 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {/* Repositioned Trade Filter Description Message - Sits directly above Filter Control Box */}
             <div
               id="trade-filter-description-box"
-              className="p-3.5 bg-[#081419] border border-[#17303d] rounded-xl text-xs text-slate-300 shadow-xs"
+              className="p-3.5 bg-[#081624] border border-[#183a54] rounded-xl text-xs text-slate-300 shadow-xs"
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1 flex items-center gap-1.5">
+              <div className="text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1 flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" />
-                <span>Trade filter description</span>
+                <span>THE TRADER FILTER DESCRIPTION</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed font-medium">
                 Before you click Buy, it has to go through the filter. 3 of 3 on your rules. Risk in Q4. Revenge/FOMO on Q5.
@@ -2532,19 +3040,19 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {/* Standalone Filter Control Box */}
             <div
               id="consolidated-interactive-control-box"
-              className="bg-[#091519] border-2 border-emerald-500/40 rounded-xl p-4 space-y-4 shadow-xl"
+              className="bg-[#0a1a29] border-2 border-sky-400/50 rounded-xl p-4 space-y-4 shadow-xl"
             >
               {/* Header with Step Tracker and Navigation */}
-              <div className="flex items-center justify-between border-b border-[#162f3c] pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <Shield className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between border-b border-[#16364d] pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shadow-xs">
+                    <Shield className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-white">
-                      Filter Control Box
+                    <span className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
+                      FILTER CONTROL BOX
                     </span>
-                    <div className="text-[10px] text-emerald-400 font-bold">
+                    <div className="text-[10px] text-sky-400 font-bold">
                       Rule {currentQuestionIndex + 1} of {totalQuestions}
                     </div>
                   </div>
@@ -2561,7 +3069,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }
                     }}
                     disabled={currentQuestionIndex === 0}
-                    className="p-1.5 rounded-md bg-[#0d1f28] border border-[#1b3a4a] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
                     title="Previous Question"
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -2576,7 +3084,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }
                     }}
                     disabled={currentQuestionIndex === totalQuestions - 1}
-                    className="p-1.5 rounded-md bg-[#0d1f28] border border-[#1b3a4a] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
                     title="Next Question"
                   >
                     <span className="hidden sm:inline">Next</span>
@@ -2602,14 +3110,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }}
                       className={`py-1 px-1 rounded-md text-[10px] font-bold transition-all text-center cursor-pointer ${
                         isCurrent
-                          ? 'bg-emerald-500 text-black font-black ring-1 ring-emerald-300'
+                          ? 'bg-sky-400 text-black font-black ring-1 ring-sky-200'
                           : status === true
-                          ? 'bg-emerald-950/70 border border-emerald-700/60 text-emerald-300'
+                          ? 'bg-sky-950/80 border border-sky-600/60 text-sky-200'
                           : status === false && isOverridden
                           ? 'bg-amber-950/70 border border-amber-700/60 text-amber-300'
                           : status === false
                           ? 'bg-rose-950/70 border border-rose-700/60 text-rose-300'
-                          : 'bg-[#0d1f28] border border-[#173342] text-slate-400 hover:text-slate-200'
+                          : 'bg-[#0d2338] border border-[#173752] text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       {q.shortTitle}
@@ -2619,7 +3127,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               </div>
 
               {/* Active Question Spotlight */}
-              <div className="p-3.5 rounded-xl bg-[#0c1e28] border border-[#1d4154] space-y-2">
+              <div className="p-3.5 rounded-xl bg-[#0c2236] border border-[#1c4668] space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold text-slate-400 uppercase tracking-wider">
                     {currentQuestion.title}
@@ -2627,12 +3135,12 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                       getCurrentStatus(currentQuestion.id) === true
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        ? 'bg-sky-950 text-sky-200 border border-sky-700'
                         : getCurrentStatus(currentQuestion.id) === false && overriddenRules[currentQuestion.id]
                         ? 'bg-amber-950 text-amber-300 border border-amber-800'
                         : getCurrentStatus(currentQuestion.id) === false
                         ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                        : 'bg-[#08151b] text-slate-400 border border-[#162f3c]'
+                        : 'bg-[#081622] text-slate-400 border border-[#16364d]'
                     }`}
                   >
                     {getCurrentStatus(currentQuestion.id) === true
@@ -2685,7 +3193,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       type="button"
                       id="override-cancel-btn"
                       onClick={handleCancelOverride}
-                      className="py-2.5 px-3 rounded-lg bg-[#0e1f28] hover:bg-[#163342] text-slate-300 border border-[#204456] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+                      className="py-2.5 px-3 rounded-lg bg-[#0e2233] hover:bg-[#16364d] text-slate-300 border border-[#204a69] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
                     >
                       <X className="w-3.5 h-3.5" />
                       <span>No, Stay Flat</span>
@@ -2702,8 +3210,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       onClick={() => handleControlAnswer(true)}
                       className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
                         getCurrentStatus(currentQuestion.id) === true
-                          ? 'bg-emerald-400 text-black ring-2 ring-emerald-300 shadow-emerald-950/50'
-                          : 'bg-emerald-500 hover:bg-emerald-400 text-black'
+                          ? 'bg-sky-400 text-black ring-2 ring-sky-300 shadow-sky-950/50'
+                          : 'bg-sky-500 hover:bg-sky-400 text-black'
                       }`}
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
@@ -2727,12 +3235,12 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
                     <span>Answers advance to the next rule in sequence</span>
                     {currentQuestionIndex < totalQuestions - 1 ? (
-                      <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                      <span className="text-sky-400 font-bold flex items-center gap-0.5">
                         <span>Next: {checklistQuestions[currentQuestionIndex + 1].shortTitle}</span>
                         <ArrowRight className="w-3 h-3" />
                       </span>
                     ) : (
-                      <span className="text-emerald-400 font-bold">Step 5 of 5 reached</span>
+                      <span className="text-sky-400 font-bold">Step 5 of 5 reached</span>
                     )}
                   </div>
                 </div>
@@ -2969,368 +3477,6 @@ export const SessionView: React.FC<SessionViewProps> = ({
         </div>
       </div>
 
-      {/* RUNNING TRADE LOG & AUDIT CARDS */}
-      {state.trades.length > 0 && (() => {
-        const sessionManagedWell = state.trades.filter(
-          (t) => t.discipline === 'managed_well' && t.disciplineSelected !== false
-        ).length;
-        const sessionEmotional = state.trades.filter(
-          (t) => t.discipline === 'exited_emotionally' && t.disciplineSelected !== false
-        ).length;
-        const sessionUnspecified = state.trades.filter(
-          (t) =>
-            !(
-              (t.discipline === 'managed_well' || t.discipline === 'exited_emotionally') &&
-              t.disciplineSelected !== false
-            )
-        ).length;
-
-        return (
-        <div className="bg-[#0b161b] border border-[#162a33] rounded-2xl p-4 lg:p-5 space-y-4">
-          {/* Running Header Bar */}
-          <div className="p-3.5 bg-[#081216] border border-[#13252e] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              {activeAccount?.name ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-black text-white">{activeAccount.name}</span>
-                  {activeAccount.maxDrawdown && (
-                    <>
-                      <span className="text-slate-500">&bull;</span>
-                      <span className="text-xs font-semibold text-slate-400">
-                        ${activeAccount.maxDrawdown?.toLocaleString()} EOD MAX DD
-                      </span>
-                    </>
-                  )}
-                </div>
-              ) : null}
-              <div className={`text-base font-black mt-0.5 ${totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                Profit: {totalProfit >= 0 ? '+' : ''}${totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-              <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
-                <span>{state.trades.length} trades &bull; {aPlusCount} A-plus &bull; {aCount} A</span>
-                <span className="text-slate-600">&bull;</span>
-                <span className="text-emerald-400 font-semibold">{sessionManagedWell} managed well</span>
-                <span className="text-slate-600">&bull;</span>
-                <span className="text-rose-400 font-semibold">{sessionEmotional} emotional</span>
-                <span className="text-slate-600">&bull;</span>
-                <span className="text-slate-400 font-semibold">{sessionUnspecified} unspecified</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 text-xs font-semibold text-slate-300">
-              <div>
-                <div className="text-[10px] text-slate-500 uppercase">Win rate</div>
-                <div className="font-bold text-white">
-                  {winRate}% ({winnersCount}/{state.trades.length})
-                </div>
-              </div>
-              <div className="h-6 w-px bg-[#182e38]"></div>
-              <div>
-                <div className="text-[10px] text-slate-500 uppercase">R:R</div>
-                <div className="font-bold text-white">
-                  1 : 0.75
-                </div>
-              </div>
-              <div className="h-6 w-px bg-[#182e38]"></div>
-              <div>
-                <div className="text-[10px] text-slate-500 uppercase">Profit factor</div>
-                <div className="font-bold text-white">
-                  1.50
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trade Cards List */}
-          <div className="space-y-4">
-            {state.trades.map((trade) => {
-              const isShowingAnswers = showAnswersMap[trade.id] ?? false;
-
-              return (
-                <div
-                  key={trade.id}
-                  className="p-4 bg-[#0a1519] border border-[#162c36] rounded-xl space-y-3"
-                >
-                  {/* Top trade info line */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#142831] pb-2.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-black uppercase text-slate-400">
-                        {trade.orderNumber === 1
-                          ? '1ST TRADE'
-                          : trade.orderNumber === 2
-                          ? '2ND TRADE'
-                          : `${trade.orderNumber}TH TRADE`}
-                      </span>
-                      <span className="text-slate-600">&bull;</span>
-                      <span className="text-xs text-slate-400">{trade.timestamp}</span>
-                      <span className="text-slate-600">&bull;</span>
-                      <span className="text-xs text-slate-400 font-semibold">
-                        {trade.plannedStatus}
-                      </span>
-                      <span className="text-slate-600">&bull;</span>
-                      <span className="text-xs text-slate-300 font-bold">
-                        Risk ${trade.riskDollars} ({trade.riskPercent}%)
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-black ${trade.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {trade.pnl >= 0 ? 'Winner: +' : 'Loss: -'}${Math.abs(trade.pnl).toFixed(2)} &bull; {trade.rMultiple}R
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-[10px] font-bold">
-                        Rules held
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Discipline Buttons */}
-                  {(() => {
-                    const isManagedWell = trade.discipline === 'managed_well' && trade.disciplineSelected !== false;
-                    const isExitedEmotionally = trade.discipline === 'exited_emotionally' && trade.disciplineSelected !== false;
-                    const isUnspecified = !isManagedWell && !isExitedEmotionally;
-
-                    return (
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <button
-                          onClick={() => handleUpdateDiscipline(trade.id, 'managed_well')}
-                          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            isManagedWell
-                              ? 'bg-emerald-500 text-black border-emerald-400 shadow-xs'
-                              : 'bg-[#0d1e26] text-slate-400 border-[#193645] hover:text-white'
-                          }`}
-                        >
-                          Managed well
-                        </button>
-
-                        <button
-                          onClick={() => handleUpdateDiscipline(trade.id, 'exited_emotionally')}
-                          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            isExitedEmotionally
-                              ? 'bg-rose-600 text-white border-rose-500 shadow-xs'
-                              : 'bg-[#0d1e26] text-slate-400 border-[#193645] hover:text-white'
-                          }`}
-                        >
-                          Exited emotionally
-                        </button>
-
-                        {isUnspecified && (
-                          <div className="text-center sm:text-left px-2 text-[10px] text-slate-500 italic">
-                            Unspecified
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Name Trade & Screenshot */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                    <div className="md:col-span-8 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={tradeNames[trade.id] ?? trade.name}
-                        onChange={(e) =>
-                          setTradeNames({ ...tradeNames, [trade.id]: e.target.value })
-                        }
-                        placeholder="Name this trade — 1B long, FVG tap"
-                        className="flex-1 bg-[#0f222b] border border-[#1b3745] text-white text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => handleSaveTradeName(trade.id)}
-                        className="px-3.5 py-2 bg-[#142d38] hover:bg-[#1a3a49] text-slate-200 text-xs font-bold rounded-xl border border-[#224759] cursor-pointer"
-                      >
-                        Save
-                      </button>
-                    </div>
-
-                    <div className="md:col-span-4 flex items-center justify-end gap-2">
-                      {trade.screenshotUrl ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-10 rounded-lg overflow-hidden border border-[#224454] relative group">
-                            <img
-                              src={trade.screenshotUrl}
-                              alt="Chart snapshot"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <button
-                            onClick={() => {
-                              const newUrl = prompt('Enter image URL or chart screenshot:');
-                              if (newUrl) {
-                                onUpdateState((prev) => ({
-                                  ...prev,
-                                  trades: prev.trades.map((t) =>
-                                    t.id === trade.id ? { ...t, screenshotUrl: newUrl } : t
-                                  ),
-                                }));
-                              }
-                            }}
-                            className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer"
-                          >
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Replace</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              onUpdateState((prev) => ({
-                                ...prev,
-                                trades: prev.trades.map((t) =>
-                                  t.id === trade.id ? { ...t, screenshotUrl: undefined } : t
-                                ),
-                              }));
-                            }}
-                            className="text-slate-500 hover:text-rose-400 p-1 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            const url = prompt(
-                              'Enter chart screenshot URL (e.g. from TradingView / Sierra Chart):'
-                            );
-                            if (url) {
-                              onUpdateState((prev) => ({
-                                ...prev,
-                                trades: prev.trades.map((t) =>
-                                  t.id === trade.id ? { ...t, screenshotUrl: url } : t
-                                ),
-                              }));
-                            }
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-[#0e1e26] hover:bg-[#142b36] border border-[#1b3543] text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Camera className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Add screenshot</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Show Answers Accordion */}
-                  <div className="pt-1">
-                    <button
-                      onClick={() =>
-                        setShowAnswersMap({ ...showAnswersMap, [trade.id]: !isShowingAnswers })
-                      }
-                      className="text-[11px] text-slate-400 hover:text-slate-200 font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>{isShowingAnswers ? 'Hide answers' : 'Show answers'}</span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${
-                          isShowingAnswers ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-
-                    {isShowingAnswers && (
-                      <div className="mt-2 p-3 bg-[#081216] border border-[#132630] rounded-xl text-xs space-y-2 animate-in fade-in">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>
-                              Q1: HTF is clear not chop —{' '}
-                              <strong className={trade.checklistAnswers.rule1 ? 'text-emerald-400' : 'text-rose-400'}>
-                                {trade.checklistAnswers.rule1 ? 'Yes' : 'No'}
-                              </strong>
-                            </span>
-                          </div>
-                          {trade.ruleNotes?.r1 && (
-                            <div className="text-[11px] text-slate-400 pl-5.5 font-mono">
-                              &bull; {trade.ruleNotes.r1}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>
-                              Q2: IB or FRB setup —{' '}
-                              <strong className={trade.checklistAnswers.rule2 ? 'text-emerald-400' : 'text-rose-400'}>
-                                {trade.checklistAnswers.rule2 ? 'Yes' : 'No'}
-                              </strong>
-                            </span>
-                          </div>
-                          {trade.ruleNotes?.r2 && (
-                            <div className="text-[11px] text-slate-400 pl-5.5 font-mono">
-                              &bull; {trade.ruleNotes.r2}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>
-                              Q3: HH/HL's or LH/LL's confirmed —{' '}
-                              <strong className={trade.checklistAnswers.rule3 ? 'text-emerald-400' : 'text-rose-400'}>
-                                {trade.checklistAnswers.rule3 ? 'Yes' : 'No'}
-                              </strong>
-                            </span>
-                          </div>
-                          {trade.ruleNotes?.r3 && (
-                            <div className="text-[11px] text-slate-400 pl-5.5 font-mono">
-                              &bull; {trade.ruleNotes.r3}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>
-                              Q4: Risk calculated (${trade.riskDollars} / {trade.riskPercent}%) —{' '}
-                              <strong className={trade.checklistAnswers.q4CalculatedRisk ? 'text-emerald-400' : 'text-rose-400'}>
-                                {trade.checklistAnswers.q4CalculatedRisk ? 'Yes' : 'No'}
-                              </strong>
-                            </span>
-                          </div>
-                          {trade.ruleNotes?.q4 && (
-                            <div className="text-[11px] text-slate-400 pl-5.5 font-mono">
-                              &bull; {trade.ruleNotes.q4}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>
-                              Q5: Not a revenge or FOMO click —{' '}
-                              <strong className={trade.checklistAnswers.q5NotFomo ? 'text-emerald-400' : 'text-rose-400'}>
-                                {trade.checklistAnswers.q5NotFomo ? 'Verified' : 'Flagged FOMO'}
-                              </strong>
-                            </span>
-                          </div>
-                          {trade.ruleNotes?.q5 && (
-                            <div className="text-[11px] text-slate-400 pl-5.5 font-mono">
-                              &bull; {trade.ruleNotes.q5}
-                            </div>
-                          )}
-                        </div>
-
-                        {(trade.notes || trade.ruleNotes?.consolidated) && (
-                          <div className="pt-2 mt-1 border-t border-[#162d39] text-slate-300">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                              Trade Execution & Context Notes:
-                            </div>
-                            <div className="text-[11px] text-emerald-300 font-mono pl-1 whitespace-pre-wrap">
-                              &ldquo;{trade.notes || trade.ruleNotes?.consolidated}&rdquo;
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        );
-      })()}
-
       {/* NEW ACCOUNT CREATION MODAL */}
       {showAddAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
@@ -3492,11 +3638,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <Sun className="w-4 h-4" />
                 </span>
                 <div>
-                  <h2 className="text-sm font-black text-white tracking-tight">
-                    Start of Day Mindset Check-In
+                  <h2 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+                    <span>Start of Day Mindset Check-In</span>
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase border border-amber-500/40">
+                      Required
+                    </span>
                   </h2>
-                  <span className="text-[10px] font-bold text-emerald-400">
-                    One quick question before you trade
+                  <span className="text-[10px] font-bold text-slate-400">
+                    Trading session &amp; trade logging are locked until this 1 question is answered
                   </span>
                 </div>
               </div>
@@ -3506,10 +3655,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 onClick={() => {
                   setShowMorningCheckInModal(false);
                   setMorningCheckInDismissed(true);
-                  setShowSwitchAccount(true);
                 }}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#142831] text-xs font-bold cursor-pointer"
-                title="Skip to accounts"
+                title="Close modal (Session remains locked until completed)"
               >
                 ✕
               </button>
@@ -3519,7 +3667,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             <div className="space-y-3">
               <div>
                 <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-1">
-                  Question 1 of 1
+                  Question 1 of 1 &bull; Required to Trade
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-white leading-snug">
                   What is your emotional state right now?
@@ -3597,15 +3745,180 @@ export const SessionView: React.FC<SessionViewProps> = ({
               })()}
             </div>
 
-            {/* Modal Action - Proceed to pick accounts */}
+            {/* Modal Action - Lock in baseline and unlock session */}
             <div className="pt-2 border-t border-[#142630]">
               <button
                 type="button"
+                id="modal-complete-checkin-btn"
                 onClick={handleCompleteMorningCheckIn}
                 className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
-                <span>Lock In Baseline & Pick Accounts to Trade →</span>
+                <span>Lock In Baseline &amp; Unlock Trading Session →</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK RESTORE / MANUAL ADD TRADE MODAL */}
+      {showRestoreTradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-lg bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#142933] pb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Restore / Log Trade in Journal
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowRestoreTradeModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Trade Name / Setup Description
+                </label>
+                <input
+                  type="text"
+                  value={restoreTradeName}
+                  onChange={(e) => setRestoreTradeName(e.target.value)}
+                  placeholder="e.g. Trade #1 - NQ Long Pullback"
+                  className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Realized P&amp;L ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={restoreTradePnl}
+                    onChange={(e) => setRestoreTradePnl(e.target.value)}
+                    placeholder="e.g. -250 or 500"
+                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-mono font-bold focus:border-emerald-500 outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Setup Quality
+                  </label>
+                  <select
+                    value={restoreTradeQuality}
+                    onChange={(e) => setRestoreTradeQuality(e.target.value as TradeQualityGrade)}
+                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                  >
+                    <option value="A_PLUS">A+ (Full Setup)</option>
+                    <option value="A">A (Standard Setup)</option>
+                    <option value="B">B (Lower Tier)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Discipline Outcome
+                  </label>
+                  <select
+                    value={restoreTradeDiscipline}
+                    onChange={(e) => setRestoreTradeDiscipline(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                  >
+                    <option value="managed_well">Managed Well</option>
+                    <option value="exited_emotionally">Exited Emotionally</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Assigned Book / Account
+                  </label>
+                  <select
+                    value={restoreTradeAccountId || activeAccount?.id || ''}
+                    onChange={(e) => setRestoreTradeAccountId(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                  >
+                    {state.accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name} (${(acc.currentBalance ?? acc.size)?.toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Execution Notes / Context
+                </label>
+                <textarea
+                  value={restoreTradeNotes}
+                  onChange={(e) => setRestoreTradeNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Key observations, levels, or execution notes..."
+                  className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#142933]">
+              <button
+                type="button"
+                onClick={() => setShowRestoreTradeModal(false)}
+                className="px-4 py-2 rounded-xl bg-[#0e1d24] hover:bg-[#152a34] text-slate-300 text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const parsedPnl = parseFloat(restoreTradePnl) || 0;
+                  const riskAmt = Math.abs(parsedPnl) || 250;
+                  const targetAcc =
+                    state.accounts.find((a) => a.id === restoreTradeAccountId) ||
+                    activeAccount ||
+                    state.accounts[0];
+
+                  onLogTrade({
+                    name: restoreTradeName.trim() || `Trade #${state.trades.length + 1}`,
+                    quality: restoreTradeQuality,
+                    symbol: 'NQ',
+                    pnl: parsedPnl,
+                    riskDollars: riskAmt,
+                    riskPercent: 1.0,
+                    rMultiple: parsedPnl / riskAmt,
+                    rulesHeld: true,
+                    discipline: restoreTradeDiscipline,
+                    disciplineSelected: true,
+                    plannedStatus: restoreTradePlanned,
+                    emotionalState: parsedPnl < 0 ? restoreTradeFeeling : undefined,
+                    notes: restoreTradeNotes.trim() || 'Restored trade record',
+                    checklistAnswers: {
+                      rule1: true,
+                      rule2: true,
+                      rule3: true,
+                      q4CalculatedRisk: true,
+                      q5NotFomo: true,
+                    },
+                    accountId: targetAcc?.id,
+                    accountName: targetAcc?.name,
+                  });
+                  setShowRestoreTradeModal(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black cursor-pointer shadow-lg flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Save &amp; Place in Journal</span>
               </button>
             </div>
           </div>

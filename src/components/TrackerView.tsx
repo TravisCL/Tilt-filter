@@ -8,6 +8,7 @@ interface TrackerViewProps {
   onUpdateEmotionalTracker: (data: AppState['emotionalTracker']) => void;
   onUpdateState?: (updater: (prev: AppState) => AppState) => void;
   onGoToSession?: () => void;
+  onCleanSlate?: () => void;
 }
 
 export const TrackerView: React.FC<TrackerViewProps> = ({
@@ -15,14 +16,30 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
   onUpdateEmotionalTracker,
   onUpdateState,
   onGoToSession,
+  onCleanSlate,
 }) => {
   const todayStr = new Date().toISOString().split('T')[0];
-  const selectedFeel = state.emotionalTracker.feelLevel ?? 5;
-  const walkOutStatus = state.emotionalTracker.walkOutStatus;
+  const selectedFeel = state?.emotionalTracker?.feelLevel;
+  const walkOutStatus = state?.emotionalTracker?.walkOutStatus;
 
   const handleSelectFeel = (level: number) => {
+    const baseTracker = state?.emotionalTracker || {
+      feelLevel: null,
+      sleepLevel: null,
+      sleepQuality: '',
+      focusIntention: '',
+      triggersDistractions: '',
+      walkOutNotes: '',
+      morningNotes: '',
+      updatedAt: '',
+      morningCheckInDate: '',
+      morningCheckInCompleted: false,
+      sessionOutcome: 'pending',
+      sessionReflection: '',
+    };
+
     onUpdateEmotionalTracker({
-      ...state.emotionalTracker,
+      ...baseTracker,
       feelLevel: level,
       morningCheckInCompleted: true,
       morningCheckInDate: todayStr,
@@ -150,14 +167,37 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
 
   return (
     <div className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-4xl mx-auto space-y-6 select-none">
-      {/* Header - Matching Video */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold tracking-tight text-white">
-          Emotional tracker
-        </h1>
-        <p className="text-xs text-slate-400 font-medium">
-          Morning feel. Call it a day: how you walked out.
-        </p>
+      {/* Header with Day Badge & Reset Option */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold tracking-tight text-white">
+              Emotional tracker
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-md bg-[#102934] border border-emerald-500/40 text-emerald-300 text-xs font-mono font-black">
+              Day {state.dayCounter || 1}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 font-medium">
+            Morning feel. Call it a day: how you walked out.
+          </p>
+        </div>
+
+        {onCleanSlate && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Reset tracker and all session tallies back to initial Day 1 blank state?')) {
+                onCleanSlate();
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#140c10] border border-rose-900/50 hover:border-rose-700/80 text-rose-300 hover:text-white text-xs font-bold transition-all cursor-pointer self-start sm:self-auto shadow-xs"
+            title="Reset to Day 1 Blank State"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Clean Slate Reset</span>
+          </button>
+        )}
       </div>
 
       {/* Main Container Card */}
@@ -307,7 +347,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
         <div className="space-y-2">
           {(state.dailyScoreboard || []).length === 0 ? (
             <div className="py-6 text-center text-xs text-slate-500">
-              No daily session records logged yet. Your morning check-in and end-of-day walkout will tally here.
+              Day 1 Clean Slate. No daily session records logged yet. Your morning check-in and end-of-day walkout will tally here.
             </div>
           ) : (
             (state.dailyScoreboard || []).map((row) => {

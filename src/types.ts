@@ -117,6 +117,7 @@ export interface CompletedTrade {
   id: string;
   orderNumber: number; // 1st trade, 2nd trade, etc.
   timestamp: string; // e.g. "SEP 1, 1:18 PM"
+  date?: string; // ISO date "YYYY-MM-DD"
   plannedStatus: 'planned' | 'unplanned';
   quality: TradeQualityGrade;
   symbol: string;
@@ -172,6 +173,7 @@ export interface EmotionalTrackerData {
   morningCheckInCompleted?: boolean;
   sessionOutcome?: 'clean' | 'minor_slip' | 'tilted' | 'pending';
   sessionReflection?: string;
+  walkOutStatus?: 'disciplined' | 'minor_slip' | 'tilted';
 }
 
 export interface DailyScoreRecord {
@@ -218,6 +220,7 @@ export interface AppState {
   emotionalTracker: EmotionalTrackerData;
   dailyScoreboard?: DailyScoreRecord[];
   cleanStreak: number;
+  dayCounter?: number;
   tiltScore: number;
   tiltTab: number;
   currentTier: TierLevel;

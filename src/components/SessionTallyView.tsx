@@ -29,7 +29,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
   onGoToCheckIn,
 }) => {
   const todayStr = new Date().toISOString().split('T')[0];
-  const scoreboard = state.dailyScoreboard || DEFAULT_SCOREBOARD_TALLY;
+  const scoreboard = state.dailyScoreboard || [];
 
   // Quick stats
   const totalDays = scoreboard.length;
@@ -54,7 +54,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
 
   const handleSaveEditedOutcome = (recordId: string) => {
     onUpdateState((prev) => {
-      const list = prev.dailyScoreboard || DEFAULT_SCOREBOARD_TALLY;
+      const list = prev.dailyScoreboard || [];
       const isClean = outcomeSelect === 'clean';
       const updated = list.map((item) => {
         if (item.id === recordId) {
@@ -81,7 +81,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
   const handleDeleteRecord = (recordId: string) => {
     if (window.confirm('Remove this session record?')) {
       onUpdateState((prev) => {
-        const list = prev.dailyScoreboard || DEFAULT_SCOREBOARD_TALLY;
+        const list = prev.dailyScoreboard || [];
         return {
           ...prev,
           dailyScoreboard: list.filter((item) => item.id !== recordId),

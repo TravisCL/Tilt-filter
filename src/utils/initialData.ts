@@ -1,4 +1,4 @@
-import { AppState, FeelScaleItem, SleepScaleItem, DailyScoreRecord } from '../types';
+import { AppState, FeelScaleItem, SleepScaleItem, DailyScoreRecord, CompletedTrade } from '../types';
 
 export const FEEL_SCALE: FeelScaleItem[] = [
   {
@@ -214,9 +214,9 @@ export const CLEAN_SLATE_STATE: AppState = {
   accounts: [],
   activeAccountId: '',
   rules: [
-    { id: 'r1', text: 'HTF IS CLEAR NOT CHOP?', checked: false },
-    { id: 'r2', text: 'IB OR FRB SETUP', checked: false },
-    { id: 'r3', text: "HH/HL's or LH/LL's", checked: false },
+    { id: 'r1', text: 'HTF IS CLEAR NOT CHOP?', checked: false, tag: 'Structure', tags: ['Structure'] },
+    { id: 'r2', text: 'IB OR FRB SETUP', checked: false, tag: 'Setup', tags: ['Setup'] },
+    { id: 'r3', text: "HH/HL's or LH/LL's", checked: false, tag: 'Trigger', tags: ['Trigger'] },
   ],
   systemTags: DEFAULT_SYSTEM_TAGS,
   trades: [],
@@ -224,14 +224,21 @@ export const CLEAN_SLATE_STATE: AppState = {
   emotionalTracker: {
     feelLevel: null,
     sleepLevel: null,
+    sleepQuality: '',
+    focusIntention: '',
+    triggersDistractions: '',
     walkOutNotes: '',
     morningNotes: '',
     updatedAt: '',
     morningCheckInDate: '',
     morningCheckInCompleted: false,
+    sessionOutcome: 'pending',
+    sessionReflection: '',
+    walkOutStatus: undefined,
   },
-  dailyScoreboard: DEFAULT_SCOREBOARD_TALLY,
+  dailyScoreboard: [],
   cleanStreak: 0,
+  dayCounter: 1,
   tiltScore: 0,
   tiltTab: 0,
   currentTier: 'silver',
@@ -243,52 +250,271 @@ export const CLEAN_SLATE_STATE: AppState = {
 export const INITIAL_STATE: AppState = CLEAN_SLATE_STATE;
 
 const STORAGE_KEY = 'tilt_filter_state_v3';
+const BACKUP_STORAGE_KEY = 'tilt_filter_state_backup';
+const LEGACY_STORAGE_KEYS = [
+  'tilt_filter_state_backup',
+  'tilt_filter_state_v2',
+  'tilt_buddy_state_v2',
+  'tilt_filter_state_v1',
+  'tilt_buddy_state_v1',
+  'tilt_filter_state',
+  'tilt_companion_state',
+];
 
+/**
+ * Bulletproof check for whether today's morning check-in has been completed.
+ * Safe against undefined/null tracker objects during detached window initialization.
+ */
+export function isMorningCheckInCompleted(
+  tracker?: AppState['emotionalTracker'] | null,
+  targetDateStr?: string
+): boolean {
+  if (!tracker || typeof tracker !== 'object') return false;
+  const today = targetDateStr || new Date().toISOString().split('T')[0];
+  return Boolean(
+    tracker.morningCheckInCompleted &&
+    tracker.morningCheckInDate === today &&
+    tracker.feelLevel !== null &&
+    tracker.feelLevel !== undefined
+  );
+}
+
+/**
+ * Strict, deterministic trade deduplication and sanitization.
+ * Filters out duplicate trades caused by rapid submissions, cross-tab race conditions, or legacy synthetic recovery tags.
+ * Preserves actual authentic user trades in exact chronological sequence.
+ */
+export function deduplicateTrades(trades: any[]): CompletedTrade[] {
+  if (!Array.isArray(trades)) return [];
+
+  const seenIds = new Set<string>();
+  const seenSignatures = new Set<string>();
+  const uniqueTrades: CompletedTrade[] = [];
+
+  // First pass: Filter out invalid entries and sanitize individual trade fields
+  const validTrades: CompletedTrade[] = trades
+    .filter((t): t is CompletedTrade => Boolean(t && typeof t === 'object' && (t.id || typeof t.pnl === 'number')))
+    .map((t, idx) => ({
+      ...t,
+      id: t.id || `trade-${Date.now()}-${idx}`,
+      orderNumber: typeof t.orderNumber === 'number' ? t.orderNumber : idx + 1,
+      pnl: typeof t.pnl === 'number' ? t.pnl : 0,
+      riskDollars: typeof t.riskDollars === 'number' ? t.riskDollars : 250,
+      riskPercent: typeof t.riskPercent === 'number' ? t.riskPercent : 1.0,
+      rMultiple:
+        typeof t.rMultiple === 'number'
+          ? t.rMultiple
+          : typeof t.pnl === 'number' && typeof t.riskDollars === 'number' && t.riskDollars > 0
+          ? Number((t.pnl / t.riskDollars).toFixed(2))
+          : 0,
+      rulesHeld: Boolean(t.rulesHeld !== false),
+      discipline: t.discipline || 'managed_well',
+      disciplineSelected: Boolean(t.disciplineSelected !== false),
+      plannedStatus: t.plannedStatus || 'planned',
+      checklistAnswers: t.checklistAnswers || {
+        rule1: true,
+        rule2: true,
+        rule3: true,
+        q4CalculatedRisk: true,
+        q5NotFomo: true,
+      },
+    }));
+
+  // Second pass: Deduplicate by exact ID and by logical trade fingerprint
+  for (const trade of validTrades) {
+    if (seenIds.has(trade.id)) {
+      continue;
+    }
+
+    const normTime = (trade.timestamp || '').trim();
+    const accId = trade.accountId || 'default';
+    const pnlKey = Number(trade.pnl).toFixed(2);
+    const outcomeKey = trade.pnl >= 0 ? 'win' : 'loss';
+    const nameKey = (trade.name || '').trim().toLowerCase();
+
+    // Fingerprints for exact trade duplicate detection
+    const strictSignature = `${accId}_${pnlKey}_${normTime}_${nameKey}`;
+    const burstSignature = `${accId}_${pnlKey}_${outcomeKey}_${normTime}`;
+
+    if (seenSignatures.has(strictSignature) || (normTime && seenSignatures.has(burstSignature))) {
+      continue;
+    }
+
+    seenIds.add(trade.id);
+    seenSignatures.add(strictSignature);
+    if (normTime) seenSignatures.add(burstSignature);
+
+    uniqueTrades.push(trade);
+  }
+
+  // Final pass: Re-index order numbers sequentially (1, 2, 3...)
+  return uniqueTrades.map((trade, idx) => ({
+    ...trade,
+    orderNumber: idx + 1,
+  }));
+}
+
+/**
+ * Robustly sanitizes and validates application state.
+ * Guarantees emotionalTracker, accounts, and all state sub-trees are fully structured,
+ * preserving user data and preventing initialization crashes across popout windows.
+ */
+export function sanitizeAppState(parsed: any): AppState {
+  if (!parsed || typeof parsed !== 'object') {
+    return { ...INITIAL_STATE };
+  }
+
+  const mergedScoreboard = Array.isArray(parsed.dailyScoreboard)
+    ? parsed.dailyScoreboard
+    : [];
+
+  const rawRules = parsed.rules && Array.isArray(parsed.rules) && parsed.rules.length > 0
+    ? parsed.rules
+    : INITIAL_STATE.rules;
+
+  const sanitizedRules = rawRules.slice(0, 5).map((r: any, idx: number) => {
+    const defaultTag = idx === 0 ? 'Structure' : idx === 1 ? 'Setup' : idx === 2 ? 'Trigger' : 'Rule';
+    const tag = (r && r.tag) || defaultTag;
+    const tags = Array.isArray(r && r.tags) && r.tags.length > 0 ? r.tags : [tag];
+    return {
+      id: (r && r.id) || `r${idx + 1}`,
+      text: (r && r.text) || `Rule ${idx + 1}`,
+      checked: Boolean(r && r.checked),
+      tag,
+      tags,
+    };
+  });
+
+  const rawSystemTags = Array.isArray(parsed.systemTags) ? parsed.systemTags : DEFAULT_SYSTEM_TAGS;
+  const sanitizedSystemTags = rawSystemTags
+    .filter((t: any) => typeof t === 'string' && t.trim().length > 0)
+    .slice(0, 10);
+
+  const defaultEmotionalTracker = INITIAL_STATE.emotionalTracker;
+  const rawEmotionalTracker = (parsed.emotionalTracker && typeof parsed.emotionalTracker === 'object')
+    ? parsed.emotionalTracker
+    : {};
+
+  const sanitizedEmotionalTracker: AppState['emotionalTracker'] = {
+    ...defaultEmotionalTracker,
+    ...rawEmotionalTracker,
+    feelLevel: rawEmotionalTracker.feelLevel !== undefined ? rawEmotionalTracker.feelLevel : null,
+    sleepLevel: rawEmotionalTracker.sleepLevel !== undefined ? rawEmotionalTracker.sleepLevel : null,
+    sleepQuality: rawEmotionalTracker.sleepQuality || '',
+    focusIntention: rawEmotionalTracker.focusIntention || '',
+    triggersDistractions: rawEmotionalTracker.triggersDistractions || '',
+    walkOutNotes: rawEmotionalTracker.walkOutNotes || '',
+    morningNotes: rawEmotionalTracker.morningNotes || '',
+    updatedAt: rawEmotionalTracker.updatedAt || '',
+    morningCheckInDate: rawEmotionalTracker.morningCheckInDate || '',
+    morningCheckInCompleted: Boolean(rawEmotionalTracker.morningCheckInCompleted),
+    sessionOutcome: rawEmotionalTracker.sessionOutcome || 'pending',
+    sessionReflection: rawEmotionalTracker.sessionReflection || '',
+  };
+
+  // Sanitize accounts list carefully, preserving every field
+  const rawAccounts = Array.isArray(parsed.accounts) ? parsed.accounts : [];
+  const sanitizedAccounts = rawAccounts
+    .filter((acc: any) => acc && typeof acc === 'object' && (acc.id || acc.name))
+    .map((acc: any, idx: number) => ({
+      id: acc.id || `acc-${Date.now()}-${idx}`,
+      name: acc.name || `Account ${idx + 1}`,
+      size: typeof acc.size === 'number' ? acc.size : 0,
+      drawdownType: acc.drawdownType === 'trailing' || acc.drawdownType === 'fixed' ? acc.drawdownType : 'eod',
+      maxDrawdown: typeof acc.maxDrawdown === 'number' ? acc.maxDrawdown : 2500,
+      floorLevel: typeof acc.floorLevel === 'number' ? acc.floorLevel : 0,
+      stopTrailingAtFloor: Boolean(acc.stopTrailingAtFloor !== false),
+      currentBalance: typeof acc.currentBalance === 'number' ? acc.currentBalance : 0,
+      highWaterMark: typeof acc.highWaterMark === 'number' ? acc.highWaterMark : 0,
+      active: Boolean(acc.active !== false),
+      accountType: acc.accountType === 'live' ? 'live' : 'eval',
+      status: acc.status === 'blown' ? 'blown' : 'active',
+      blownAt: acc.blownAt,
+      blownReason: acc.blownReason,
+    }));
+
+  // Resolve valid activeAccountId
+  let resolvedActiveAccountId = typeof parsed.activeAccountId === 'string' ? parsed.activeAccountId : '';
+  if (sanitizedAccounts.length > 0) {
+    const exists = sanitizedAccounts.some((a) => a.id === resolvedActiveAccountId);
+    if (!exists) {
+      resolvedActiveAccountId = sanitizedAccounts[0].id;
+    }
+  }
+
+  // Deduplicate trades cleanly on every sanitize pass
+  const cleanTrades = deduplicateTrades(Array.isArray(parsed.trades) ? parsed.trades : []);
+
+  return {
+    ...INITIAL_STATE,
+    ...parsed,
+    currentView: parsed.currentView || 'session',
+    accounts: sanitizedAccounts,
+    activeAccountId: resolvedActiveAccountId,
+    trades: cleanTrades,
+    deskMessages: Array.isArray(parsed.deskMessages) ? parsed.deskMessages : [],
+    tiltEvents: Array.isArray(parsed.tiltEvents) ? parsed.tiltEvents : [],
+    dayCounter: typeof parsed.dayCounter === 'number' && parsed.dayCounter >= 1 ? parsed.dayCounter : 1,
+    cleanStreak: typeof parsed.cleanStreak === 'number' ? parsed.cleanStreak : 0,
+    tiltScore: typeof parsed.tiltScore === 'number' ? parsed.tiltScore : 0,
+    tiltTab: typeof parsed.tiltTab === 'number' ? parsed.tiltTab : 0,
+    rules: sanitizedRules,
+    systemTags: sanitizedSystemTags.length > 0 ? sanitizedSystemTags : DEFAULT_SYSTEM_TAGS,
+    dailyScoreboard: mergedScoreboard,
+    emotionalTracker: sanitizedEmotionalTracker,
+  };
+}
+
+/**
+ * Loads application state reliably without generating synthetic duplicates.
+ */
 export function loadAppState(): AppState {
   try {
+    let baseState: AppState = { ...INITIAL_STATE };
+
+    // 1. Primary storage key check
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      // Ensure dailyScoreboard exists
-      const mergedScoreboard = parsed.dailyScoreboard && parsed.dailyScoreboard.length > 0
-        ? parsed.dailyScoreboard
-        : DEFAULT_SCOREBOARD_TALLY;
-
-      // Enforce strict limit of max 5 rules and ensure tag/tags format
-      const sanitizedRules = (parsed.rules && Array.isArray(parsed.rules) && parsed.rules.length > 0
-        ? parsed.rules
-        : INITIAL_STATE.rules
-      )
-        .slice(0, 5)
-        .map((r: any, idx: number) => {
-          const defaultTag = idx === 0 ? 'Structure' : idx === 1 ? 'Setup' : idx === 2 ? 'Trigger' : 'Rule';
-          const tag = r.tag || defaultTag;
-          const tags = Array.isArray(r.tags) && r.tags.length > 0 ? r.tags : [tag];
-          return { ...r, tag, tags };
-        });
-
-      const rawSystemTags = Array.isArray(parsed.systemTags) ? parsed.systemTags : DEFAULT_SYSTEM_TAGS;
-      const sanitizedSystemTags = rawSystemTags
-        .filter((t: any) => typeof t === 'string' && t.trim().length > 0)
-        .slice(0, 10);
-
-      return {
-        ...INITIAL_STATE,
-        ...parsed,
-        rules: sanitizedRules,
-        systemTags: sanitizedSystemTags.length > 0 ? sanitizedSystemTags : DEFAULT_SYSTEM_TAGS,
-        dailyScoreboard: mergedScoreboard,
-      };
+      try {
+        const parsed = JSON.parse(raw);
+        baseState = sanitizeAppState(parsed);
+        saveAppState(baseState);
+        return baseState;
+      } catch (err) {
+        console.warn('Error parsing primary storage key', err);
+      }
     }
+
+    // 2. Backup storage key check (fallback only)
+    const backupRaw = localStorage.getItem(BACKUP_STORAGE_KEY);
+    if (backupRaw) {
+      try {
+        const backupParsed = JSON.parse(backupRaw);
+        if (backupParsed && typeof backupParsed === 'object') {
+          baseState = sanitizeAppState(backupParsed);
+          saveAppState(baseState);
+          return baseState;
+        }
+      } catch (err) {
+        console.warn('Error parsing backup storage key', err);
+      }
+    }
+
+    return baseState;
   } catch (e) {
     console.error('Failed to load state', e);
   }
-  return INITIAL_STATE;
+  return { ...INITIAL_STATE };
 }
 
 export function saveAppState(state: AppState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const serialized = JSON.stringify(state);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    // Keep a persistent safety backup if state contains valuable user accounts or trades
+    if ((state.accounts && state.accounts.length > 0) || (state.trades && state.trades.length > 0)) {
+      localStorage.setItem(BACKUP_STORAGE_KEY, serialized);
+    }
   } catch (e) {
     console.error('Failed to save state', e);
   }
@@ -298,8 +524,54 @@ export function resetToCleanSlate(): AppState {
   try {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('tilt_buddy_state_v2');
+    localStorage.removeItem('tilt_filter_state_v3');
+    // Clear any and all related keys
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('tilt_') || key.startsWith('app_') || key.includes('trade') || key.includes('session'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
   } catch (e) {
     console.error('Failed to clear storage', e);
   }
-  return CLEAN_SLATE_STATE;
+
+  return {
+    ...CLEAN_SLATE_STATE,
+    dayCounter: 1,
+    cleanStreak: 0,
+    dailyScoreboard: [],
+    trades: [],
+    tiltEvents: [],
+    deskMessages: [],
+    tiltScore: 0,
+    tiltTab: 0,
+    accounts: [],
+    activeAccountId: '',
+    rules: [
+      { id: 'r1', text: 'HTF IS CLEAR NOT CHOP?', checked: false, tag: 'Structure', tags: ['Structure'] },
+      { id: 'r2', text: 'IB OR FRB SETUP', checked: false, tag: 'Setup', tags: ['Setup'] },
+      { id: 'r3', text: "HH/HL's or LH/LL's", checked: false, tag: 'Trigger', tags: ['Trigger'] },
+    ],
+    emotionalTracker: {
+      feelLevel: null,
+      sleepLevel: null,
+      sleepQuality: '',
+      focusIntention: '',
+      triggersDistractions: '',
+      walkOutNotes: '',
+      morningNotes: '',
+      updatedAt: '',
+      morningCheckInDate: '',
+      morningCheckInCompleted: false,
+      sessionOutcome: 'pending',
+      sessionReflection: '',
+    },
+  };
 }

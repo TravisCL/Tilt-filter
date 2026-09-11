@@ -23,28 +23,49 @@ import {
   Edit3,
   Info,
   AlertTriangle,
+  Terminal,
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
+import { isMorningCheckInCompleted } from '../utils/initialData';
+import { broadcastTradeLogged, broadcastTradeUpdated } from '../utils/syncService';
 
 interface AccountsViewProps {
   state: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
 }
 
-// Helper to filter trades that belong to a specific account
+// Helper to filter trades that belong strictly and exclusively to a specific account
 export function getAccountTrades(
   account: TradingAccount,
   allTrades: CompletedTrade[],
-  activeAccountId: string,
-  totalAccounts: number
+  activeAccountId?: string,
+  totalAccounts?: number
 ): CompletedTrade[] {
+  if (!Array.isArray(allTrades) || allTrades.length === 0) return [];
+  if (!account) return allTrades;
+
   return allTrades.filter((t) => {
-    if (t.accountId) {
-      return t.accountId === account.id;
+    if (!t) return false;
+    // 1. Exact ID match
+    if (t.accountId && account.id && t.accountId === account.id) {
+      return true;
     }
-    // Fallback for legacy trades without accountId:
-    if (totalAccounts === 1) return true;
-    if (account.id === activeAccountId) return true;
+    // 2. Case-insensitive Account Name match
+    if (
+      t.accountName &&
+      account.name &&
+      t.accountName.trim().toLowerCase() === account.name.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    // 3. Fallback only if there is solely one account created in the system
+    if (!totalAccounts || totalAccounts <= 1) {
+      return true;
+    }
+    // 4. If trade has no accountId or accountName, associate with active account
+    if (!t.accountId && !t.accountName && (account.id === activeAccountId || !activeAccountId)) {
+      return true;
+    }
     return false;
   });
 }
@@ -120,14 +141,6 @@ export function calculateAccountMetrics(trades: CompletedTrade[]) {
 }
 
 export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState }) => {
-  // New account modal / form state
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newAccType, setNewAccType] = useState<AccountCategory>('live');
-  const [newAccName, setNewAccName] = useState('');
-  const [newAccDrawdownType, setNewAccDrawdownType] = useState<AccountDrawdownType>('eod');
-  const [newAccMaxDD, setNewAccMaxDD] = useState('');
-  const [newAccStopFloor, setNewAccStopFloor] = useState(true);
-
   // Deletion modal state
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
 
@@ -139,6 +152,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
   const [editingMemoTradeId, setEditingMemoTradeId] = useState<string | null>(null);
   const [memoDraft, setMemoDraft] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Inline Risk Editing State
+  const [editingRiskTradeId, setEditingRiskTradeId] = useState<string | null>(null);
+  const [editRiskDraft, setEditRiskDraft] = useState('');
 
   // File input ref for screenshot attachments
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -153,57 +170,45 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
   );
   const blownAccounts = state.accounts.filter((acc) => acc.status === 'blown');
 
-  const handleOpenAddForm = (type: AccountCategory) => {
-    setNewAccType(type);
-    setNewAccName(type === 'live' ? 'Apex 50K PA #1' : 'Apex 50K Combine #1');
-    setNewAccMaxDD('2500');
-    setNewAccDrawdownType('eod');
-    setNewAccStopFloor(true);
-    setShowAddForm(true);
-  };
-
-  const handleCreateAccount = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAccName.trim()) {
-      return;
-    }
-
-    const maxDD = parseFloat(newAccMaxDD);
-    if (isNaN(maxDD) || maxDD <= 0) {
-      return;
-    }
-
-    const newAccount: TradingAccount = {
-      id: `acc-${Date.now()}`,
-      name: newAccName.trim(),
-      size: 0,
-      drawdownType: newAccDrawdownType,
-      maxDrawdown: maxDD,
-      floorLevel: 0,
-      stopTrailingAtFloor: newAccStopFloor,
-      currentBalance: 0,
-      highWaterMark: 0,
-      active: true,
-      accountType: newAccType,
-      status: 'active',
-    };
-
-    onUpdateState((prev) => ({
-      ...prev,
-      accounts: [...prev.accounts, newAccount],
-      activeAccountId: newAccount.id,
-    }));
-
-    setNewAccName('');
-    setNewAccMaxDD('');
-    setShowAddForm(false);
-  };
-
   const handleSetActive = (id: string) => {
     onUpdateState((prev) => ({
       ...prev,
       activeAccountId: id,
     }));
+  };
+
+  // Move an account directly to the blown section
+  const handleMarkAccountBlown = (id: string) => {
+    const todayStr = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    onUpdateState((prev) => {
+      const updatedAccounts = prev.accounts.map((acc) => {
+        if (acc.id === id) {
+          return {
+            ...acc,
+            status: 'blown' as const,
+            blownDate: todayStr,
+          };
+        }
+        return acc;
+      });
+
+      let nextActive = prev.activeAccountId;
+      if (prev.activeAccountId === id) {
+        const firstActive = updatedAccounts.find((a) => a.status !== 'blown') || updatedAccounts[0];
+        nextActive = firstActive ? firstActive.id : '';
+      }
+
+      return {
+        ...prev,
+        accounts: updatedAccounts,
+        activeAccountId: nextActive,
+      };
+    });
   };
 
   // Restore blown account to active
@@ -269,12 +274,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
       if (dataUrl) {
-        onUpdateState((prev) => ({
-          ...prev,
-          trades: prev.trades.map((t) =>
+        onUpdateState((prev) => {
+          const updatedTrades = prev.trades.map((t) =>
             t.id === uploadTargetTradeId ? { ...t, screenshotUrl: dataUrl } : t
-          ),
-        }));
+          );
+          const nextState = { ...prev, trades: updatedTrades };
+          broadcastTradeUpdated(uploadTargetTradeId, nextState);
+          return nextState;
+        });
       }
     };
     reader.readAsDataURL(file);
@@ -283,12 +290,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
 
   // Remove Screenshot
   const handleRemoveScreenshot = (tradeId: string) => {
-    onUpdateState((prev) => ({
-      ...prev,
-      trades: prev.trades.map((t) =>
+    onUpdateState((prev) => {
+      const updatedTrades = prev.trades.map((t) =>
         t.id === tradeId ? { ...t, screenshotUrl: undefined } : t
-      ),
-    }));
+      );
+      const nextState = { ...prev, trades: updatedTrades };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
   };
 
   // Memo editing
@@ -298,23 +307,67 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
   };
 
   const handleSaveMemo = (tradeId: string) => {
-    onUpdateState((prev) => ({
-      ...prev,
-      trades: prev.trades.map((t) =>
+    onUpdateState((prev) => {
+      const updatedTrades = prev.trades.map((t) =>
         t.id === tradeId
           ? { ...t, memo: memoDraft.trim(), notes: memoDraft.trim() }
           : t
-      ),
-    }));
+      );
+      const nextState = { ...prev, trades: updatedTrades };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
     setEditingMemoTradeId(null);
     setMemoDraft('');
   };
 
+  // Inline Risk Editing Handlers
+  const handleStartEditRisk = (trade: CompletedTrade) => {
+    setEditingRiskTradeId(trade.id);
+    setEditRiskDraft(String(trade.riskDollars || ''));
+  };
+
+  const handleCancelEditRisk = () => {
+    setEditingRiskTradeId(null);
+    setEditRiskDraft('');
+  };
+
+  const handleSaveTradeRisk = (tradeId: string, customVal?: number) => {
+    const valToUse = typeof customVal === 'number' ? customVal : parseFloat(editRiskDraft);
+    if (isNaN(valToUse) || valToUse <= 0) {
+      return;
+    }
+
+    onUpdateState((prev) => {
+      const updatedTrades = prev.trades.map((t) => {
+        if (t.id === tradeId) {
+          const acc = prev.accounts.find((a) => a.id === t.accountId);
+          const maxDD = acc?.maxDrawdown || (journalAccount?.maxDrawdown || 2000);
+          const newRiskPercent = Number(((valToUse / maxDD) * 100).toFixed(1));
+          const newRMultiple =
+            typeof t.pnl === 'number' ? Number((t.pnl / valToUse).toFixed(2)) : t.rMultiple;
+          return {
+            ...t,
+            riskDollars: Math.round(valToUse),
+            riskPercent: newRiskPercent,
+            rMultiple: newRMultiple,
+          };
+        }
+        return t;
+      });
+      const nextState = { ...prev, trades: updatedTrades };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
+
+    setEditingRiskTradeId(null);
+    setEditRiskDraft('');
+  };
+
   // Toggle or update trade discipline (Managed trade well vs Exited emotionally)
   const handleUpdateDiscipline = (tradeId: string, discipline: 'managed_well' | 'exited_emotionally') => {
-    onUpdateState((prev) => ({
-      ...prev,
-      trades: prev.trades.map((t) => {
+    onUpdateState((prev) => {
+      const updatedTrades = prev.trades.map((t) => {
         if (t.id !== tradeId) return t;
         const isCurrentActive = t.discipline === discipline && t.disciplineSelected !== false;
         return {
@@ -322,12 +375,24 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
           discipline: isCurrentActive ? undefined : discipline,
           disciplineSelected: !isCurrentActive,
         };
-      }),
-    }));
+      });
+      const nextState = { ...prev, trades: updatedTrades };
+      broadcastTradeUpdated(tradeId, nextState);
+      return nextState;
+    });
   };
 
   // Create a quick practice trade for an account (useful when starting with an empty journal)
   const handleLogPracticeTrade = (account: TradingAccount, isWin: boolean) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isCheckInCompletedToday = isMorningCheckInCompleted(state?.emotionalTracker, todayStr);
+
+    if (!isCheckInCompletedToday) {
+      alert('Trading is locked: Please complete your morning mindset check-in on the Session view first.');
+      onUpdateState((prev) => ({ ...prev, currentView: 'session' }));
+      return;
+    }
+
     const risk = account.maxDrawdown > 0 ? Math.round(account.maxDrawdown * 0.1) : 250;
     const pnl = isWin ? Math.round(risk * 1.8) : -risk;
     const rMultiple = isWin ? 1.8 : -1.0;
@@ -375,11 +440,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
         return a;
       });
 
-      return {
+      const nextState = {
         ...prev,
         trades: [...prev.trades, practiceTrade],
         accounts: updatedAccounts,
       };
+
+      broadcastTradeLogged(practiceTrade, nextState);
+      return nextState;
     });
   };
 
@@ -402,7 +470,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#142933] pb-4">
         <div className="space-y-1">
           <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-emerald-400" />
+            <CreditCard className="w-5 h-5 text-sky-400" />
             <span>Trading Books & Accounts</span>
           </h1>
           <p className="text-xs text-slate-400">
@@ -412,18 +480,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => handleOpenAddForm('live')}
-            className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
+            className="px-3.5 py-2 bg-[#0c2233] hover:bg-[#11314a] text-sky-300 border border-[#1b4363] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="Switch to Session tab where accounts are activated and managed"
           >
-            <Zap className="w-3.5 h-3.5 fill-black" />
-            <span>+ Add Live Account</span>
-          </button>
-          <button
-            onClick={() => handleOpenAddForm('eval')}
-            className="px-3.5 py-2 bg-[#122833] hover:bg-[#193746] text-slate-200 border border-[#204557] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 text-cyan-400" />
-            <span>+ Add Evaluation</span>
+            <Terminal className="w-3.5 h-3.5 text-sky-400" />
+            <span>+ Add New Accounts in Session Tab</span>
           </button>
         </div>
       </div>
@@ -449,145 +511,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
         </div>
       </div>
 
-      {/* New Account Form Drawer */}
-      {showAddForm && (
-        <form
-          onSubmit={handleCreateAccount}
-          className="p-5 bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl space-y-4 animate-in fade-in"
-        >
-          <div className="flex items-center justify-between border-b border-[#142933] pb-3">
-            <div className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-              <Plus className="w-4 h-4 text-emerald-400" />
-              <span>Configure New Trading Book</span>
-            </div>
-
-            {/* Type Selector Pills */}
-            <div className="flex items-center gap-1.5 p-1 bg-[#081216] border border-[#142630] rounded-xl">
-              <button
-                type="button"
-                onClick={() => setNewAccType('live')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  newAccType === 'live'
-                    ? 'bg-emerald-500 text-black font-black'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Live Account
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewAccType('eval')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  newAccType === 'eval'
-                    ? 'bg-cyan-500 text-black font-black'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Evaluation
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                Account Name
-              </label>
-              <input
-                type="text"
-                required
-                value={newAccName}
-                onChange={(e) => setNewAccName(e.target.value)}
-                placeholder="e.g. Apex 50K PA #1"
-                className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                Max Drawdown Limit ($)
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={newAccMaxDD}
-                onChange={(e) => setNewAccMaxDD(e.target.value)}
-                placeholder="2500"
-                className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                Drawdown Type
-              </label>
-              <select
-                value={newAccDrawdownType}
-                onChange={(e) => setNewAccDrawdownType(e.target.value as AccountDrawdownType)}
-                className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
-              >
-                <option value="eod">End of Day Trailing (Snaps at Globex Close)</option>
-                <option value="intraday_trailing">Intraday Trailing (High Water Mark)</option>
-                <option value="static">Static Drawdown (Fixed Floor)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="p-3 bg-[#081216] border border-[#142831] rounded-xl flex items-center justify-between">
-            <div>
-              <div className="text-xs font-bold text-white">
-                Does drawdown stop trailing at starting balance?
-              </div>
-              <div className="text-[10px] text-slate-400">
-                Floor locks once drawdown is covered; remaining profits grow safely.
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setNewAccStopFloor(true)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg border cursor-pointer ${
-                  newAccStopFloor
-                    ? 'bg-emerald-500 text-black border-emerald-400'
-                    : 'bg-[#102027] text-slate-400 border-[#1a3746]'
-                }`}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewAccStopFloor(false)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg border cursor-pointer ${
-                  !newAccStopFloor
-                    ? 'bg-rose-600 text-white border-rose-500'
-                    : 'bg-[#102027] text-slate-400 border-[#1a3746]'
-                }`}
-              >
-                No
-              </button>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-[#102027] text-slate-400 hover:text-white rounded-xl text-xs font-semibold cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-black cursor-pointer shadow-xs"
-            >
-              Save Account
-            </button>
-          </div>
-        </form>
-      )}
-
       {/* 3-COLUMN REORGANIZED LAYOUT:
           - Live accounts on the left (Column 1)
           - Evals in the middle (Column 2)
@@ -605,13 +528,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                 LIVE ACCOUNTS ({liveAccounts.length})
               </h2>
             </div>
-            <button
-              onClick={() => handleOpenAddForm('live')}
-              className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Add Live</span>
-            </button>
           </div>
 
           {liveAccounts.length === 0 ? (
@@ -622,15 +538,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
               <div className="space-y-1">
                 <p className="text-xs text-slate-300 font-bold">No Live Accounts Active</p>
                 <p className="text-[11px] text-slate-400">
-                  Track real funded capital and journal execution discipline.
+                  New accounts can only be added from the Session tab.
                 </p>
               </div>
               <button
-                onClick={() => handleOpenAddForm('live')}
+                onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
                 className="px-3.5 py-1.5 bg-[#10242e] hover:bg-[#16313f] text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Configure Live Account</span>
+                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Go to Session Tab</span>
               </button>
             </div>
           ) : (
@@ -683,7 +599,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                         </div>
                       </div>
 
-                      {/* Active Selector Pill */}
+                      {/* Active Selector Pill & Send to Blown */}
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isActive ? (
                           <span className="px-2 py-0.5 rounded-md bg-emerald-950 border border-emerald-700 text-emerald-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
@@ -698,6 +614,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                             Set Active
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleMarkAccountBlown(acc.id)}
+                          className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Send this account to the Blown section"
+                        >
+                          <Flame className="w-3 h-3 text-rose-400" />
+                          <span>Send to Blown</span>
+                        </button>
 
                         <button
                           onClick={() => setAccountToDelete(acc)}
@@ -822,13 +748,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                 EVALUATIONS ({evalAccounts.length})
               </h2>
             </div>
-            <button
-              onClick={() => handleOpenAddForm('eval')}
-              className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Add Eval</span>
-            </button>
           </div>
 
           {evalAccounts.length === 0 ? (
@@ -839,15 +758,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
               <div className="space-y-1">
                 <p className="text-xs text-slate-300 font-bold">No Evaluations Configured</p>
                 <p className="text-[11px] text-slate-400">
-                  Track prop firm combines with disciplined stop loss & rule criteria.
+                  New evaluation books can only be added from the Session tab.
                 </p>
               </div>
               <button
-                onClick={() => handleOpenAddForm('eval')}
+                onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
                 className="px-3.5 py-1.5 bg-[#10242e] hover:bg-[#16313f] text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Configure Evaluation</span>
+                <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Go to Session Tab</span>
               </button>
             </div>
           ) : (
@@ -900,7 +819,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                         </div>
                       </div>
 
-                      {/* Active Selector Pill */}
+                      {/* Active Selector Pill & Send to Blown */}
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isActive ? (
                           <span className="px-2 py-0.5 rounded-md bg-cyan-950 border border-cyan-700 text-cyan-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
@@ -915,6 +834,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                             Set Active
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleMarkAccountBlown(acc.id)}
+                          className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Send this account to the Blown section"
+                        >
+                          <Flame className="w-3 h-3 text-rose-400" />
+                          <span>Send to Blown</span>
+                        </button>
 
                         <button
                           onClick={() => setAccountToDelete(acc)}
@@ -1094,14 +1023,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
 
                       <div className="flex items-center gap-1 shrink-0">
                         <button
-                          onClick={() => handleRestoreAccount(acc.id)}
-                          className="px-2.5 py-1 bg-[#122833] hover:bg-[#193646] text-slate-200 border border-[#1f3e4e] rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                          title="Reactivate book"
-                        >
-                          <RotateCcw className="w-3 h-3 text-cyan-400" />
-                          <span>Reset</span>
-                        </button>
-                        <button
                           onClick={() => setAccountToDelete(acc)}
                           className="p-1 text-slate-500 hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
                           title="Delete book"
@@ -1150,8 +1071,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
           ACCOUNT JOURNAL MODAL / DETAILED TRADE VIEW
          ========================================================================= */}
       {journalAccount && (() => {
+        // Resolve the live active account object directly from state.accounts to ensure balance and metadata never go stale
+        const liveJournalAccount =
+          state.accounts.find((a) => a.id === journalAccount.id) || journalAccount;
+
         const trades = getAccountTrades(
-          journalAccount,
+          liveJournalAccount,
           state.trades,
           state.activeAccountId,
           state.accounts.length
@@ -1187,22 +1112,22 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                        journalAccount.accountType === 'live'
+                        liveJournalAccount.accountType === 'live'
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : journalAccount.status === 'blown'
+                          : liveJournalAccount.status === 'blown'
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                           : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                       }`}
                     >
-                      {journalAccount.status === 'blown'
+                      {liveJournalAccount.status === 'blown'
                         ? 'BLOWN BOOK'
-                        : journalAccount.accountType === 'live'
+                        : liveJournalAccount.accountType === 'live'
                         ? 'LIVE BOOK'
                         : 'EVALUATION'}
                     </span>
                     <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-emerald-400" />
-                      <span>{journalAccount.name} &bull; Trade Journal</span>
+                      <span>{liveJournalAccount.name} &bull; Trade Journal</span>
                     </h2>
                   </div>
                   <p className="text-xs text-slate-400">
@@ -1211,6 +1136,19 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
+                  {liveJournalAccount.status !== 'blown' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleMarkAccountBlown(liveJournalAccount.id);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="Send this account to the Blown section"
+                    >
+                      <Flame className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Send to Blown</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => setJournalAccount(null)}
                     className="p-2 text-slate-400 hover:text-white hover:bg-[#122834] rounded-xl transition-colors cursor-pointer"
@@ -1577,15 +1515,124 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                                 );
                               })()}
 
-                              <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-                                <span>
-                                  Symbol: <strong className="text-slate-200">{trade.symbol}</strong>
-                                </span>
-                                <span>&bull;</span>
-                                <span>
-                                  Risk: <strong className="text-slate-200">${trade.riskDollars}</strong> ({trade.riskPercent}%)
-                                </span>
-                              </div>
+                              {editingRiskTradeId === trade.id ? (
+                                <div className="p-3 rounded-xl bg-[#06141a] border border-cyan-500/50 space-y-2.5 my-1.5 animate-in fade-in-50 duration-150 shadow-lg">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                      <span>Correct Trade Risk Amount:</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      Current: ${trade.riskDollars} ({trade.riskPercent}%)
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <div className="relative flex-1 max-w-[170px]">
+                                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-cyan-400 font-mono font-bold text-xs">
+                                        $
+                                      </span>
+                                      <input
+                                        type="number"
+                                        value={editRiskDraft}
+                                        onChange={(e) => setEditRiskDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSaveTradeRisk(trade.id);
+                                          if (e.key === 'Escape') handleCancelEditRisk();
+                                        }}
+                                        placeholder="200"
+                                        autoFocus
+                                        className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-[#0b1b22] border border-cyan-500/60 text-white font-mono font-bold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                                      />
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveTradeRisk(trade.id)}
+                                      className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
+                                      title="Save updated risk"
+                                    >
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                      <span>Save</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEditRisk}
+                                      className="px-2.5 py-1.5 rounded-lg bg-[#0e1d24] hover:bg-[#162e3a] text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700"
+                                      title="Cancel"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+
+                                  {/* Quick Presets */}
+                                  <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                    <span className="text-[9px] text-slate-400 font-medium">Quick Fill:</span>
+                                    {[
+                                      ...(journalAccount?.maxDrawdown
+                                        ? [
+                                            {
+                                              label: `B ($${Math.max(5, Math.round(journalAccount.maxDrawdown * 0.05))})`,
+                                              val: Math.max(5, Math.round(journalAccount.maxDrawdown * 0.05)),
+                                            },
+                                            {
+                                              label: `A ($${Math.max(10, Math.round(journalAccount.maxDrawdown * 0.10))})`,
+                                              val: Math.max(10, Math.round(journalAccount.maxDrawdown * 0.10)),
+                                            },
+                                            {
+                                              label: `A+ ($${Math.max(15, Math.round(journalAccount.maxDrawdown * 0.15))})`,
+                                              val: Math.max(15, Math.round(journalAccount.maxDrawdown * 0.15)),
+                                            },
+                                          ]
+                                        : []),
+                                      { label: '$50', val: 50 },
+                                      { label: '$100', val: 100 },
+                                      { label: '$150', val: 150 },
+                                      { label: '$200', val: 200 },
+                                      { label: '$250', val: 250 },
+                                      { label: '$300', val: 300 },
+                                      { label: '$500', val: 500 },
+                                    ].map((p, pIdx) => (
+                                      <button
+                                        key={pIdx}
+                                        type="button"
+                                        onClick={() => setEditRiskDraft(String(p.val))}
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
+                                          editRiskDraft === String(p.val)
+                                            ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200'
+                                            : 'bg-[#09181f] hover:bg-cyan-500/20 border-slate-700 hover:border-cyan-500/40 text-slate-300'
+                                        }`}
+                                      >
+                                        {p.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
+                                  <span>
+                                    Symbol: <strong className="text-slate-200">{trade.symbol}</strong>
+                                  </span>
+                                  <span>&bull;</span>
+                                  <span className="flex items-center gap-1.5">
+                                    <span>Risk:</span>
+                                    <strong className="text-slate-200 font-mono font-bold">
+                                      ${trade.riskDollars}
+                                    </strong>
+                                    <span className="text-slate-400">({trade.riskPercent}%)</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditRisk(trade)}
+                                      className="ml-1 px-2 py-0.5 rounded-md bg-[#0b1d26] hover:bg-cyan-500/20 border border-[#163644] hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                                      title="Edit/Update risk amount for this trade"
+                                    >
+                                      <Edit3 className="w-3 h-3 text-cyan-400" />
+                                      <span>Edit Risk</span>
+                                    </button>
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {/* PnL & Prominent Risk-to-Reward (RR) Ratio Block */}

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-[#060e11] text-slate-100 min-h-screen">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,9 +9,19 @@
     <meta property="og:description" content="Disciplined trade execution and tilt filter with interactive pre-trade checklist rules, inline editable tags, risk sizing calculator, and emotional risk monitoring." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      html, body, #root {
+        background-color: #060e11 !important;
+        color: #f1f5f9;
+        min-height: 100vh;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-[#060e11] text-slate-100 min-h-screen">
+    <div id="root" class="min-h-screen bg-[#060e11]"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
