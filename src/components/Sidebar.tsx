@@ -17,6 +17,7 @@ import {
   Crown,
   Sparkles,
   AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { AppState, TierLevel } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
@@ -168,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Accounts</span>
           </button>
 
-          {/* Tracker */}
+          {/* Mood Tracker */}
           <button
             onClick={() => onSelectView('tracker')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -180,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Activity
               className={`w-4 h-4 ${isTracker ? 'text-sky-400' : 'text-slate-400'}`}
             />
-            <span>Tracker</span>
+            <span>Mood Tracker</span>
           </button>
 
           {/* Profile */}
@@ -247,13 +248,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {onCleanSlate && (
           <button
             onClick={() => {
-              if (window.confirm('Reset app data to clean slate?')) {
+              if (window.confirm('Refresh Everything (Clean Slate)? This will reset your accounts, trades, scoreboard, and tilt streaks back to Day 1.')) {
                 onCleanSlate();
               }
             }}
-            className="w-full text-center text-[10px] text-slate-500 hover:text-slate-300 py-1 cursor-pointer transition-colors"
+            className="w-full text-center text-[10px] text-slate-500 hover:text-rose-300 py-1 cursor-pointer transition-colors flex items-center justify-center gap-1"
+            title="Wipe all accounts, trades, and streaks back to Day 1"
           >
-            Clean Slate Reset
+            <RotateCcw className="w-3 h-3 text-slate-500" />
+            <span>Refresh Everything (Clean Slate)</span>
           </button>
         )}
       </div>

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Shield, Check, Calendar, RotateCcw } from 'lucide-react';
-import { AppState } from '../types';
-import { FEEL_SCALE } from '../utils/initialData';
+import React, { useState } from 'react';
+import { Shield, Check, Calendar, RotateCcw, HeartPulse, Sparkles, Moon, Sun, PenLine, Smile, HelpCircle } from 'lucide-react';
+import { AppState, DailyScoreRecord } from '../types';
+import { FEEL_SCALE, SLEEP_SCALE } from '../utils/initialData';
 
 interface TrackerViewProps {
   state: AppState;
@@ -21,12 +21,18 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const selectedFeel = state?.emotionalTracker?.feelLevel;
   const walkOutStatus = state?.emotionalTracker?.walkOutStatus;
+  const [morningNotesDraft, setMorningNotesDraft] = useState<string>(
+    state?.emotionalTracker?.morningNotes || ''
+  );
+  const [selectedSleep, setSelectedSleep] = useState<number>(
+    state?.emotionalTracker?.sleepLevel ?? 8
+  );
 
   const handleSelectFeel = (level: number) => {
     const baseTracker = state?.emotionalTracker || {
       feelLevel: null,
-      sleepLevel: null,
-      sleepQuality: '',
+      sleepLevel: 8,
+      sleepQuality: 'Well Rested',
       focusIntention: '',
       triggersDistractions: '',
       walkOutNotes: '',
@@ -38,39 +44,45 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
       sessionReflection: '',
     };
 
+    const feelItem = FEEL_SCALE.find((f) => f.level === level);
+    const feelDeviation = Math.abs(level - 5);
+    const emoScore = Math.max(40, 100 - feelDeviation * 12);
+
     onUpdateEmotionalTracker({
       ...baseTracker,
       feelLevel: level,
       morningCheckInCompleted: true,
       morningCheckInDate: todayStr,
+      updatedAt: todayStr,
     });
 
     if (onUpdateState) {
       onUpdateState((prev) => {
-        // Also sync to today's scoreboard record if exists or prepend
         const list = prev.dailyScoreboard || [];
         const existingIndex = list.findIndex((r) => r.date === todayStr);
-        const feelItem = FEEL_SCALE.find((f) => f.level === level);
 
         if (existingIndex >= 0) {
           const updated = [...list];
           updated[existingIndex] = {
             ...updated[existingIndex],
             feelLevel: level,
-            morningNotes: feelItem?.title || '',
+            emotionalConsistencyPercent: emoScore,
+            morningNotes: morningNotesDraft.trim() || feelItem?.title || '',
           };
           return { ...prev, dailyScoreboard: updated };
         } else {
-          const newRecord = {
+          const currentDayNum = prev.dayCounter || 1;
+          const formattedDate = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          const newRecord: DailyScoreRecord = {
             id: `sb-${Date.now()}`,
             date: todayStr,
-            dayLabel: 'Today',
+            dayLabel: `Day ${currentDayNum} (${formattedDate})`,
             feelLevel: level,
-            sleepLevel: 8,
-            morningNotes: feelItem?.title || '',
+            sleepLevel: selectedSleep,
+            morningNotes: morningNotesDraft.trim() || feelItem?.title || '',
             walkOutNotes: '',
-            dailyProcessScore: 95,
-            emotionalConsistencyPercent: 100,
+            dailyProcessScore: Math.round(100 * 0.55 + emoScore * 0.45),
+            emotionalConsistencyPercent: emoScore,
             ruleAdherencePercent: 100,
             tradesCount: prev.trades.length,
             plannedTradesCount: prev.trades.length,
@@ -78,11 +90,37 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
             wellManagedExitsCount: prev.trades.length,
             emotionalExitsCount: 0,
             pnl: 0,
-            isCleanDay: prev.tiltScore === 0,
-            status: prev.tiltScore === 0 ? ('clean' as const) : ('tilted' as const),
+            isCleanDay: true,
+            status: 'clean',
           };
           return { ...prev, dailyScoreboard: [newRecord, ...list] };
         }
+      });
+    }
+  };
+
+  const handleSaveMorningNotes = () => {
+    onUpdateEmotionalTracker({
+      ...state.emotionalTracker,
+      morningNotes: morningNotesDraft.trim(),
+      sleepLevel: selectedSleep,
+      updatedAt: todayStr,
+    });
+
+    if (onUpdateState) {
+      onUpdateState((prev) => {
+        const list = prev.dailyScoreboard || [];
+        const existingIndex = list.findIndex((r) => r.date === todayStr);
+        if (existingIndex >= 0) {
+          const updated = [...list];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            morningNotes: morningNotesDraft.trim(),
+            sleepLevel: selectedSleep,
+          };
+          return { ...prev, dailyScoreboard: updated };
+        }
+        return prev;
       });
     }
   };
@@ -91,11 +129,11 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
     onUpdateEmotionalTracker({
       ...state.emotionalTracker,
       walkOutStatus: status,
+      updatedAt: todayStr,
     });
 
     if (onUpdateState) {
       onUpdateState((prev) => {
-        const isClean = status === 'disciplined';
         const list = prev.dailyScoreboard || [];
         const existingIndex = list.findIndex((r) => r.date === todayStr);
 
@@ -103,19 +141,17 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
           const updated = [...list];
           updated[existingIndex] = {
             ...updated[existingIndex],
-            isCleanDay: isClean,
-            status: isClean ? 'clean' : 'tilted',
+            sessionOutcome: status === 'disciplined' ? ('clean' as const) : status,
             walkOutNotes:
               status === 'disciplined'
-                ? 'Disciplined. Process followed.'
+                ? 'Disciplined session. Followed trade rules.'
                 : status === 'minor_slip'
-                ? 'Minor rule slip.'
-                : 'Tilted / Revenge trade.',
+                ? 'Minor rule slip noted.'
+                : 'Tilted / Challenging session.',
           };
           return {
             ...prev,
             dailyScoreboard: updated,
-            cleanStreak: isClean ? prev.cleanStreak + 1 : 0,
           };
         }
         return prev;
@@ -171,15 +207,16 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold tracking-tight text-white">
-              Emotional tracker
+            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              <HeartPulse className="w-5 h-5 text-emerald-400" />
+              <span>Mood Tracker</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-md bg-[#102934] border border-emerald-500/40 text-emerald-300 text-xs font-mono font-black">
               Day {state.dayCounter || 1}
             </span>
           </div>
           <p className="text-xs text-slate-400 font-medium">
-            Morning feel. Call it a day: how you walked out.
+            Daily mindset baseline &amp; emotional reflection &bull; <span className="text-emerald-300 font-semibold">Separate from trade tilt &amp; streaks</span>
           </p>
         </div>
 
@@ -187,25 +224,41 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (window.confirm('Reset tracker and all session tallies back to initial Day 1 blank state?')) {
+              if (window.confirm('Refresh Everything (Clean Slate)? This will reset your accounts, trades, scoreboard, and tilt streaks back to Day 1.')) {
                 onCleanSlate();
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#140c10] border border-rose-900/50 hover:border-rose-700/80 text-rose-300 hover:text-white text-xs font-bold transition-all cursor-pointer self-start sm:self-auto shadow-xs"
-            title="Reset to Day 1 Blank State"
+            title="Reset all accounts, trades, and streaks to Day 1"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Clean Slate Reset</span>
+            <span>Refresh Everything (Clean Slate)</span>
           </button>
         )}
       </div>
 
+      {/* Mood Separation Notice Box */}
+      <div className="p-3 bg-[#081822] border border-[#16384d] rounded-2xl flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 text-slate-300">
+          <Smile className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>
+            <strong>Independent Psychological Tracking:</strong> Recording your honest emotional state (even if tired or frustrated) helps build self-awareness and does <span className="text-emerald-300 font-bold">not</span> penalize your trading tilt record or status ladder.
+          </span>
+        </div>
+      </div>
+
       {/* Main Container Card */}
       <div className="bg-[#0b161b] border border-[#162a33] rounded-2xl p-4 sm:p-6 space-y-5 shadow-xs">
-        {/* Section Label: FEEL */}
+        {/* Section Label: FEEL (1 - 10) */}
         <div>
-          <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-3">
-            FEEL
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>MORNING EMOTIONAL BASELINE (FEEL)</span>
+            </div>
+            <span className="text-[10px] font-mono text-slate-500">
+              Anchor 5: Cool as a Cucumber 🥒
+            </span>
           </div>
 
           {/* 10 Vertical Level Rows */}
@@ -220,7 +273,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                   onClick={() => handleSelectFeel(item.level)}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[#10242e] border-emerald-500/50 shadow-xs'
+                      ? 'bg-[#10242e] border-emerald-500/50 shadow-xs ring-1 ring-emerald-400/40'
                       : 'bg-[#081317] border-[#13252f] hover:bg-[#0d1e25] hover:border-[#1a3745]'
                   }`}
                 >
@@ -232,7 +285,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                       {item.level}
                     </div>
 
-                    {/* Text Label from Video */}
+                    {/* Text Label */}
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-xs font-bold ${
@@ -254,11 +307,11 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                     {isSelected ? (
                       <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        <span className="hidden sm:inline">Selected</span>
+                        <span className="hidden sm:inline">Active Feel</span>
                       </span>
                     ) : item.level === 5 ? (
                       <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-wider hidden sm:inline">
-                        Target
+                        Target Baseline
                       </span>
                     ) : null}
                   </div>
@@ -268,14 +321,47 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
           </div>
         </div>
 
-        {/* End of Day Stamp - Matching Video Bottom */}
+        {/* Morning Mindset & Sleep Reflection */}
+        <div className="pt-4 border-t border-[#142630] space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <PenLine className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Daily Mindset &amp; Sleep Notes</span>
+            </span>
+            <span className="text-[10px] font-mono text-slate-500">
+              {todayStr}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={morningNotesDraft}
+              onChange={(e) => setMorningNotesDraft(e.target.value)}
+              placeholder="e.g. Slept 8 hrs, feeling calm, focused on waiting for high-conviction 15m levels..."
+              className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white text-xs placeholder:text-slate-600 focus:outline-hidden focus:border-emerald-500"
+            />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveMorningNotes}
+                className="px-3 py-1 bg-[#10242e] hover:bg-[#163442] text-emerald-300 text-xs font-bold border border-emerald-500/40 rounded-lg transition-all cursor-pointer"
+              >
+                Save Mindset Note
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* End of Day Emotional State */}
         <div className="pt-4 border-t border-[#142630] space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs text-slate-400 font-medium">
-              End-of-day stamp. Close only updates how you walked out.
+            <span className="text-xs text-slate-300 font-bold flex items-center gap-1.5">
+              <Moon className="w-3.5 h-3.5 text-teal-400" />
+              <span>End-of-day reflection: How you walked out emotionally</span>
             </span>
-            <span className="text-xs font-mono font-bold text-slate-500 self-end sm:self-auto">
-              {todayStr}
+            <span className="text-[10px] text-slate-500">
+              Self-awareness log
             </span>
           </div>
 
@@ -285,12 +371,12 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
               onClick={() => handleSelectWalkOut('disciplined')}
               className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 walkOutStatus === 'disciplined'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-xs'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-xs ring-1 ring-emerald-400/40'
                   : 'bg-[#081216] border-[#142831] text-slate-400 hover:text-white hover:bg-[#0e1b21]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>Disciplined. Process followed</span>
+              <span>Calm &amp; Disciplined</span>
             </button>
 
             <button
@@ -298,12 +384,12 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
               onClick={() => handleSelectWalkOut('minor_slip')}
               className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 walkOutStatus === 'minor_slip'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs ring-1 ring-amber-400/40'
                   : 'bg-[#081216] border-[#142831] text-slate-400 hover:text-white hover:bg-[#0e1b21]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Minor rule slip</span>
+              <span>Slightly Off / Tense</span>
             </button>
 
             <button
@@ -311,29 +397,27 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
               onClick={() => handleSelectWalkOut('tilted')}
               className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 walkOutStatus === 'tilted'
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-xs'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-xs ring-1 ring-rose-400/40'
                   : 'bg-[#081216] border-[#142831] text-slate-400 hover:text-white hover:bg-[#0e1b21]'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-              <span>Tilted / Revenge trade</span>
+              <span>Frustrated / Overstimulated</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Clean Daily Session Tally */}
+      {/* Daily Mood & Mindset History Log */}
       <div className="bg-[#0b161b] border border-[#162a33] rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#142630] pb-3">
           <div>
             <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <span>Daily Session Tally</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold">
-                Clean Streak: {state.cleanStreak}d
-              </span>
+              <Calendar className="w-4 h-4 text-cyan-400" />
+              <span>Daily Mood &amp; Mindset History</span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              History of daily mindset baseline check-ins, rule execution, and walk-out outcomes.
+              Historical record of morning mindset ratings and daily reflections.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -343,26 +427,21 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
           </div>
         </div>
 
-        {/* Tally Rows */}
+        {/* Mood History Rows */}
         <div className="space-y-2">
           {(state.dailyScoreboard || []).length === 0 ? (
             <div className="py-6 text-center text-xs text-slate-500">
-              Day 1 Clean Slate. No daily session records logged yet. Your morning check-in and end-of-day walkout will tally here.
+              Day 1 Clean Slate. No daily mood check-ins logged yet. Your ratings and notes will tally here.
             </div>
           ) : (
             (state.dailyScoreboard || []).map((row) => {
               const feelItem = FEEL_SCALE.find((f) => f.level === row.feelLevel);
-              const isClean = row.isCleanDay;
               const isAnchor = row.feelLevel === 5;
 
               return (
                 <div
                   key={row.id}
-                  className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    isClean
-                      ? 'bg-[#08151b] border-[#142934] hover:border-[#1e3c4c]'
-                      : 'bg-[#150d10] border-rose-950/70 hover:border-rose-900/80'
-                  }`}
+                  className="p-3 rounded-xl border bg-[#08151b] border-[#142934] hover:border-[#1e3c4c] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   {/* Left: Date & Mood Baseline */}
                   <div className="flex items-center gap-3">
@@ -383,39 +462,29 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
                       {isAnchor ? (
                         <span className="text-xs" title="Cool as a Cucumber">🥒</span>
                       ) : (
-                        <span className="text-[10px] text-slate-300 font-medium truncate max-w-[120px]">
+                        <span className="text-[10px] text-slate-300 font-medium truncate max-w-[130px]">
                           {feelItem?.title || 'Baseline'}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Middle: Notes / Walkout Outcome */}
+                  {/* Middle: Mindset & Reflection */}
                   <div className="flex-1 text-xs text-slate-300 min-w-0">
-                    <div className="truncate font-medium text-[11px] text-slate-300">
-                      {row.walkOutNotes || row.morningNotes || (isClean ? 'Disciplined session' : 'Rule slip')}
+                    <div className="truncate font-medium text-[11px] text-slate-200">
+                      {row.morningNotes || feelItem?.title || 'Check-in recorded'}
                     </div>
-                    <div className="text-[10px] text-slate-500">
-                      {row.tradesCount} trade{row.tradesCount === 1 ? '' : 's'} &bull; {row.plannedTradesCount} planned
-                      {row.unplannedTradesCount > 0 && (
-                        <span className="text-rose-400 ml-1">&bull; {row.unplannedTradesCount} unplanned</span>
-                      )}
-                    </div>
+                    {row.walkOutNotes && (
+                      <div className="text-[10px] text-slate-400 truncate">
+                        Walkout: {row.walkOutNotes}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Right: Clean / Tilted Badge */}
+                  {/* Right: Emotional Consistency */}
                   <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                    <span
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                        isClean
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                          : 'bg-rose-500/15 border-rose-500/40 text-rose-300'
-                      }`}
-                    >
-                      {isClean ? 'Clean Day ✓' : 'Tilted ✗'}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-slate-300">
-                      {row.dailyProcessScore}%
+                    <span className="px-2 py-0.5 rounded-md bg-[#0e2430] border border-cyan-500/30 text-cyan-300 text-[10px] font-bold">
+                      {row.emotionalConsistencyPercent || 100}% Consistency
                     </span>
                   </div>
                 </div>
@@ -433,7 +502,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
             onClick={onGoToSession}
             className="px-4 py-2 bg-[#0b161b] hover:bg-[#12242c] text-emerald-300 text-xs font-bold border border-emerald-500/30 rounded-xl transition-all cursor-pointer"
           >
-            ← Back to Session & Trade
+            ← Back to Session &amp; Trade
           </button>
         </div>
       )}

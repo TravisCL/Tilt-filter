@@ -205,8 +205,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
         <div className="pt-3.5 border-t border-[#143247] space-y-2">
           <div className="text-xs text-slate-300 font-medium">
             {rawScoreboard.length > 0
-              ? `Day ${state.dayCounter || 1} in progress • ${state.cleanStreak || 0} clean sessions logged`
-              : `Day ${state.dayCounter || 1} • Clean slate session ready`}
+              ? `Day ${state.dayCounter || 1} in progress • ${noTiltDays} clean ${noTiltDays === 1 ? 'day' : 'days'} logged`
+              : `Day ${state.dayCounter || 1} • Clean slate session in progress`}
           </div>
 
           <div className="flex items-end gap-2 h-16 pt-2 px-1 border-b border-[#143247]">
@@ -233,7 +233,9 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
             <span className="text-sky-400 font-mono text-[10px]">Day {state.dayCounter || 1}</span>
           </div>
           <div className="text-3xl font-black text-white font-mono">{noTiltDays}</div>
-          <div className="text-xs text-slate-400 font-medium">consecutive tilt-free sessions</div>
+          <div className="text-xs text-slate-400 font-medium">
+            {noTiltDays === 1 ? 'day consecutive tilt-free streak' : 'days consecutive tilt-free streak'}
+          </div>
         </div>
 
         {/* TILT SCORE */}

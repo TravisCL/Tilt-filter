@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Shield, RotateCcw, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
-import { AppState, TIERS_CONFIG } from '../types';
+import { AppState } from '../types';
+import { getNoTiltStats } from '../utils/tierProgression';
 
 interface ProfileViewProps {
   state: AppState;
@@ -8,7 +9,8 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ state, onCleanSlate }) => {
-  const currentTier = TIERS_CONFIG[state.currentTier];
+  const stats = getNoTiltStats(state);
+  const { currentTier, tierInfo, noTiltDays } = stats;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -68,7 +70,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onCleanSlate })
             <p className="text-xs text-slate-400">Trading with Travis &bull; Desk Operator</p>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-md bg-[#11252e] border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
               <Shield className="w-3 h-3" />
-              <span>{currentTier.badgeLabel} ({state.cleanStreak} clean sessions)</span>
+              <span>{tierInfo.badgeLabel} ({noTiltDays} {noTiltDays === 1 ? 'clean day' : 'clean days'})</span>
             </div>
           </div>
         </div>

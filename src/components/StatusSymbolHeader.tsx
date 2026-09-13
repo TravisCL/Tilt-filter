@@ -137,13 +137,13 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
                 {noTiltDays}
               </span>
               <span className="text-sm sm:text-base font-black text-sky-300 uppercase tracking-tight">
-                NO TILT DAYS
+                {noTiltDays === 1 ? 'NO TILT DAY' : 'NO TILT DAYS'}
               </span>
             </div>
 
             <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between pt-0.5">
               <span>Consecutive clean sessions:</span>
-              <strong className="text-white font-mono">{stats.cleanStreak}</strong>
+              <strong className="text-white font-mono">{noTiltDays}</strong>
             </div>
           </div>
         </div>

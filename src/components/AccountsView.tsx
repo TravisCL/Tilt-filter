@@ -26,8 +26,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
-import { isMorningCheckInCompleted } from '../utils/initialData';
-import { broadcastTradeLogged, broadcastTradeUpdated } from '../utils/syncService';
+import { broadcastTradeUpdated } from '../utils/syncService';
 
 interface AccountsViewProps {
   state: AppState;
@@ -378,75 +377,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
       });
       const nextState = { ...prev, trades: updatedTrades };
       broadcastTradeUpdated(tradeId, nextState);
-      return nextState;
-    });
-  };
-
-  // Create a quick practice trade for an account (useful when starting with an empty journal)
-  const handleLogPracticeTrade = (account: TradingAccount, isWin: boolean) => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isCheckInCompletedToday = isMorningCheckInCompleted(state?.emotionalTracker, todayStr);
-
-    if (!isCheckInCompletedToday) {
-      alert('Trading is locked: Please complete your morning mindset check-in on the Session view first.');
-      onUpdateState((prev) => ({ ...prev, currentView: 'session' }));
-      return;
-    }
-
-    const risk = account.maxDrawdown > 0 ? Math.round(account.maxDrawdown * 0.1) : 250;
-    const pnl = isWin ? Math.round(risk * 1.8) : -risk;
-    const rMultiple = isWin ? 1.8 : -1.0;
-
-    const practiceTrade: CompletedTrade = {
-      id: `tr-${Date.now()}`,
-      orderNumber: state.trades.length + 1,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      plannedStatus: 'planned',
-      quality: isWin ? 'A_PLUS' : 'A',
-      symbol: 'NQ',
-      riskDollars: risk,
-      riskPercent: 10,
-      pnl,
-      rMultiple,
-      rulesHeld: true,
-      discipline: undefined,
-      disciplineSelected: false,
-      name: isWin ? '1B Long • Key FVG Tap' : 'Opening Drive Sweep • Hard Stop Respected',
-      outcome: isWin ? 'winner' : 'loser',
-      accountId: account.id,
-      accountName: account.name,
-      memo: isWin
-        ? 'Waited for 15m candle close confirmation. Scaled out half at 1.5R and trailed runner to key liquidity level.'
-        : 'Entry was according to checklist rules. Invalidation hit quickly, took the planned loss without moving the stop.',
-      checklistAnswers: {
-        rule1: true,
-        rule2: true,
-        rule3: true,
-        q4CalculatedRisk: true,
-        q5NotFomo: true,
-      },
-    };
-
-    onUpdateState((prev) => {
-      const updatedAccounts = prev.accounts.map((a) => {
-        if (a.id === account.id) {
-          const newBal = (a.currentBalance || 0) + pnl;
-          return {
-            ...a,
-            currentBalance: newBal,
-            highWaterMark: Math.max(a.highWaterMark || 0, newBal),
-          };
-        }
-        return a;
-      });
-
-      const nextState = {
-        ...prev,
-        trades: [...prev.trades, practiceTrade],
-        accounts: updatedAccounts,
-      };
-
-      broadcastTradeLogged(practiceTrade, nextState);
       return nextState;
     });
   };
@@ -1377,24 +1307,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                       <p className="text-xs text-slate-400 leading-relaxed">
                         Trades logged during the Pre-Trade Session will automatically record here with complete RR metrics, screenshots, and memos.
                       </p>
-                    </div>
-
-                    {/* Quick Practice Trade Button for immediate testing */}
-                    <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => handleLogPracticeTrade(journalAccount, true)}
-                        className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Add Demo Winning Trade</span>
-                      </button>
-                      <button
-                        onClick={() => handleLogPracticeTrade(journalAccount, false)}
-                        className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Add Demo Loss Trade</span>
-                      </button>
                     </div>
                   </div>
                 ) : (

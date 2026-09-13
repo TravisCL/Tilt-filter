@@ -198,8 +198,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
         wellManagedExitsCount: 0,
         emotionalExitsCount: 0,
         pnl: todayIndex >= 0 ? existingScoreboard[todayIndex].pnl : 0,
-        isCleanDay: selectedFeel >= 4 && selectedFeel <= 7,
-        status: selectedFeel >= 4 && selectedFeel <= 7 ? 'clean' : 'active',
+        isCleanDay: todayIndex >= 0 ? existingScoreboard[todayIndex].isCleanDay : true,
+        status: todayIndex >= 0 ? existingScoreboard[todayIndex].status : 'active',
         sessionOutcome: prev.emotionalTracker.sessionOutcome || 'pending',
         sessionReflection: prev.emotionalTracker.sessionReflection || '',
       };
@@ -216,7 +216,6 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
 
       return {
         ...prev,
-        cleanStreak: selectedFeel >= 4 && selectedFeel <= 7 ? Math.max(1, prev.cleanStreak) : prev.cleanStreak,
         emotionalTracker: {
           ...prev.emotionalTracker,
           feelLevel: selectedFeel,

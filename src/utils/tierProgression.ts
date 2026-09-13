@@ -1,4 +1,5 @@
 import { AppState, TierLevel, TIERS_CONFIG, TierInfo } from '../types';
+import { evaluateTodayTiltStatus, getESTDate } from './dailyRollover';
 
 export interface TierProgressionDetails {
   level: TierLevel;
@@ -106,7 +107,6 @@ export const TIER_ORDER: TierLevel[] = ['diamond', 'platinum', 'gold', 'silver',
 
 /**
  * Calculates the earned status tier strictly from authentic no-tilt days and tilt impact.
- * Ensures the status symbol is earned through discipline, not arbitrary clicking.
  */
 export function calculateEarnedTier(noTiltDays: number, activeTiltTab: number = 0): TierLevel {
   if (activeTiltTab > 0) {
@@ -116,8 +116,7 @@ export function calculateEarnedTier(noTiltDays: number, activeTiltTab: number = 
   if (noTiltDays >= 60) return 'platinum';
   if (noTiltDays >= 30) return 'gold';
   if (noTiltDays >= 7) return 'silver';
-  if (noTiltDays >= 1) return 'bronze';
-  return 'silver'; // Default foundational starting status
+  return 'bronze'; // Starting foundational status for 1-6 clean days
 }
 
 export interface NoTiltStats {
@@ -131,31 +130,48 @@ export interface NoTiltStats {
   progressPercent: number;
   isMaxTier: boolean;
   activeTiltTab: number;
+  isTodayTilt: boolean;
+  tiltReasons: string[];
 }
 
 export function getNoTiltStats(state: AppState): NoTiltStats {
-  const cleanStreak = Math.max(0, state.cleanStreak ?? 0);
-  const totalLoggedCleanDays = Math.max(
-    cleanStreak,
-    (state.dailyScoreboard || []).filter((s) => s.isCleanDay || s.status === 'clean').length
-  );
-  
-  // Use clean streak as the primary live no-tilt metric
-  const noTiltDays = cleanStreak;
+  const estDate = getESTDate();
+  const todayStr = estDate.dateStr;
 
-  // Active tilt tab calculation
-  const activeTiltEvents = (state.tiltEvents || []).filter(
-    (e) => typeof e.lossAmount === 'number' && e.lossAmount > 0
-  );
-  const calculatedTiltTab = activeTiltEvents
-    .filter((e) => e.feeling === 'feel_like_chasing' || e.feeling === 'frustrated')
-    .reduce((acc, curr) => acc + (curr.lossAmount || 0), 0);
-  const activeTiltTab = Math.max(state.tiltTab || 0, calculatedTiltTab);
+  // STRICT TILT EVALUATION:
+  // A day is a tilt day IF AND ONLY IF the trader admitted to feeling frustrated OR chased after a loser.
+  const todayTiltEval = evaluateTodayTiltStatus(state, todayStr);
+
+  // Check historical scoreboard clean days
+  const loggedCleanDays = (state.dailyScoreboard || []).filter(
+    (s) => s.isCleanDay || s.status === 'clean' || s.sessionOutcome === 'clean'
+  ).length;
+
+  const cleanStreak = Math.max(0, state.cleanStreak ?? 0);
+  const totalLoggedCleanDays = Math.max(cleanStreak, loggedCleanDays);
+
+  // If today had frustration or chase impulse logged, today is a tilt breach
+  const hasActiveTiltToday = todayTiltEval.isTiltDay;
+  const activeTiltTab = hasActiveTiltToday
+    ? Math.max(state.tiltTab || 0, todayTiltEval.todayLossTally || 0)
+    : 0;
+
+  // Active No Tilt Days:
+  // If the trader tilted today (frustrated or chased), reset to 0 (Copper).
+  // Otherwise, the trader has NOT tilted: they are on clean day 1+ (or their accumulated clean streak / day counter).
+  const noTiltDays = hasActiveTiltToday
+    ? 0
+    : Math.max(
+        1, // If no tilt occurred today, they have at least 1 clean day
+        cleanStreak,
+        totalLoggedCleanDays,
+        typeof state.dayCounter === 'number' && state.dayCounter > 0 ? state.dayCounter : 1
+      );
 
   const earnedTier = calculateEarnedTier(noTiltDays, activeTiltTab);
   const tierInfo = TIER_MILESTONES[earnedTier];
 
-  // Determine next milestone
+  // Determine next milestone and days to rank up
   let nextTier: TierProgressionDetails | null = null;
   let daysToNextTier = 0;
   let progressPercent = 100;
@@ -187,13 +203,11 @@ export function getNoTiltStats(state: AppState): NoTiltStats {
   } else if (earnedTier === 'bronze') {
     nextTier = TIER_MILESTONES.silver;
     daysToNextTier = Math.max(0, 7 - noTiltDays);
-    const range = 7 - 1;
-    const currentInRange = Math.max(0, noTiltDays - 1);
-    progressPercent = Math.min(100, Math.round((currentInRange / range) * 100));
+    progressPercent = Math.min(100, Math.round((noTiltDays / 7) * 100));
   } else {
-    // copper
-    nextTier = TIER_MILESTONES.silver;
-    daysToNextTier = 7;
+    // Copper (reset)
+    nextTier = TIER_MILESTONES.bronze;
+    daysToNextTier = 1;
     progressPercent = 0;
   }
 
@@ -208,5 +222,7 @@ export function getNoTiltStats(state: AppState): NoTiltStats {
     progressPercent,
     isMaxTier,
     activeTiltTab,
+    isTodayTilt: hasActiveTiltToday,
+    tiltReasons: todayTiltEval.tiltReasons,
   };
 }
