@@ -15,12 +15,66 @@ import {
   requestStateSync,
   subscribeToStateSync,
 } from './utils/syncService';
+import { pullStateFromSupabase, pushStateToSupabase, scheduleSupabasePush } from './utils/supabaseSync';
+import { isSupabaseConfigured } from './utils/supabaseClient';
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
   const isRemoteUpdateRef = useRef<boolean>(false);
   const hasMountedRef = useRef<boolean>(false);
   const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
+  const supabaseBootstrappedRef = useRef<boolean>(false);
+
+  // One-time Supabase bootstrap on app load: adopt cloud data if it exists
+  // (so data survives redeploys/code changes), or seed the cloud from
+  // whatever's currently in localStorage if this is the very first sync.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    (async () => {
+      const pulled = await pullStateFromSupabase();
+      if (!pulled) return; // network/config issue — stay on local data
+
+      const localHasData =
+        state.accounts.length > 0 || state.trades.length > 0 || (state.dailyScoreboard || []).length > 0;
+
+      if (pulled.isEmpty) {
+        if (localHasData) {
+          // First time connecting this device/browser to a fresh Supabase project:
+          // push what we already have up, rather than wiping it with empty cloud data.
+          await pushStateToSupabase(state).catch((e) => console.warn('[Supabase] initial seed failed:', e));
+        }
+        supabaseBootstrappedRef.current = true;
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        accounts: pulled.accounts,
+        trades: pulled.trades,
+        dailyScoreboard: pulled.dailyScoreboard,
+        tiltEvents: pulled.tiltEvents,
+        deskMessages: pulled.deskMessages.length > 0 ? pulled.deskMessages : prev.deskMessages,
+        ...(pulled.meta
+          ? {
+              activeAccountId: pulled.meta.activeAccountId || prev.activeAccountId,
+              rules: pulled.meta.rules && pulled.meta.rules.length > 0 ? pulled.meta.rules : prev.rules,
+              systemTags: pulled.meta.systemTags && pulled.meta.systemTags.length > 0 ? pulled.meta.systemTags : prev.systemTags,
+              emotionalTracker: pulled.meta.emotionalTracker || prev.emotionalTracker,
+              cleanStreak: pulled.meta.cleanStreak ?? prev.cleanStreak,
+              dayCounter: pulled.meta.dayCounter ?? prev.dayCounter,
+              tiltScore: pulled.meta.tiltScore ?? prev.tiltScore,
+              tiltTab: pulled.meta.tiltTab ?? prev.tiltTab,
+              currentTier: pulled.meta.currentTier || prev.currentTier,
+              customRiskInput: pulled.meta.customRiskInput ?? prev.customRiskInput,
+              selectedSizingTier: pulled.meta.selectedSizingTier || prev.selectedSizingTier,
+            }
+          : {}),
+      }));
+      supabaseBootstrappedRef.current = true;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 5:35 PM EST Automated Board Update Timer:
   // Automatically evaluates tilt vs no-tilt status at 5:35 PM EST based strictly on whether
@@ -110,6 +164,7 @@ export default function App() {
       return;
     }
     broadcastStateChange(state);
+    scheduleSupabasePush(state);
   }, [state]);
 
   const handleSelectView = (view: AppState['currentView']) => {
