@@ -1,5 +1,5 @@
 import { AppState, TierLevel, TIERS_CONFIG, TierInfo } from '../types';
-import { evaluateTodayTiltStatus, getESTDate } from './dailyRollover';
+import { evaluateTodayTiltStatus, getESTDate, computeTiltDrop } from './dailyRollover';
 
 export interface TierProgressionDetails {
   level: TierLevel;
@@ -106,17 +106,17 @@ export const TIER_MILESTONES: Record<TierLevel, TierProgressionDetails> = {
 export const TIER_ORDER: TierLevel[] = ['diamond', 'platinum', 'gold', 'silver', 'bronze', 'copper'];
 
 /**
- * Calculates the earned status tier strictly from authentic no-tilt days and tilt impact.
+ * Calculates the earned status tier strictly from authentic no-tilt days.
+ * A tilt drops the trader by one tier (see computeTiltDrop) rather than
+ * force-resetting to Copper — Copper is only earned when noTiltDays is truly 0.
  */
-export function calculateEarnedTier(noTiltDays: number, activeTiltTab: number = 0): TierLevel {
-  if (activeTiltTab > 0) {
-    return 'copper';
-  }
+export function calculateEarnedTier(noTiltDays: number): TierLevel {
   if (noTiltDays >= 90) return 'diamond';
   if (noTiltDays >= 60) return 'platinum';
   if (noTiltDays >= 30) return 'gold';
   if (noTiltDays >= 7) return 'silver';
-  return 'bronze'; // Starting foundational status for 1-6 clean days
+  if (noTiltDays >= 1) return 'bronze';
+  return 'copper';
 }
 
 export interface NoTiltStats {
@@ -157,18 +157,20 @@ export function getNoTiltStats(state: AppState): NoTiltStats {
     : 0;
 
   // Active No Tilt Days:
-  // If the trader tilted today (frustrated or chased), reset to 0 (Copper).
-  // Otherwise, the trader has NOT tilted: they are on clean day 1+ (or their accumulated clean streak / day counter).
+  // If the trader tilted today (frustrated or chased), drop exactly one tier
+  // (see computeTiltDrop) instead of resetting all the way to 0.
+  // Otherwise, the trader has NOT tilted: they are on clean day 1+ (their accumulated clean streak).
+  // Note: dayCounter (total days using the app, never decreasing) is intentionally
+  // NOT part of this — it would prevent the tier from ever dropping on a tilt.
   const noTiltDays = hasActiveTiltToday
-    ? 0
+    ? computeTiltDrop(cleanStreak)
     : Math.max(
         1, // If no tilt occurred today, they have at least 1 clean day
         cleanStreak,
-        totalLoggedCleanDays,
-        typeof state.dayCounter === 'number' && state.dayCounter > 0 ? state.dayCounter : 1
+        totalLoggedCleanDays
       );
 
-  const earnedTier = calculateEarnedTier(noTiltDays, activeTiltTab);
+  const earnedTier = calculateEarnedTier(noTiltDays);
   const tierInfo = TIER_MILESTONES[earnedTier];
 
   // Determine next milestone and days to rank up

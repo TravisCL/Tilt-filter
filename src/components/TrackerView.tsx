@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Shield, Check, Calendar, RotateCcw, HeartPulse, Sparkles, Moon, Sun, PenLine, Smile, HelpCircle } from 'lucide-react';
 import { AppState, DailyScoreRecord } from '../types';
 import { FEEL_SCALE, SLEEP_SCALE } from '../utils/initialData';
+import { getESTDate } from '../utils/dailyRollover';
 
 interface TrackerViewProps {
   state: AppState;
@@ -18,7 +19,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
   onGoToSession,
   onCleanSlate,
 }) => {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getESTDate().dateStr;
   const selectedFeel = state?.emotionalTracker?.feelLevel;
   const walkOutStatus = state?.emotionalTracker?.walkOutStatus;
   const [morningNotesDraft, setMorningNotesDraft] = useState<string>(
@@ -71,8 +72,8 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
           };
           return { ...prev, dailyScoreboard: updated };
         } else {
-          const currentDayNum = prev.dayCounter || 1;
-          const formattedDate = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          const currentDayNum = (prev.dailyScoreboard || []).length + 1;
+          const formattedDate = getESTDate().formattedDisplay;
           const newRecord: DailyScoreRecord = {
             id: `sb-${Date.now()}`,
             date: todayStr,
@@ -93,7 +94,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
             isCleanDay: true,
             status: 'clean',
           };
-          return { ...prev, dailyScoreboard: [newRecord, ...list] };
+          return { ...prev, dayCounter: currentDayNum, dailyScoreboard: [newRecord, ...list] };
         }
       });
     }

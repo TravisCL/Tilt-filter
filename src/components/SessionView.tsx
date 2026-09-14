@@ -53,6 +53,7 @@ import {
 } from '../types';
 import { FEEL_SCALE, SLEEP_SCALE, DEFAULT_SCOREBOARD_TALLY, DEFAULT_SYSTEM_TAGS, isMorningCheckInCompleted } from '../utils/initialData';
 import { broadcastTradeUpdated, broadcastStateChange } from '../utils/syncService';
+import { getESTDate } from '../utils/dailyRollover';
 
 interface SessionViewProps {
   state: AppState;
@@ -273,7 +274,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
   }, [state.accounts, state.activeAccountId, onUpdateState]);
 
   // Morning Emotional Check-In State (Anchor 5: Cool as a Cucumber, Sleep Notes via Memo)
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Uses the EST trading-day date (matches the 5:35 PM EST rollover / tier logic),
+  // not the device's local/UTC date, so "today" means the same thing everywhere in the app.
+  const todayStr = getESTDate().dateStr;
   const isCheckInCompletedToday = isMorningCheckInCompleted(state?.emotionalTracker, todayStr);
 
   // Trigger morning check-in prompt automatically at the start of the trading day or session view if not completed today
@@ -330,6 +333,11 @@ export const SessionView: React.FC<SessionViewProps> = ({
       const existingScoreboard = prev.dailyScoreboard || DEFAULT_SCOREBOARD_TALLY;
       const todayIndex = existingScoreboard.findIndex((s) => s.date === todayStr);
 
+      // Day counter only advances when today's record is being created for the
+      // first time — derived from scoreboard length so it self-heals regardless
+      // of any prior stuck/corrupt stored value.
+      const nextDayCounter = todayIndex >= 0 ? (prev.dayCounter || 1) : existingScoreboard.length + 1;
+
       let updatedScoreboard = [...existingScoreboard];
       if (todayIndex >= 0) {
         updatedScoreboard[todayIndex] = {
@@ -344,7 +352,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
           {
             id: `sb-today-${todayStr}`,
             date: todayStr,
-            dayLabel: `Today (${new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`,
+            dayLabel: `Day ${nextDayCounter} (${getESTDate().formattedDisplay})`,
             feelLevel: morningFeelLevel,
             morningNotes: morningNotesInput,
             walkOutNotes: '',
@@ -366,6 +374,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
       return {
         ...prev,
+        dayCounter: nextDayCounter,
         emotionalTracker: updatedEmotionalTracker,
         dailyScoreboard: updatedScoreboard,
         deskMessages: [...prev.deskMessages, deskMsg],
@@ -1396,6 +1405,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
       const existingScoreboard = prev.dailyScoreboard || DEFAULT_SCOREBOARD_TALLY;
       const todayIndex = existingScoreboard.findIndex((s) => s.date === todayStr);
+      const nextDayCounter = todayIndex >= 0 ? (prev.dayCounter || 1) : existingScoreboard.length + 1;
       let updatedScoreboard = [...existingScoreboard];
 
       if (todayIndex >= 0) {
@@ -1410,7 +1420,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
           {
             id: `sb-today-${todayStr}`,
             date: todayStr,
-            dayLabel: `Today (${new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`,
+            dayLabel: `Day ${nextDayCounter} (${getESTDate().formattedDisplay})`,
             feelLevel: level,
             morningNotes: prev.emotionalTracker.morningNotes || '',
             walkOutNotes: '',
@@ -1432,6 +1442,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
       return {
         ...prev,
+        dayCounter: nextDayCounter,
         emotionalTracker: updatedEmotionalTracker,
         dailyScoreboard: updatedScoreboard,
       };

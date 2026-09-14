@@ -1,14 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { AppState, CompletedTrade, DailyScoreRecord } from '../types';
+import { getESTDate } from '../utils/dailyRollover';
 
 interface TradeManagementTallyProps {
   state: AppState;
 }
 
 export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ state }) => {
-  const currentDate = new Date();
-  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const estToday = getESTDate();
+  const currentMonthKey = `${estToday.year}-${String(estToday.month).padStart(2, '0')}`;
 
   // Find all unique months present across trades and daily scoreboard
   const availableMonths = useMemo(() => {
@@ -66,7 +67,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
   // Calculate monthly stats for a specific month
   const getMonthlyStats = (monthKey: string) => {
     const isCurrentMonth = monthKey === currentMonthKey;
-    const todayStr = currentDate.toISOString().split('T')[0];
+    const todayStr = estToday.dateStr;
 
     // Filter historical scoreboard records for this month
     const monthScoreboard = (state.dailyScoreboard || []).filter((r) =>

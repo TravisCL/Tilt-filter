@@ -138,6 +138,19 @@ export function evaluateTodayTiltStatus(
 }
 
 /**
+ * On a tilt day, drop the trader exactly one tier instead of resetting all the
+ * way to zero. Mapped to the tier day-thresholds (30/60/90):
+ *   90+ (Diamond)  -> 60 (Platinum)
+ *   60+ (Platinum) -> 30 (Gold)
+ *   30+ (Gold) and below (Silver/Bronze) -> 0 (Copper)
+ */
+export function computeTiltDrop(priorStreak: number): number {
+  if (priorStreak >= 90) return 60;
+  if (priorStreak >= 60) return 30;
+  return 0;
+}
+
+/**
  * Checks if the board needs to automatically update at 5:35 PM EST.
  * If current EST time is past 5:35 PM and today hasn't been finalized in the dailyScoreboard,
  * this rolls over the board automatically without requiring any manual button clicks.
@@ -168,8 +181,12 @@ export function checkAndApplyESTDailyRollover(state: AppState): {
   const tiltEvaluation = evaluateTodayTiltStatus(state, todayStr);
   const isClean = !tiltEvaluation.isTiltDay;
 
-  const currentDay = state.dayCounter || 1;
-  const nextCleanStreak = isClean ? (state.cleanStreak || 0) + 1 : 0;
+  const priorStreak = state.cleanStreak || 0;
+  // Day counter: only advance when a brand-new day's record is being created.
+  // Derived from scoreboard length rather than trusted blindly, so it self-heals
+  // even if it was previously stuck (see the "never incremented" bug).
+  const currentDay = existingRecord ? (state.dayCounter || 1) : existingScoreboard.length + 1;
+  const nextCleanStreak = isClean ? priorStreak + 1 : computeTiltDrop(priorStreak);
   const nextTiltScore = isClean ? 0 : Math.max(1, state.tiltScore || 1);
   const nextTiltTab = isClean ? 0 : tiltEvaluation.todayLossTally || state.tiltTab || 0;
 
@@ -207,6 +224,7 @@ export function checkAndApplyESTDailyRollover(state: AppState): {
 
   const nextState: AppState = {
     ...state,
+    dayCounter: currentDay,
     cleanStreak: nextCleanStreak,
     tiltScore: nextTiltScore,
     tiltTab: nextTiltTab,
@@ -219,7 +237,7 @@ export function checkAndApplyESTDailyRollover(state: AppState): {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: isClean
           ? `🏆 5:35 PM EST UPDATE: Day ${currentDay} confirmed as a NO TILT DAY! Clean streak is now ${nextCleanStreak} days.`
-          : `⚠️ 5:35 PM EST UPDATE: Day ${currentDay} marked as a TILT DAY (${tiltEvaluation.tiltReasons.join(', ')}). Reset required.`,
+          : `⚠️ 5:35 PM EST UPDATE: Day ${currentDay} marked as a TILT DAY (${tiltEvaluation.tiltReasons.join(', ')}). Streak dropped to ${nextCleanStreak} days.`,
       },
     ],
   };

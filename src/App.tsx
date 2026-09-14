@@ -8,7 +8,7 @@ import { ProfileView } from './components/ProfileView';
 import { InvitesView } from './components/InvitesView';
 import { AppState, CompletedTrade, TierLevel } from './types';
 import { loadAppState, saveAppState, resetToCleanSlate, isMorningCheckInCompleted, deduplicateTrades } from './utils/initialData';
-import { checkAndApplyESTDailyRollover } from './utils/dailyRollover';
+import { checkAndApplyESTDailyRollover, getESTDate } from './utils/dailyRollover';
 import {
   broadcastStateChange,
   broadcastTradeLogged,
@@ -169,7 +169,7 @@ export default function App() {
         id: `tr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         orderNumber: prev.trades.length + 1,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: tradeData.date || new Date().toISOString().split('T')[0],
+        date: tradeData.date || getESTDate().dateStr,
         accountId: boundAccountId,
         accountName: boundAccountName,
       };

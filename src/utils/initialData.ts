@@ -1,4 +1,5 @@
 import { AppState, FeelScaleItem, SleepScaleItem, DailyScoreRecord, CompletedTrade } from '../types';
+import { getESTDate } from './dailyRollover';
 
 export const FEEL_SCALE: FeelScaleItem[] = [
   {
@@ -270,7 +271,7 @@ export function isMorningCheckInCompleted(
   targetDateStr?: string
 ): boolean {
   if (!tracker || typeof tracker !== 'object') return false;
-  const today = targetDateStr || new Date().toISOString().split('T')[0];
+  const today = targetDateStr || getESTDate().dateStr;
   return Boolean(
     tracker.morningCheckInCompleted &&
     tracker.morningCheckInDate === today &&

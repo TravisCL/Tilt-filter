@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AppState, DailyScoreRecord } from '../types';
 import { FEEL_SCALE, DEFAULT_SCOREBOARD_TALLY } from '../utils/initialData';
+import { getESTDate } from '../utils/dailyRollover';
 
 interface SessionTallyViewProps {
   state: AppState;
@@ -28,7 +29,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
   onUpdateState,
   onGoToCheckIn,
 }) => {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getESTDate().dateStr;
   const scoreboard = state.dailyScoreboard || [];
 
   // Quick stats
