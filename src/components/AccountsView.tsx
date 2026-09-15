@@ -24,6 +24,7 @@ import {
   Info,
   AlertTriangle,
   Terminal,
+  ChevronDown,
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
 import { broadcastTradeUpdated } from '../utils/syncService';
@@ -140,6 +141,9 @@ export function calculateAccountMetrics(trades: CompletedTrade[]) {
 }
 
 export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState }) => {
+  // Which eval book is currently shown (only one card at a time, picked via dropdown)
+  const [selectedEvalId, setSelectedEvalId] = useState<string>('');
+
   // Deletion modal state
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
 
@@ -701,7 +705,30 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
             </div>
           ) : (
             <div className="space-y-3.5">
-              {evalAccounts.map((acc) => {
+              {evalAccounts.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={
+                      evalAccounts.some((a) => a.id === selectedEvalId)
+                        ? selectedEvalId
+                        : evalAccounts[0].id
+                    }
+                    onChange={(e) => setSelectedEvalId(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-[#204555] text-xs font-bold text-cyan-200 cursor-pointer"
+                  >
+                    {evalAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                        {a.id === state.activeAccountId ? ' (Active)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-cyan-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              )}
+              {(() => {
+                const acc =
+                  evalAccounts.find((a) => a.id === selectedEvalId) || evalAccounts[0];
                 const isActive = acc.id === state.activeAccountId;
                 const accountTrades = getAccountTrades(
                   acc,
@@ -882,7 +909,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                     </button>
                   </div>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>
