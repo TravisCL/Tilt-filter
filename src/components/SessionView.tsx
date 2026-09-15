@@ -3654,7 +3654,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* NEW ACCOUNT CREATION MODAL */}
       {showAddAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
+          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#142933] pb-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-emerald-400" />
@@ -3804,7 +3804,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* MORNING EMOTIONAL CHECK-IN MODAL (JUST ONE QUESTION) */}
       {showMorningCheckInModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0b161b] border border-[#1b3644] rounded-2xl max-w-lg w-full p-5 sm:p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
+          <div className="bg-[#0b161b] border border-[#1b3644] rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#142630] pb-3">
               <div className="flex items-center gap-2.5">
@@ -3938,7 +3938,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* QUICK RESTORE / MANUAL ADD TRADE MODAL */}
       {showRestoreTradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
+          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#142933] pb-3">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-400" />

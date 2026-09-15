@@ -1062,7 +1062,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-4xl max-h-[90vh] bg-[#09151b] border border-[#1b3a4a] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="w-full max-w-4xl max-h-[90dvh] bg-[#09151b] border border-[#1b3a4a] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
               {/* Journal Modal Header */}
               <div className="p-4 sm:p-5 border-b border-[#142d3b] bg-[#071116] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -1323,7 +1323,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
               </div>
 
               {/* Trades List View */}
-              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-4">
                 {filteredTrades.length === 0 ? (
                   <div className="p-8 text-center space-y-4 rounded-2xl bg-[#061116] border border-[#132832]">
                     <div className="w-12 h-12 mx-auto rounded-full bg-[#0c222c] border border-[#193a4a] flex items-center justify-center text-slate-400">
@@ -1785,7 +1785,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-5xl max-h-[90vh] bg-[#071217] border border-[#193949] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            className="relative max-w-5xl max-h-[90dvh] bg-[#071217] border border-[#193949] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
           >
             <div className="p-3 bg-[#050f14] border-b border-[#142f3d] flex items-center justify-between">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -1803,7 +1803,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
               <img
                 src={lightboxImage}
                 alt="Trade Chart Fullscreen"
-                className="max-h-[80vh] w-auto object-contain rounded-lg"
+                className="max-h-[80dvh] w-auto object-contain rounded-lg"
               />
             </div>
           </div>
