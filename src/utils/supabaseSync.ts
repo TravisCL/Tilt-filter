@@ -304,6 +304,34 @@ export async function pullStateFromSupabase(): Promise<PulledState | null> {
   }
 }
 
+/** Merges a Supabase pull result into an existing AppState — used both on initial
+ * bootstrap and on every live realtime update, so both paths stay identical. */
+export function mergePulledIntoState(pulled: PulledState, prev: AppState): AppState {
+  return {
+    ...prev,
+    accounts: pulled.accounts,
+    trades: pulled.trades,
+    dailyScoreboard: pulled.dailyScoreboard,
+    tiltEvents: pulled.tiltEvents,
+    deskMessages: pulled.deskMessages.length > 0 ? pulled.deskMessages : prev.deskMessages,
+    ...(pulled.meta
+      ? {
+          activeAccountId: pulled.meta.activeAccountId || prev.activeAccountId,
+          rules: pulled.meta.rules && pulled.meta.rules.length > 0 ? pulled.meta.rules : prev.rules,
+          systemTags: pulled.meta.systemTags && pulled.meta.systemTags.length > 0 ? pulled.meta.systemTags : prev.systemTags,
+          emotionalTracker: pulled.meta.emotionalTracker || prev.emotionalTracker,
+          cleanStreak: pulled.meta.cleanStreak ?? prev.cleanStreak,
+          dayCounter: pulled.meta.dayCounter ?? prev.dayCounter,
+          tiltScore: pulled.meta.tiltScore ?? prev.tiltScore,
+          tiltTab: pulled.meta.tiltTab ?? prev.tiltTab,
+          currentTier: pulled.meta.currentTier || prev.currentTier,
+          customRiskInput: pulled.meta.customRiskInput ?? prev.customRiskInput,
+          selectedSizingTier: pulled.meta.selectedSizingTier || prev.selectedSizingTier,
+        }
+      : {}),
+  };
+}
+
 // ============================================================
 // Push: write everything to Supabase (debounced)
 // ============================================================
@@ -362,4 +390,31 @@ export function scheduleSupabasePush(state: AppState) {
   pushTimer = setTimeout(() => {
     pushStateToSupabase(state).catch((e) => console.error('[Supabase] push failed:', e));
   }, 800);
+}
+
+// ============================================================
+// Live cross-device sync (Supabase Realtime)
+// Without this, a change only reaches other devices/tabs the next time
+// they happen to reload — this makes every device reflect changes
+// within ~1s of any other device saving, no refresh needed.
+// Requires the tables to be added to the `supabase_realtime` publication
+// (see supabase/enable_realtime.sql).
+// ============================================================
+
+const REALTIME_TABLES = ['accounts', 'trades', 'daily_scoreboard', 'tilt_events', 'desk_messages', 'app_meta'];
+
+export function subscribeToSupabaseRealtime(onRemoteChange: () => void): () => void {
+  if (!supabase) return () => {};
+
+  const channel = supabase.channel('app-state-sync');
+  REALTIME_TABLES.forEach((table) => {
+    channel.on('postgres_changes' as any, { event: '*', schema: 'public', table }, () => {
+      onRemoteChange();
+    });
+  });
+  channel.subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

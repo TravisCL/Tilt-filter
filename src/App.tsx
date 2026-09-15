@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Menu, X } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { SessionView } from './components/SessionView';
 import { TrackerView } from './components/TrackerView';
@@ -15,11 +16,18 @@ import {
   requestStateSync,
   subscribeToStateSync,
 } from './utils/syncService';
-import { pullStateFromSupabase, pushStateToSupabase, scheduleSupabasePush } from './utils/supabaseSync';
+import {
+  pullStateFromSupabase,
+  pushStateToSupabase,
+  scheduleSupabasePush,
+  mergePulledIntoState,
+  subscribeToSupabaseRealtime,
+} from './utils/supabaseSync';
 import { isSupabaseConfigured } from './utils/supabaseClient';
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isRemoteUpdateRef = useRef<boolean>(false);
   const hasMountedRef = useRef<boolean>(false);
   const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
@@ -48,32 +56,35 @@ export default function App() {
         return;
       }
 
-      setState((prev) => ({
-        ...prev,
-        accounts: pulled.accounts,
-        trades: pulled.trades,
-        dailyScoreboard: pulled.dailyScoreboard,
-        tiltEvents: pulled.tiltEvents,
-        deskMessages: pulled.deskMessages.length > 0 ? pulled.deskMessages : prev.deskMessages,
-        ...(pulled.meta
-          ? {
-              activeAccountId: pulled.meta.activeAccountId || prev.activeAccountId,
-              rules: pulled.meta.rules && pulled.meta.rules.length > 0 ? pulled.meta.rules : prev.rules,
-              systemTags: pulled.meta.systemTags && pulled.meta.systemTags.length > 0 ? pulled.meta.systemTags : prev.systemTags,
-              emotionalTracker: pulled.meta.emotionalTracker || prev.emotionalTracker,
-              cleanStreak: pulled.meta.cleanStreak ?? prev.cleanStreak,
-              dayCounter: pulled.meta.dayCounter ?? prev.dayCounter,
-              tiltScore: pulled.meta.tiltScore ?? prev.tiltScore,
-              tiltTab: pulled.meta.tiltTab ?? prev.tiltTab,
-              currentTier: pulled.meta.currentTier || prev.currentTier,
-              customRiskInput: pulled.meta.customRiskInput ?? prev.customRiskInput,
-              selectedSizingTier: pulled.meta.selectedSizingTier || prev.selectedSizingTier,
-            }
-          : {}),
-      }));
+      setState((prev) => mergePulledIntoState(pulled, prev));
       supabaseBootstrappedRef.current = true;
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Live cross-device sync: whenever ANY device changes data in Supabase,
+  // pull the fresh state and adopt it here within ~1s — no refresh needed.
+  // isRemoteUpdateRef prevents this from immediately re-pushing what we just pulled.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleRemoteChange = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (!supabaseBootstrappedRef.current) return; // don't race the initial bootstrap
+        const pulled = await pullStateFromSupabase();
+        if (!pulled || pulled.isEmpty) return;
+        isRemoteUpdateRef.current = true;
+        setState((prev) => mergePulledIntoState(pulled, prev));
+      }, 500);
+    };
+
+    const unsubscribe = subscribeToSupabaseRealtime(handleRemoteChange);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsubscribe();
+    };
   }, []);
 
   // 5:35 PM EST Automated Board Update Timer:
@@ -381,6 +392,14 @@ export default function App() {
     <div className="flex flex-col md:flex-row min-h-screen bg-[#060f17] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between px-3 py-2.5 bg-[#081522] border-b border-[#132c3f]">
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open navigation menu"
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#0c1e30] border border-[#173752] text-slate-200"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
           <span className="text-white font-black text-xs uppercase">Trader Status</span>
@@ -389,6 +408,41 @@ export default function App() {
           <span>{state.cleanStreak || 0} NO TILT DAYS</span>
         </div>
       </div>
+
+      {/* Mobile Nav Drawer */}
+      {mobileNavOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 h-full overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation menu"
+              className="absolute top-3 right-[-44px] flex items-center justify-center w-8 h-8 rounded-lg bg-[#0c1e30] border border-[#173752] text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <Sidebar
+              state={state}
+              currentView={state.currentView}
+              onSelectView={(view) => {
+                handleSelectView(view);
+                setMobileNavOpen(false);
+              }}
+              syncVersion="9.68"
+              onCleanSlate={() => {
+                handleCleanSlate();
+                setMobileNavOpen(false);
+              }}
+              isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Desktop Left Sidebar */}
       <div className="hidden md:block shrink-0">
