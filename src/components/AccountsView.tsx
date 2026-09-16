@@ -32,6 +32,8 @@ import { broadcastTradeUpdated } from '../utils/syncService';
 interface AccountsViewProps {
   state: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
+  onDeleteTrade?: (tradeId: string) => void;
+  onMoveTrade?: (tradeId: string, newAccountId: string) => void;
 }
 
 // Helper to filter trades that belong strictly and exclusively to a specific account
@@ -140,12 +142,23 @@ export function calculateAccountMetrics(trades: CompletedTrade[]) {
   };
 }
 
-export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState }) => {
+export const AccountsView: React.FC<AccountsViewProps> = ({
+  state,
+  onUpdateState,
+  onDeleteTrade,
+  onMoveTrade,
+}) => {
   // Which eval book is currently shown (only one card at a time, picked via dropdown)
   const [selectedEvalId, setSelectedEvalId] = useState<string>('');
 
   // Deletion modal state
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
+
+  // Trade deletion confirmation (themed modal, not the browser's native confirm())
+  const [tradeToDelete, setTradeToDelete] = useState<CompletedTrade | null>(null);
+
+  // Brief confirmation toast after moving a trade to a different account
+  const [moveToast, setMoveToast] = useState<string | null>(null);
 
   // Journal modal state
   const [journalAccount, setJournalAccount] = useState<TradingAccount | null>(null);
@@ -399,6 +412,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
   return (
     <div className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl mx-auto space-y-6">
       {fileInputElement}
+
+      {/* Move-trade confirmation toast */}
+      {moveToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl bg-[#0c222c] border border-emerald-500/50 text-emerald-300 text-xs font-bold shadow-2xl animate-in fade-in flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{moveToast}</span>
+        </div>
+      )}
 
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#142933] pb-4">
@@ -1752,6 +1773,46 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
                               )}
                             </div>
                           </div>
+
+                          {/* Row 3: Manage Trade — move to a different account, or delete */}
+                          <div className="pt-2 border-t border-[#122733] flex items-center justify-between gap-2 flex-wrap">
+                            {onMoveTrade && state.accounts.length > 1 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  Move to:
+                                </span>
+                                <select
+                                  value={trade.accountId || ''}
+                                  onChange={(e) => {
+                                    if (e.target.value && e.target.value !== trade.accountId) {
+                                      onMoveTrade(trade.id, e.target.value);
+                                      const target = state.accounts.find((a) => a.id === e.target.value);
+                                      setMoveToast(`Moved to ${target?.name || 'account'}`);
+                                      setTimeout(() => setMoveToast(null), 2000);
+                                    }
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 cursor-pointer"
+                                >
+                                  {state.accounts.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                      {a.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {onDeleteTrade && (
+                              <button
+                                type="button"
+                                onClick={() => setTradeToDelete(trade)}
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete Trade</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })
@@ -1843,6 +1904,59 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ state, onUpdateState
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Permanently</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          IN-APP TRADE DELETION CONFIRMATION MODAL
+         ========================================================================= */}
+      {tradeToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-[#0c161b] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-rose-950/70 border border-rose-800/80 flex items-center justify-center text-rose-400">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-white tracking-tight">
+                Delete this trade?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {tradeToDelete.name || tradeToDelete.symbol}
+                {' — '}
+                <span
+                  className={
+                    (tradeToDelete.pnl || 0) >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'
+                  }
+                >
+                  {(tradeToDelete.pnl || 0) >= 0
+                    ? `+$${tradeToDelete.pnl.toLocaleString()}`
+                    : `-$${Math.abs(tradeToDelete.pnl).toLocaleString()}`}
+                </span>
+                . This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setTradeToDelete(null)}
+                className="flex-1 py-2.5 bg-[#12242c] hover:bg-[#18303a] text-slate-300 font-bold text-xs rounded-xl border border-[#1d3744] transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  onDeleteTrade?.(tradeToDelete.id);
+                  setTradeToDelete(null);
+                }}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Trade</span>
               </button>
             </div>
           </div>

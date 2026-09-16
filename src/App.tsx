@@ -376,6 +376,45 @@ export default function App() {
     });
   };
 
+  const handleMoveTrade = (tradeId: string, newAccountId: string) => {
+    setState((prev) => {
+      const trade = (prev.trades || []).find((t) => t.id === tradeId);
+      if (!trade) return prev;
+
+      const oldAccountId = trade.accountId;
+      if (oldAccountId === newAccountId) return prev;
+
+      const newAccount = (prev.accounts || []).find((a) => a.id === newAccountId);
+      if (!newAccount) return prev;
+
+      const pnl = typeof trade.pnl === 'number' ? trade.pnl : 0;
+
+      // Move the PnL's balance impact from the old account to the new one
+      const updatedAccounts = (prev.accounts || []).map((acc) => {
+        if (acc.id === oldAccountId) {
+          return { ...acc, currentBalance: (acc.currentBalance ?? acc.size) - pnl };
+        }
+        if (acc.id === newAccountId) {
+          return { ...acc, currentBalance: (acc.currentBalance ?? acc.size) + pnl };
+        }
+        return acc;
+      });
+
+      const updatedTrades = (prev.trades || []).map((t) =>
+        t.id === tradeId ? { ...t, accountId: newAccountId, accountName: newAccount.name } : t
+      );
+
+      const nextState: AppState = {
+        ...prev,
+        trades: updatedTrades,
+        accounts: updatedAccounts,
+      };
+
+      broadcastStateChange(nextState);
+      return nextState;
+    });
+  };
+
   const handleCleanDuplicates = () => {
     setState((prev) => {
       const cleanedTrades = deduplicateTrades(prev.trades || []);
@@ -479,7 +518,12 @@ export default function App() {
         )}
 
         {state.currentView === 'accounts' && (
-          <AccountsView state={state} onUpdateState={setState} />
+          <AccountsView
+            state={state}
+            onUpdateState={setState}
+            onDeleteTrade={handleDeleteTrade}
+            onMoveTrade={handleMoveTrade}
+          />
         )}
 
         {state.currentView === 'board' && (
