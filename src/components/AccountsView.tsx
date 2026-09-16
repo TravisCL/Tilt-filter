@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
 import { broadcastTradeUpdated } from '../utils/syncService';
+import { getESTDate } from '../utils/dailyRollover';
 
 interface AccountsViewProps {
   state: AppState;
@@ -185,6 +186,36 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     (acc) => acc.accountType !== 'live' && acc.status !== 'blown'
   );
   const blownAccounts = state.accounts.filter((acc) => acc.status === 'blown');
+
+  // P&L rollups for Today / This Week (trailing 7 days) / This Month (calendar month),
+  // combined across every account. Dates are keyed the same EST trading-day basis as
+  // the rest of the app.
+  const { todayPnl, weekPnl, monthPnl } = (() => {
+    const est = getESTDate();
+    const todayStr = est.dateStr;
+    const toDateObj = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
+    const todayObj = toDateObj(est.year, est.month, est.day);
+    const weekStartObj = new Date(todayObj);
+    weekStartObj.setUTCDate(weekStartObj.getUTCDate() - 6);
+    const monthPrefix = `${est.year}-${String(est.month).padStart(2, '0')}`;
+
+    let dayTotal = 0;
+    let weekTotal = 0;
+    let monthTotal = 0;
+
+    (state.trades || []).forEach((t) => {
+      if (!t.date || typeof t.pnl !== 'number') return;
+      const [y, m, d] = t.date.split('-').map(Number);
+      if (!y || !m || !d) return;
+      const tradeObj = toDateObj(y, m, d);
+
+      if (t.date === todayStr) dayTotal += t.pnl;
+      if (tradeObj >= weekStartObj && tradeObj <= todayObj) weekTotal += t.pnl;
+      if (t.date.startsWith(monthPrefix)) monthTotal += t.pnl;
+    });
+
+    return { todayPnl: dayTotal, weekPnl: weekTotal, monthPnl: monthTotal };
+  })();
 
   const handleSetActive = (id: string) => {
     onUpdateState((prev) => ({
@@ -443,6 +474,40 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <span>+ Add New Accounts in Session Tab</span>
           </button>
         </div>
+      </div>
+
+      {/* P&L Summary: Today / This Week / This Month — combined across all accounts */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { label: 'Today', value: todayPnl },
+          { label: 'This Week', value: weekPnl },
+          { label: 'This Month', value: monthPnl },
+        ].map(({ label, value }) => (
+          <div
+            key={label}
+            className="p-3.5 rounded-2xl bg-[#09151b] border border-[#142831] flex items-center justify-between"
+          >
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {label}
+              </div>
+              <div
+                className={`text-lg font-black font-mono ${
+                  value >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}
+              >
+                {value >= 0
+                  ? `+$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                  : `-$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+              </div>
+            </div>
+            {value >= 0 ? (
+              <TrendingUp className="w-5 h-5 text-emerald-500/60" />
+            ) : (
+              <TrendingDown className="w-5 h-5 text-rose-500/60" />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Drawdown Disclaimer Notice */}
