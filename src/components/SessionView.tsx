@@ -2589,7 +2589,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       ? 'border border-amber-500/40 bg-[#16160e]'
                       : q5NotFomo === false
                       ? 'border border-rose-900/60 bg-[#161a1d]'
-                      : 'border border-[#17303d] bg-[#0c181e] opacity-90 hover:opacity-100 hover:border-[#22485c]'
+                      : 'border-2 border-amber-500/60 bg-[#1a1509] opacity-95 hover:opacity-100 hover:border-amber-400/80 shadow-md shadow-amber-950/30'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
