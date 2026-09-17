@@ -379,6 +379,7 @@ export async function pushStateToSupabase(state: AppState): Promise<void> {
 }
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
+let pushInFlight: Promise<void> | null = null;
 
 /**
  * Debounced push — call on every state change. Coalesces rapid-fire updates
@@ -388,8 +389,29 @@ export function scheduleSupabasePush(state: AppState) {
   if (!supabase) return;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
-    pushStateToSupabase(state).catch((e) => console.error('[Supabase] push failed:', e));
+    pushTimer = null;
+    pushInFlight = pushStateToSupabase(state)
+      .catch((e) => console.error('[Supabase] push failed:', e))
+      .finally(() => {
+        pushInFlight = null;
+      });
   }, 800);
+}
+
+/**
+ * Resolves once any currently scheduled (debouncing) or in-flight push has
+ * finished. Realtime-driven pulls must await this first — otherwise a pull
+ * can land with stale data from BEFORE our own most recent local write and
+ * silently overwrite it when merged back into state (e.g. a just-logged
+ * tilt admission getting wiped by an echo of our own earlier, staler write).
+ */
+export async function waitForPendingPush(): Promise<void> {
+  while (pushTimer !== null) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  if (pushInFlight) {
+    await pushInFlight;
+  }
 }
 
 // ============================================================

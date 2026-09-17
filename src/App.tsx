@@ -22,6 +22,7 @@ import {
   scheduleSupabasePush,
   mergePulledIntoState,
   subscribeToSupabaseRealtime,
+  waitForPendingPush,
 } from './utils/supabaseSync';
 import { isSupabaseConfigured } from './utils/supabaseClient';
 
@@ -73,6 +74,9 @@ export default function App() {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
         if (!supabaseBootstrappedRef.current) return; // don't race the initial bootstrap
+        // Let any of our own pending/in-flight writes land first, so this pull
+        // can never be staler than what we just saved locally (see waitForPendingPush).
+        await waitForPendingPush();
         const pulled = await pullStateFromSupabase();
         if (!pulled || pulled.isEmpty) return;
         isRemoteUpdateRef.current = true;
