@@ -47,6 +47,9 @@ check('60 days -> platinum', calculateEarnedTier(60), 'platinum');
 check('90 days -> diamond', calculateEarnedTier(90), 'diamond');
 
 console.log('\n=== 4. getNoTiltStats end-to-end: tilting today drops one tier, not to zero ===');
+// NOTE: the streak is now computed fresh from dailyScoreboard + trades/tiltEvents
+// history (see verify_streak_redesign.ts) rather than trusted from state.cleanStreak.
+// So "prior streak" here must be built as real scoreboard history, not just a number.
 function makeStateWithPriorStreakAndTodayTilt(priorStreak: number): AppState {
   const todayStr = getESTDate().dateStr;
   const tiltedTrade: CompletedTrade = {
@@ -56,11 +59,25 @@ function makeStateWithPriorStreakAndTodayTilt(priorStreak: number): AppState {
     rulesHeld: true, name: 'Test trade', emotionalState: 'frustrated',
     checklistAnswers: { rule1: true, rule2: true, rule3: true, q4CalculatedRisk: true, q5NotFomo: true },
   };
+
+  const pastDays: DailyScoreRecord[] = [];
+  for (let i = priorStreak; i >= 1; i--) {
+    const d = new Date(`${todayStr}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    pastDays.push({
+      id: `sb-${dateStr}`, date: dateStr, dayLabel: dateStr, feelLevel: 5, dailyProcessScore: 90,
+      emotionalConsistencyPercent: 90, ruleAdherencePercent: 100, tradesCount: 0, plannedTradesCount: 0,
+      unplannedTradesCount: 0, wellManagedExitsCount: 0, emotionalExitsCount: 0, pnl: 0,
+      isCleanDay: true, status: 'clean',
+    });
+  }
+
   return {
     currentView: 'session', accounts: [], activeAccountId: '', rules: [],
     trades: [tiltedTrade], deskMessages: [], tiltEvents: [],
     emotionalTracker: { feelLevel: 5, walkOutNotes: '', morningNotes: '', updatedAt: '' },
-    dailyScoreboard: [], cleanStreak: priorStreak, dayCounter: 500, // huge dayCounter, must NOT leak into tier calc
+    dailyScoreboard: pastDays, cleanStreak: 999, dayCounter: 500, // both deliberately garbage — must NOT leak into tier calc
     tiltScore: 0, tiltTab: 0, currentTier: 'bronze', customRiskInput: '', selectedSizingTier: 'B',
   };
 }
@@ -70,12 +87,13 @@ check('was Platinum (60), tilts today -> tier Gold', getNoTiltStats(makeStateWit
 check('was Gold (30), tilts today -> tier Copper', getNoTiltStats(makeStateWithPriorStreakAndTodayTilt(30)).currentTier, 'copper');
 check('was Silver (10), tilts today -> tier Copper', getNoTiltStats(makeStateWithPriorStreakAndTodayTilt(10)).currentTier, 'copper');
 
-console.log('\n=== 5. High dayCounter alone (no clean streak) no longer inflates tier ===');
+console.log('\n=== 5. Garbage cleanStreak/dayCounter fields no longer leak into the tier calc ===');
 {
   const s = makeStateWithPriorStreakAndTodayTilt(90);
-  s.dayCounter = 500; // day 500 of using the app, but tilted today from a 90-day streak
+  s.dayCounter = 500;
+  s.cleanStreak = 12345;
   const stats = getNoTiltStats(s);
-  check('noTiltDays reflects tier-drop (60), ignores dayCounter=500', stats.noTiltDays, 60);
+  check('noTiltDays reflects real tier-drop (60) from computed history, ignores stale fields', stats.noTiltDays, 60);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

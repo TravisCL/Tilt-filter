@@ -182,12 +182,12 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
         </div>
 
         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-0.5">
-          <span>Current: {tierInfo.minDays} Days ({tierInfo.badgeLabel})</span>
+          <span>{tierInfo.badgeLabel} tier requires: {tierInfo.minDays}+ Days</span>
           <span className="text-slate-500 flex items-center gap-1">
             <Lock className="w-3 h-3 text-slate-400" />
             <span>Tiers are locked status symbols earned by logging tilt-free days</span>
           </span>
-          <span>{nextTier ? `Next: ${nextTier.minDays} Days (${nextTier.badgeLabel})` : 'Master Level'}</span>
+          <span>{nextTier ? `Next tier (${nextTier.badgeLabel}) requires: ${nextTier.minDays}+ Days` : 'Master Level'}</span>
         </div>
       </div>
     </div>

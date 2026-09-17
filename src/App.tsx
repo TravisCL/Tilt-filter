@@ -9,7 +9,8 @@ import { ProfileView } from './components/ProfileView';
 import { InvitesView } from './components/InvitesView';
 import { AppState, CompletedTrade, TierLevel } from './types';
 import { loadAppState, saveAppState, resetToCleanSlate, isMorningCheckInCompleted, deduplicateTrades } from './utils/initialData';
-import { checkAndApplyESTDailyRollover, getESTDate } from './utils/dailyRollover';
+import { getESTDate } from './utils/dailyRollover';
+import { getNoTiltStats } from './utils/tierProgression';
 import {
   broadcastStateChange,
   broadcastTradeLogged,
@@ -89,27 +90,6 @@ export default function App() {
       if (debounceTimer) clearTimeout(debounceTimer);
       unsubscribe();
     };
-  }, []);
-
-  // 5:35 PM EST Automated Board Update Timer:
-  // Automatically evaluates tilt vs no-tilt status at 5:35 PM EST based strictly on whether
-  // the trader ever admitted to feeling frustrated or chased after a loser today.
-  useEffect(() => {
-    // Check immediately on mount/view load
-    setState((current) => {
-      const { state: updatedState, updated } = checkAndApplyESTDailyRollover(current);
-      return updated ? updatedState : current;
-    });
-
-    // Check periodically every 15 seconds so rollover hits right at 5:35 PM EST
-    const interval = setInterval(() => {
-      setState((current) => {
-        const { state: updatedState, updated } = checkAndApplyESTDailyRollover(current);
-        return updated ? updatedState : current;
-      });
-    }, 15000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // Ensure responsive layouts recalculate and request freshest state on initial popup mount
@@ -431,6 +411,8 @@ export default function App() {
     });
   };
 
+  const noTiltStats = getNoTiltStats(state);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#060f17] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
       {/* Mobile Top Header */}
@@ -448,7 +430,7 @@ export default function App() {
           <span className="text-white font-black text-xs uppercase">Trader Status</span>
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0c1e30] border border-[#173752] text-[10px] font-mono font-black text-sky-300">
-          <span>{state.cleanStreak || 0} NO TILT DAYS</span>
+          <span>{noTiltStats.noTiltDays} NO TILT DAYS</span>
         </div>
       </div>
 

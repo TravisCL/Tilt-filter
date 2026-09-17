@@ -15,6 +15,7 @@ import { AppState, TierLevel } from '../types';
 import { TradeManagementTally } from './TradeManagementTally';
 import { StatusSymbolHeader } from './StatusSymbolHeader';
 import { getNoTiltStats, TIER_MILESTONES, TIER_ORDER } from '../utils/tierProgression';
+import { evaluateTodayTiltStatus } from '../utils/dailyRollover';
 
 interface BoardViewProps {
   state: AppState;
@@ -23,7 +24,7 @@ interface BoardViewProps {
 
 export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
   const stats = getNoTiltStats(state);
-  const { currentTier, noTiltDays, activeTiltTab } = stats;
+  const { currentTier, noTiltDays, activeTiltTab, tiltScore, longestStreak, totalTiltDays } = stats;
   const hasActiveTiltTab = activeTiltTab > 0;
 
   const todayTrades = state.trades || [];
@@ -33,15 +34,20 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
   const weekPlanned = plannedCount;
   const weekUnplanned = unplannedCount;
 
-  // Timeline bars: dynamic based on dailyScoreboard or fresh Day 1 timeline
+  // Timeline bars: dynamic based on dailyScoreboard or fresh Day 1 timeline.
+  // Clean/tilt is evaluated live from actual trade/tilt-event history for each
+  // date, not trusted from the scoreboard's stored isCleanDay/status fields —
+  // those are only ever set once at check-in time and never corrected later.
   const rawScoreboard = state.dailyScoreboard || [];
   const timelineDates =
     rawScoreboard.length > 0
-      ? rawScoreboard.slice(0, 7).reverse().map((s) => ({
-          date: s.date.slice(5),
-          clean: s.isCleanDay,
-          height: s.isCleanDay ? 'h-8' : 'h-4',
-        }))
+      ? rawScoreboard
+          .slice(0, 7)
+          .reverse()
+          .map((s) => {
+            const clean = !evaluateTodayTiltStatus(state, s.date).isTiltDay;
+            return { date: s.date.slice(5), clean, height: clean ? 'h-8' : 'h-4' };
+          })
       : [{ date: 'Day 1', clean: true, height: 'h-6' }];
 
   const getTierIcon = (level: TierLevel, className: string = 'w-5 h-5') => {
@@ -181,7 +187,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
                             : 'bg-[#050f17] border-[#132e42] text-slate-500'
                         }`}
                       >
-                        {milestone.minDays === 0 ? 'Reset Tier' : `${milestone.minDays}+ No Tilt Days`}
+                        {milestone.minDays === 0 ? 'Reset Tier' : `Requires ${milestone.minDays}+ No Tilt Days`}
                       </span>
 
                       <div className="text-[11px] font-mono">
@@ -243,19 +249,19 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             TILT SCORE
           </div>
-          <div className="text-3xl font-black text-white">{state.tiltScore}</div>
+          <div className="text-3xl font-black text-white">{tiltScore}</div>
           <div
             className={`text-xs font-bold ${
-              state.tiltScore === 0
+              tiltScore === 0
                 ? 'text-sky-300'
-                : state.tiltScore === 1
+                : tiltScore === 1
                 ? 'text-amber-400'
                 : 'text-rose-400'
             }`}
           >
-            {state.tiltScore === 0
+            {tiltScore === 0
               ? 'Calm'
-              : state.tiltScore === 1
+              : tiltScore === 1
               ? 'Tension (Frustrated)'
               : 'High Tilt Risk (Chasing)'}
           </div>
@@ -284,6 +290,27 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
           <div className="text-xs text-slate-400 font-medium">
             {plannedCount} planned &bull; {unplannedCount} unplanned
           </div>
+        </div>
+      </div>
+
+      {/* Your Record: best-ever streak + total tilt days across all history */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 bg-[#081726] border border-emerald-900/40 rounded-2xl space-y-1 shadow-xs">
+          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            BEST STREAK
+          </div>
+          <div className="text-3xl font-black text-emerald-400 font-mono">{longestStreak}</div>
+          <div className="text-xs text-slate-400 font-medium">
+            {longestStreak === 1 ? 'day, your record' : 'days, your record'}
+          </div>
+        </div>
+
+        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            DAYS TILTED
+          </div>
+          <div className="text-3xl font-black text-white font-mono">{totalTiltDays}</div>
+          <div className="text-xs text-slate-400 font-medium">total, all-time</div>
         </div>
       </div>
 

@@ -54,6 +54,7 @@ import {
 import { FEEL_SCALE, SLEEP_SCALE, DEFAULT_SCOREBOARD_TALLY, DEFAULT_SYSTEM_TAGS, isMorningCheckInCompleted } from '../utils/initialData';
 import { broadcastTradeUpdated, broadcastStateChange } from '../utils/syncService';
 import { getESTDate } from '../utils/dailyRollover';
+import { getNoTiltStats } from '../utils/tierProgression';
 
 interface SessionViewProps {
   state: AppState;
@@ -1449,6 +1450,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
     });
   };
 
+  const noTiltStats = getNoTiltStats(state);
+
   return (
     <div className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl mx-auto space-y-6">
       {/* Unplanned Trade Feedback Toast */}
@@ -1526,10 +1529,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#061420] border border-[#153850] text-[11px] font-bold text-slate-200">
               <Shield className="w-3.5 h-3.5 text-sky-400" />
               <span className="text-sky-300 font-black">Status:</span>
-              <span className="text-white capitalize">{state.currentTier || 'Rules Student'}</span>
+              <span className="text-white capitalize">{noTiltStats.currentTier}</span>
               <span className="text-slate-500">&bull;</span>
               <Flame className="w-3.5 h-3.5 text-sky-400" />
-              <span className="font-mono text-sky-300 font-black">{state.cleanStreak || 0} No Tilt Days</span>
+              <span className="font-mono text-sky-300 font-black">{noTiltStats.noTiltDays} No Tilt Days</span>
             </div>
           </div>
 

@@ -27,9 +27,7 @@ function scheduleSupabasePush(row: any) {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
     pushTimer = null;
-    pushInFlight = supabase
-      .from('trades')
-      .upsert(row, { onConflict: 'id' })
+    pushInFlight = Promise.resolve(supabase.from('trades').upsert(row, { onConflict: 'id' }))
       .then(() => undefined)
       .finally(() => {
         pushInFlight = null;

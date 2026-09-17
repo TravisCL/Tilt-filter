@@ -132,6 +132,92 @@ export interface NoTiltStats {
   activeTiltTab: number;
   isTodayTilt: boolean;
   tiltReasons: string[];
+  /** 0 = calm, 1 = frustrated today, 2 = chased a loser today (worse). Computed
+   * live from today's actual admissions — not a stored counter. */
+  tiltScore: number;
+  /** Best consecutive no-tilt run ever achieved (>= noTiltDays). */
+  longestStreak: number;
+  /** Total number of days tilted across all history. */
+  totalTiltDays: number;
+}
+
+/**
+ * Computes the current no-tilt streak directly from trade/tilt-event history —
+ * never from a stored counter. This is the fix for the streak silently going
+ * stale: there is nothing here that needs "finalizing" at 5:35 PM or on any
+ * schedule, so it can never get stuck out of date. Every call re-derives the
+ * truth from raw data, so it's correct immediately, on every device, even if
+ * the app was closed for days.
+ *
+ * Walks backward day-by-day through every date that has a daily-scoreboard
+ * entry (i.e. a day the trader actually checked in), counting consecutive
+ * clean days until it hits one that was a tilt day. Today is evaluated
+ * separately: if today is currently a tilt day, the streak drops one tier
+ * from whatever was built up before today (see computeTiltDrop) rather than
+ * resetting to zero; otherwise today extends the streak by one.
+ */
+export function computeCurrentStreak(state: AppState, todayStr?: string): number {
+  const today = todayStr || getESTDate().dateStr;
+
+  const pastDates = Array.from(new Set((state.dailyScoreboard || []).map((s) => s.date)))
+    .filter((d) => d < today)
+    .sort()
+    .reverse(); // most recent past day first
+
+  let priorStreak = 0;
+  for (const dateStr of pastDates) {
+    const dayEval = evaluateTodayTiltStatus(state, dateStr);
+    if (dayEval.isTiltDay) break;
+    priorStreak += 1;
+  }
+
+  const todayEval = evaluateTodayTiltStatus(state, today);
+  if (todayEval.isTiltDay) {
+    return computeTiltDrop(priorStreak);
+  }
+  return priorStreak + 1; // today counts — at least 1 once you haven't tilted
+}
+
+export interface StreakHistoryStats {
+  currentStreak: number;
+  longestStreak: number;
+  totalTiltDays: number;
+}
+
+/**
+ * Full-history companion to computeCurrentStreak(): the best consecutive
+ * no-tilt run ever achieved, and the total number of days tilted overall.
+ * Same principle — computed fresh from raw history every time, nothing stored.
+ */
+export function computeStreakHistory(state: AppState, todayStr?: string): StreakHistoryStats {
+  const today = todayStr || getESTDate().dateStr;
+
+  const allDates = Array.from(new Set((state.dailyScoreboard || []).map((s) => s.date)))
+    .filter((d) => d <= today)
+    .sort(); // ascending, oldest first
+
+  let longestStreak = 0;
+  let runLength = 0;
+  let totalTiltDays = 0;
+
+  for (const dateStr of allDates) {
+    const dayEval = evaluateTodayTiltStatus(state, dateStr);
+    if (dayEval.isTiltDay) {
+      totalTiltDays += 1;
+      runLength = 0;
+    } else {
+      runLength += 1;
+      if (runLength > longestStreak) longestStreak = runLength;
+    }
+  }
+
+  const currentStreak = computeCurrentStreak(state, today);
+  // The displayed current streak can be cushioned above the strict historical
+  // run (see computeTiltDrop) — the record should never read lower than what
+  // you currently have.
+  if (currentStreak > longestStreak) longestStreak = currentStreak;
+
+  return { currentStreak, longestStreak, totalTiltDays };
 }
 
 export function getNoTiltStats(state: AppState): NoTiltStats {
@@ -141,34 +227,15 @@ export function getNoTiltStats(state: AppState): NoTiltStats {
   // STRICT TILT EVALUATION:
   // A day is a tilt day IF AND ONLY IF the trader admitted to feeling frustrated OR chased after a loser.
   const todayTiltEval = evaluateTodayTiltStatus(state, todayStr);
-
-  // Check historical scoreboard clean days
-  const loggedCleanDays = (state.dailyScoreboard || []).filter(
-    (s) => s.isCleanDay || s.status === 'clean' || s.sessionOutcome === 'clean'
-  ).length;
-
-  const cleanStreak = Math.max(0, state.cleanStreak ?? 0);
-  const totalLoggedCleanDays = Math.max(cleanStreak, loggedCleanDays);
-
-  // If today had frustration or chase impulse logged, today is a tilt breach
   const hasActiveTiltToday = todayTiltEval.isTiltDay;
   const activeTiltTab = hasActiveTiltToday
     ? Math.max(state.tiltTab || 0, todayTiltEval.todayLossTally || 0)
     : 0;
 
-  // Active No Tilt Days:
-  // If the trader tilted today (frustrated or chased), drop exactly one tier
-  // (see computeTiltDrop) instead of resetting all the way to 0.
-  // Otherwise, the trader has NOT tilted: they are on clean day 1+ (their accumulated clean streak).
-  // Note: dayCounter (total days using the app, never decreasing) is intentionally
-  // NOT part of this — it would prevent the tier from ever dropping on a tilt.
-  const noTiltDays = hasActiveTiltToday
-    ? computeTiltDrop(cleanStreak)
-    : Math.max(
-        1, // If no tilt occurred today, they have at least 1 clean day
-        cleanStreak,
-        totalLoggedCleanDays
-      );
+  const streakHistory = computeStreakHistory(state, todayStr);
+  const noTiltDays = streakHistory.currentStreak;
+  const cleanStreak = noTiltDays;
+  const totalLoggedCleanDays = noTiltDays;
 
   const earnedTier = calculateEarnedTier(noTiltDays);
   const tierInfo = TIER_MILESTONES[earnedTier];
@@ -226,5 +293,8 @@ export function getNoTiltStats(state: AppState): NoTiltStats {
     activeTiltTab,
     isTodayTilt: hasActiveTiltToday,
     tiltReasons: todayTiltEval.tiltReasons,
+    tiltScore: todayTiltEval.chaseCount > 0 ? 2 : todayTiltEval.frustratedCount > 0 ? 1 : 0,
+    longestStreak: streakHistory.longestStreak,
+    totalTiltDays: streakHistory.totalTiltDays,
   };
 }
