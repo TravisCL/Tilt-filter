@@ -49,11 +49,17 @@ export function getAccountTrades(
 
   return allTrades.filter((t) => {
     if (!t) return false;
-    // 1. Exact ID match
-    if (t.accountId && account.id && t.accountId === account.id) {
-      return true;
+
+    // 1. If the trade has a recorded accountId, it's authoritative — match on
+    //    that alone. Two different accounts can share the same name (e.g. a
+    //    trader re-attempting the same-sized eval after blowing one), and a
+    //    trade tagged to one of them must never also show up under the other
+    //    just because the names match.
+    if (t.accountId) {
+      return account.id ? t.accountId === account.id : false;
     }
-    // 2. Case-insensitive Account Name match
+
+    // 2. Legacy trades with no accountId recorded — fall back to name match.
     if (
       t.accountName &&
       account.name &&
@@ -66,7 +72,7 @@ export function getAccountTrades(
       return true;
     }
     // 4. If trade has no accountId or accountName, associate with active account
-    if (!t.accountId && !t.accountName && (account.id === activeAccountId || !activeAccountId)) {
+    if (!t.accountName && (account.id === activeAccountId || !activeAccountId)) {
       return true;
     }
     return false;
@@ -151,6 +157,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 }) => {
   // Which eval book is currently shown (only one card at a time, picked via dropdown)
   const [selectedEvalId, setSelectedEvalId] = useState<string>('');
+  const [selectedLiveId, setSelectedLiveId] = useState<string>('');
+  const [selectedBlownId, setSelectedBlownId] = useState<string>('');
 
   // Deletion modal state
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
@@ -574,7 +582,30 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
           ) : (
             <div className="space-y-3.5">
-              {liveAccounts.map((acc) => {
+              {liveAccounts.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={
+                      liveAccounts.some((a) => a.id === selectedLiveId)
+                        ? selectedLiveId
+                        : liveAccounts[0].id
+                    }
+                    onChange={(e) => setSelectedLiveId(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-[#204555] text-xs font-bold text-emerald-200 cursor-pointer"
+                  >
+                    {liveAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                        {a.id === state.activeAccountId ? ' (Active)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-emerald-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              )}
+              {(() => {
+                const acc =
+                  liveAccounts.find((a) => a.id === selectedLiveId) || liveAccounts[0];
                 const isActive = acc.id === state.activeAccountId;
                 const accountTrades = getAccountTrades(
                   acc,
@@ -755,7 +786,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     </button>
                   </div>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>
@@ -1035,7 +1066,30 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
           ) : (
             <div className="space-y-3.5">
-              {blownAccounts.map((acc) => {
+              {blownAccounts.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={
+                      blownAccounts.some((a) => a.id === selectedBlownId)
+                        ? selectedBlownId
+                        : blownAccounts[0].id
+                    }
+                    onChange={(e) => setSelectedBlownId(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-rose-900/60 text-xs font-bold text-rose-200 cursor-pointer"
+                  >
+                    {blownAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                        {a.blownDate ? ` — blown ${a.blownDate}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-rose-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              )}
+              {(() => {
+                const acc =
+                  blownAccounts.find((a) => a.id === selectedBlownId) || blownAccounts[0];
                 const accountTrades = getAccountTrades(
                   acc,
                   state.trades,
@@ -1107,7 +1161,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     </button>
                   </div>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>
