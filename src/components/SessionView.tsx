@@ -59,7 +59,10 @@ import { getNoTiltStats } from '../utils/tierProgression';
 interface SessionViewProps {
   state: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
-  onLogTrade: (trade: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>) => void;
+  onLogTrade: (
+    trade: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>,
+    copyToAccountIds?: string[]
+  ) => void;
   onDeleteTrade?: (tradeId: string) => void;
   onCleanDuplicates?: () => void;
 }
@@ -204,6 +207,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
   );
 
   const [showSwitchAccount, setShowSwitchAccount] = useState(false);
+
+  // Copy this trade to other owned accounts at the same time it's logged
+  const [copyToAccountIds, setCopyToAccountIds] = useState<string[]>([]);
+  const toggleCopyToAccount = (accountId: string) => {
+    setCopyToAccountIds((prev) =>
+      prev.includes(accountId) ? prev.filter((id) => id !== accountId) : [...prev, accountId]
+    );
+  };
 
   // New Account Modal State - Completely blank form by default
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -392,6 +403,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [overriddenRules, setOverriddenRules] = useState<Record<string, boolean>>({});
   const [overridePromptFor, setOverridePromptFor] = useState<string | null>(null);
   const [consolidatedNote, setConsolidatedNote] = useState('');
+  const [tradeDirection, setTradeDirection] = useState<'LONG' | 'SHORT' | ''>('');
+  const [entryPriceInput, setEntryPriceInput] = useState('');
+  const [exitPriceInput, setExitPriceInput] = useState('');
   const [ruleNotes, setRuleNotes] = useState<Record<string, string>>({});
   const [q4Risk, setQ4Risk] = useState<boolean | null>(null);
   const [q5NotFomo, setQ5NotFomo] = useState<boolean | null>(null);
@@ -1033,6 +1047,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
       notes: activeNote,
       accountId: activeAccount?.id,
       accountName: activeAccount?.name,
+      direction: tradeDirection || undefined,
+      entryPrice: entryPriceInput ? parseFloat(entryPriceInput) : undefined,
+      exitPrice: exitPriceInput ? parseFloat(exitPriceInput) : undefined,
       checklistAnswers: {
         rule1: !!ruleCheckboxes.r1,
         rule2: !!ruleCheckboxes.r2,
@@ -1047,7 +1064,11 @@ export const SessionView: React.FC<SessionViewProps> = ({
       },
     };
 
-    onLogTrade(newTrade);
+    onLogTrade(newTrade, copyToAccountIds);
+    setCopyToAccountIds([]);
+    setTradeDirection('');
+    setEntryPriceInput('');
+    setExitPriceInput('');
     setTradeInPosition(false);
     setOutcomeMode('idle');
     setOutcomeStatus({
@@ -1127,6 +1148,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
       outcome: 'loser',
       emotionalState: feeling,
       tiltRisk: tiltRiskLevel,
+      direction: tradeDirection || undefined,
+      entryPrice: entryPriceInput ? parseFloat(entryPriceInput) : undefined,
+      exitPrice: exitPriceInput ? parseFloat(exitPriceInput) : undefined,
       checklistAnswers: {
         rule1: !!ruleCheckboxes.r1,
         rule2: !!ruleCheckboxes.r2,
@@ -1141,7 +1165,11 @@ export const SessionView: React.FC<SessionViewProps> = ({
       },
     };
 
-    onLogTrade(newTrade);
+    onLogTrade(newTrade, copyToAccountIds);
+    setCopyToAccountIds([]);
+    setTradeDirection('');
+    setEntryPriceInput('');
+    setExitPriceInput('');
     setTradeInPosition(false);
     setOutcomeMode('idle');
 
@@ -1819,6 +1847,35 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Also log this trade to other accounts at the same time */}
+              {state.accounts.filter((a) => a.id !== activeAccount?.id).length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap pb-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+                    Also log to:
+                  </span>
+                  {state.accounts
+                    .filter((a) => a.id !== activeAccount?.id)
+                    .map((a) => {
+                      const isChecked = copyToAccountIds.includes(a.id);
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => toggleCopyToAccount(a.id)}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                            isChecked
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                              : 'bg-[#0b1820] border-[#162a34] text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {isChecked ? <Check className="w-2.5 h-2.5" /> : null}
+                          <span>{a.name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
 
               {/* Action Buttons: TAKE THE TRADE and SKIPPED THE TRADE */}
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -3422,6 +3479,54 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Optional Trade Details: Direction / Entry / Exit */}
+              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
+                <div className="flex items-center gap-1.5 font-bold text-slate-200 text-[11px]">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Direction / Entry / Exit (Optional)</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center rounded-lg border border-[#142c38] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setTradeDirection(tradeDirection === 'LONG' ? '' : 'LONG')}
+                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
+                        tradeDirection === 'LONG'
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      LONG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTradeDirection(tradeDirection === 'SHORT' ? '' : 'SHORT')}
+                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer border-l border-[#142c38] ${
+                        tradeDirection === 'SHORT'
+                          ? 'bg-rose-500/20 text-rose-300'
+                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      SHORT
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    value={entryPriceInput}
+                    onChange={(e) => setEntryPriceInput(e.target.value)}
+                    placeholder="Entry Price"
+                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                  />
+                  <input
+                    type="number"
+                    value={exitPriceInput}
+                    onChange={(e) => setExitPriceInput(e.target.value)}
+                    placeholder="Exit Price"
+                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                  />
+                </div>
+              </div>
 
               {/* Optional Trade Notes Input */}
               <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">

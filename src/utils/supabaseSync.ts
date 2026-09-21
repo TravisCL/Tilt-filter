@@ -76,6 +76,10 @@ function tradeToRow(t: CompletedTrade) {
     memo: t.memo ?? null,
     account_id: t.accountId ?? null,
     account_name: t.accountName ?? null,
+    link_group_id: t.linkGroupId ?? null,
+    direction: t.direction ?? null,
+    entry_price: t.entryPrice ?? null,
+    exit_price: t.exitPrice ?? null,
   };
 }
 
@@ -107,6 +111,10 @@ function rowToTrade(r: any): CompletedTrade {
     memo: r.memo ?? undefined,
     accountId: r.account_id ?? undefined,
     accountName: r.account_name ?? undefined,
+    linkGroupId: r.link_group_id ?? undefined,
+    direction: r.direction ?? undefined,
+    entryPrice: r.entry_price != null ? Number(r.entry_price) : undefined,
+    exitPrice: r.exit_price != null ? Number(r.exit_price) : undefined,
   };
 }
 

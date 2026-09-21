@@ -42,7 +42,19 @@ console.log('\n=== CSV building ===');
   ]);
   const lines = csv.split('\n');
   check('header row', lines[0], 'Date,Time,Account,Ticker,Direction,Entry,Exit,Result,Notes');
-  check('data row — direction/entry/exit blank as expected', lines[1], '2026-09-15,9:00 AM,Acct A,MNQ,,,,Winner,clean setup');
+  check('data row — no direction/entry/exit captured on this trade -> blank', lines[1], '2026-09-15,9:00 AM,Acct A,MNQ,,,,Winner,clean setup');
+}
+
+console.log('\n=== CSV building — direction/entry/exit populated when captured ===');
+{
+  const csv = buildTradesCSV([
+    makeTrade({
+      id: 't1', date: '2026-09-15', timestamp: '9:00 AM', accountName: 'Acct A', symbol: 'MNQ',
+      outcome: 'winner', notes: 'clean setup', direction: 'LONG', entryPrice: 19850.25, exitPrice: 19900.5,
+    }),
+  ]);
+  const lines = csv.split('\n');
+  check('data row — real direction/entry/exit values', lines[1], '2026-09-15,9:00 AM,Acct A,MNQ,LONG,19850.25,19900.5,Winner,clean setup');
 }
 
 console.log('\n=== CSV escaping (commas and quotes in notes) ===');

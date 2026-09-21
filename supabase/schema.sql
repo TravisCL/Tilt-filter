@@ -53,6 +53,10 @@ create table if not exists trades (
   memo text,
   account_id text references accounts(id) on delete set null,
   account_name text,
+  link_group_id text,
+  direction text,
+  entry_price numeric,
+  exit_price numeric,
   created_at timestamptz not null default now()
 );
 

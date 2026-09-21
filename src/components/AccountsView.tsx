@@ -30,6 +30,7 @@ import {
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
 import { broadcastTradeUpdated } from '../utils/syncService';
 import { getESTDate } from '../utils/dailyRollover';
+import { buildShareCopies, propagateToLinked, applyTradeBalanceDeltas } from '../utils/copyTrade';
 
 interface AccountsViewProps {
   state: AppState;
@@ -65,8 +66,8 @@ export function filterTradesByDateRange(
 
 /**
  * Builds a CSV string: date, time, account, ticker, direction, entry, exit,
- * result, notes. Direction/entry/exit are always blank — the app doesn't
- * capture entry/exit price or long/short direction when a trade is logged.
+ * result, notes. Direction/entry/exit come from trades logged after this
+ * capture was added; older trades logged before it will render blank.
  */
 export function buildTradesCSV(trades: CompletedTrade[]): string {
   const headers = ['Date', 'Time', 'Account', 'Ticker', 'Direction', 'Entry', 'Exit', 'Result', 'Notes'];
@@ -83,9 +84,9 @@ export function buildTradesCSV(trades: CompletedTrade[]): string {
       t.timestamp || '',
       t.accountName || '',
       t.symbol || '',
-      '', // Direction — not captured by the app
-      '', // Entry — not captured by the app
-      '', // Exit — not captured by the app
+      t.direction || '',
+      t.entryPrice != null ? String(t.entryPrice) : '',
+      t.exitPrice != null ? String(t.exitPrice) : '',
       result,
       t.notes || t.memo || '',
     ].map((v) => csvEscape(String(v)));
@@ -259,9 +260,44 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const [editingRiskTradeId, setEditingRiskTradeId] = useState<string | null>(null);
   const [editRiskDraft, setEditRiskDraft] = useState('');
 
+  // "Update all linked copies too" checkboxes for memo / risk edits on trades
+  // that were logged/shared to multiple accounts (share linkGroupId).
+  const [propagateMemoToLinked, setPropagateMemoToLinked] = useState(false);
+  const [propagateRiskToLinked, setPropagateRiskToLinked] = useState(false);
+
   // File input ref for screenshot attachments
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetTradeId, setUploadTargetTradeId] = useState<string | null>(null);
+
+  // "Share to other accounts" state — copies an already-logged trade into
+  // one or more other accounts (linked via linkGroupId, same as multi-account
+  // logging at trade-taking time).
+  const [sharingTradeId, setSharingTradeId] = useState<string | null>(null);
+  const [shareTargetIds, setShareTargetIds] = useState<string[]>([]);
+  const toggleShareTarget = (accountId: string) => {
+    setShareTargetIds((prev) =>
+      prev.includes(accountId) ? prev.filter((id) => id !== accountId) : [...prev, accountId]
+    );
+  };
+  const handleConfirmShare = (trade: CompletedTrade) => {
+    const targets = shareTargetIds.filter((id) => id !== trade.accountId);
+    if (targets.length === 0) {
+      setSharingTradeId(null);
+      setShareTargetIds([]);
+      return;
+    }
+
+    onUpdateState((prev) => {
+      const { copies, linkGroupId } = buildShareCopies(trade, targets, prev.accounts, prev.trades.length + 1);
+      const updatedTrades = prev.trades.map((t) => (t.id === trade.id ? { ...t, linkGroupId } : t));
+      const updatedAccounts = applyTradeBalanceDeltas(prev.accounts, copies);
+
+      return { ...prev, trades: [...updatedTrades, ...copies], accounts: updatedAccounts };
+    });
+
+    setSharingTradeId(null);
+    setShareTargetIds([]);
+  };
 
   // Filter accounts into categories
   const liveAccounts = state.accounts.filter(
@@ -439,11 +475,13 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   };
 
   const handleSaveMemo = (tradeId: string) => {
+    const trimmed = memoDraft.trim();
     onUpdateState((prev) => {
-      const updatedTrades = prev.trades.map((t) =>
-        t.id === tradeId
-          ? { ...t, memo: memoDraft.trim(), notes: memoDraft.trim() }
-          : t
+      const updatedTrades = propagateToLinked(
+        prev.trades,
+        tradeId,
+        (t) => ({ ...t, memo: trimmed, notes: trimmed }),
+        propagateMemoToLinked
       );
       const nextState = { ...prev, trades: updatedTrades };
       broadcastTradeUpdated(tradeId, nextState);
@@ -451,6 +489,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     });
     setEditingMemoTradeId(null);
     setMemoDraft('');
+    setPropagateMemoToLinked(false);
   };
 
   // Inline Risk Editing Handlers
@@ -471,8 +510,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     }
 
     onUpdateState((prev) => {
-      const updatedTrades = prev.trades.map((t) => {
-        if (t.id === tradeId) {
+      const updatedTrades = propagateToLinked(
+        prev.trades,
+        tradeId,
+        (t) => {
           const acc = prev.accounts.find((a) => a.id === t.accountId);
           const maxDD = acc?.maxDrawdown || (journalAccount?.maxDrawdown || 2000);
           const newRiskPercent = Number(((valToUse / maxDD) * 100).toFixed(1));
@@ -484,9 +525,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             riskPercent: newRiskPercent,
             rMultiple: newRMultiple,
           };
-        }
-        return t;
-      });
+        },
+        propagateRiskToLinked
+      );
       const nextState = { ...prev, trades: updatedTrades };
       broadcastTradeUpdated(tradeId, nextState);
       return nextState;
@@ -494,6 +535,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
     setEditingRiskTradeId(null);
     setEditRiskDraft('');
+    setPropagateRiskToLinked(false);
   };
 
   // Toggle or update trade discipline (Managed trade well vs Exited emotionally)
@@ -1796,12 +1838,46 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                       </button>
                                     ))}
                                   </div>
+
+                                  {trade.linkGroupId && (
+                                    <label className="flex items-center gap-1.5 pt-0.5 text-[10px] text-slate-400 font-medium cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={propagateRiskToLinked}
+                                        onChange={(e) => setPropagateRiskToLinked(e.target.checked)}
+                                        className="cursor-pointer"
+                                      />
+                                      <span>Update all linked copies too</span>
+                                    </label>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
                                   <span>
                                     Symbol: <strong className="text-slate-200">{trade.symbol}</strong>
                                   </span>
+                                  {trade.direction && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span
+                                        className={`font-bold ${
+                                          trade.direction === 'LONG' ? 'text-emerald-400' : 'text-rose-400'
+                                        }`}
+                                      >
+                                        {trade.direction}
+                                      </span>
+                                    </>
+                                  )}
+                                  {(trade.entryPrice != null || trade.exitPrice != null) && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span className="font-mono">
+                                        {trade.entryPrice != null ? trade.entryPrice : '—'}
+                                        {' → '}
+                                        {trade.exitPrice != null ? trade.exitPrice : '—'}
+                                      </span>
+                                    </>
+                                  )}
                                   <span>&bull;</span>
                                   <span className="flex items-center gap-1.5">
                                     <span>Risk:</span>
@@ -1973,19 +2049,34 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                     autoFocus
                                     className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none resize-none leading-relaxed"
                                   />
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button
-                                      onClick={() => setEditingMemoTradeId(null)}
-                                      className="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white rounded-lg cursor-pointer"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={() => handleSaveMemo(trade.id)}
-                                      className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-lg transition-colors cursor-pointer shadow-xs"
-                                    >
-                                      Save Memo
-                                    </button>
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    {trade.linkGroupId ? (
+                                      <label className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={propagateMemoToLinked}
+                                          onChange={(e) => setPropagateMemoToLinked(e.target.checked)}
+                                          className="cursor-pointer"
+                                        />
+                                        <span>Update all linked copies too</span>
+                                      </label>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => setEditingMemoTradeId(null)}
+                                        className="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => handleSaveMemo(trade.id)}
+                                        className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-lg transition-colors cursor-pointer shadow-xs"
+                                      >
+                                        Save Memo
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
@@ -2030,6 +2121,25 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               </div>
                             )}
 
+                            {state.accounts.filter((a) => a.id !== trade.accountId).length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (sharingTradeId === trade.id) {
+                                    setSharingTradeId(null);
+                                    setShareTargetIds([]);
+                                  } else {
+                                    setSharingTradeId(trade.id);
+                                    setShareTargetIds([]);
+                                  }
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/25 border border-sky-500/30 hover:border-sky-500/60 text-sky-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Share to Other Accounts</span>
+                              </button>
+                            )}
+
                             {onDeleteTrade && (
                               <button
                                 type="button"
@@ -2041,6 +2151,56 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               </button>
                             )}
                           </div>
+
+                          {sharingTradeId === trade.id && (
+                            <div className="p-3 bg-[#061217] border border-sky-500/20 rounded-xl space-y-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Copy this trade to:
+                              </span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {state.accounts
+                                  .filter((a) => a.id !== trade.accountId)
+                                  .map((a) => {
+                                    const isChecked = shareTargetIds.includes(a.id);
+                                    return (
+                                      <button
+                                        key={a.id}
+                                        type="button"
+                                        onClick={() => toggleShareTarget(a.id)}
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                          isChecked
+                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                                            : 'bg-[#0b1820] border-[#162a34] text-slate-400 hover:text-slate-200'
+                                        }`}
+                                      >
+                                        {isChecked ? <Check className="w-2.5 h-2.5" /> : null}
+                                        <span>{a.name}</span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                              <div className="flex items-center justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSharingTradeId(null);
+                                    setShareTargetIds([]);
+                                  }}
+                                  className="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmShare(trade)}
+                                  disabled={shareTargetIds.filter((id) => id !== trade.accountId).length === 0}
+                                  className="px-4 py-1.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs rounded-lg transition-colors cursor-pointer shadow-xs"
+                                >
+                                  Confirm Copy
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })

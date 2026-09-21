@@ -146,6 +146,12 @@ export interface CompletedTrade {
   memo?: string;
   accountId?: string;
   accountName?: string;
+  /** Set when this trade was logged to, or copied to, multiple accounts at
+   * once. Trades sharing the same linkGroupId are copies of each other. */
+  linkGroupId?: string;
+  direction?: 'LONG' | 'SHORT';
+  entryPrice?: number;
+  exitPrice?: number;
 }
 
 export interface FeelScaleItem {

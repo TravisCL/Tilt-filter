@@ -12,6 +12,7 @@ import { loadAppState, saveAppState, resetToCleanSlate, isMorningCheckInComplete
 import { getESTDate } from './utils/dailyRollover';
 import { getNoTiltStats } from './utils/tierProgression';
 import { postTradeToDiscord } from './utils/discordWebhook';
+import { resolveTargetAccountIds, buildLinkedTrades, applyTradeBalanceDeltas } from './utils/copyTrade';
 import {
   broadcastStateChange,
   broadcastTradeLogged,
@@ -183,7 +184,8 @@ export default function App() {
   };
 
   const handleLogTrade = (
-    tradeData: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>
+    tradeData: Omit<CompletedTrade, 'id' | 'orderNumber' | 'timestamp'>,
+    copyToAccountIds: string[] = []
   ) => {
     // Debounce & deduplicate rapid double-submits within 1500ms
     const now = Date.now();
@@ -200,6 +202,11 @@ export default function App() {
     const tradeId = `tr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const tradeTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tradeDate = tradeData.date || getESTDate().dateStr;
+    // Only a real "link" if this trade is being logged to more than one account.
+    const linkGroupId =
+      copyToAccountIds.length > 0
+        ? `link-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+        : undefined;
 
     setState((prev) => {
       // Check if identical trade was already recorded in state within the last few seconds
@@ -216,47 +223,30 @@ export default function App() {
         return prev;
       }
 
-      // Explicitly bind the trade to the specified account or the currently active selected account ID
-      const targetAccountId = tradeData.accountId || prev.activeAccountId || (prev.accounts[0]?.id ?? '');
-      const targetAccount = prev.accounts.find((a) => a.id === targetAccountId) || prev.accounts[0];
-      const boundAccountId = targetAccount?.id || targetAccountId || 'default-account';
-      const boundAccountName = targetAccount?.name || tradeData.accountName || 'Primary Account';
+      const primaryAccountId = tradeData.accountId || prev.activeAccountId || (prev.accounts[0]?.id ?? '');
+      const targetAccountIds = resolveTargetAccountIds(primaryAccountId, copyToAccountIds);
 
-      const newTrade: CompletedTrade = {
-        ...tradeData,
-        id: tradeId,
-        orderNumber: prev.trades.length + 1,
+      const newTrades: CompletedTrade[] = buildLinkedTrades(tradeData, targetAccountIds, prev.accounts, {
+        baseId: tradeId,
         timestamp: tradeTimestamp,
         date: tradeDate,
-        accountId: boundAccountId,
-        accountName: boundAccountName,
-      };
+        orderNumberStart: prev.trades.length + 1,
+        linkGroupId,
+      });
+      const newTrade = newTrades[0]; // the "primary" trade — used for tilt tracking, desk messages, broadcast
 
-      const updatedTrades = deduplicateTrades([...prev.trades, newTrade]);
+      const updatedTrades = deduplicateTrades([...prev.trades, ...newTrades]);
 
-      // Update exclusively the ledger of the specific target account this trade belongs to
-      let updatedAccounts = prev.accounts;
-      if (targetAccount && typeof newTrade.pnl === 'number') {
-        updatedAccounts = prev.accounts.map((acc) => {
-          if (acc.id === targetAccount.id) {
-            const currentBal = typeof acc.currentBalance === 'number' ? acc.currentBalance : acc.size;
-            const newBal = currentBal + newTrade.pnl;
-            const newPeak = Math.max(acc.highWaterMark ?? acc.size ?? 0, newBal);
-            return {
-              ...acc,
-              currentBalance: newBal,
-              highWaterMark: newPeak,
-            };
-          }
-          return acc;
-        });
-      }
+      // Update the ledger of every target account this trade (or its copies) was logged to
+      const updatedAccounts = applyTradeBalanceDeltas(prev.accounts, newTrades);
 
       let newTiltScore = prev.tiltScore;
       let newTiltTab = prev.tiltTab;
       const newTiltEvents = [...(prev.tiltEvents || [])];
       let newDeskMessages = prev.deskMessages;
 
+      // Tilt tracking fires ONCE per trade taken, not once per copy — the trader
+      // felt the emotion a single time, regardless of how many accounts it was logged to.
       if (newTrade.emotionalState) {
         const lossAmt = Math.abs(newTrade.pnl || newTrade.riskDollars);
         const tiltRisk =
@@ -334,18 +324,23 @@ export default function App() {
     // Save happens above regardless of what follows — Discord posting is a
     // best-effort side effect and must never block or fail the trade save.
     if (state.discordWebhookEnabled && state.discordWebhookUrl) {
-      const targetAccountId = tradeData.accountId || state.activeAccountId || (state.accounts[0]?.id ?? '');
-      const targetAccount = state.accounts.find((a) => a.id === targetAccountId) || state.accounts[0];
+      const primaryAccountId = tradeData.accountId || state.activeAccountId || (state.accounts[0]?.id ?? '');
+      const targetAccountIds = Array.from(new Set([primaryAccountId, ...copyToAccountIds].filter(Boolean)));
+      const accountNames = targetAccountIds
+        .map((id) => state.accounts.find((a) => a.id === id)?.name)
+        .filter((n): n is string => Boolean(n));
+      const primaryAccount = state.accounts.find((a) => a.id === primaryAccountId) || state.accounts[0];
+
       const postedTrade: CompletedTrade = {
         ...tradeData,
         id: tradeId,
         orderNumber: state.trades.length + 1,
         timestamp: tradeTimestamp,
         date: tradeDate,
-        accountId: targetAccount?.id || targetAccountId || 'default-account',
-        accountName: targetAccount?.name || tradeData.accountName || 'Primary Account',
+        accountId: primaryAccount?.id || primaryAccountId || 'default-account',
+        accountName: primaryAccount?.name || tradeData.accountName || 'Primary Account',
       };
-      postTradeToDiscord(state.discordWebhookUrl, postedTrade).catch(() => {
+      postTradeToDiscord(state.discordWebhookUrl, postedTrade, accountNames.length > 1 ? accountNames : undefined).catch(() => {
         // postTradeToDiscord already swallows its own errors; this catch is
         // just a safety net so a rejection can never surface here.
       });
