@@ -1848,14 +1848,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               </div>
 
-              {/* Also log this trade to other accounts at the same time */}
-              {state.accounts.filter((a) => a.id !== activeAccount?.id).length > 0 && (
+              {/* Also log this trade to other accounts at the same time (blown accounts excluded) */}
+              {state.accounts.filter((a) => a.id !== activeAccount?.id && a.status !== 'blown').length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap pb-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                     Also log to:
                   </span>
                   {state.accounts
-                    .filter((a) => a.id !== activeAccount?.id)
+                    .filter((a) => a.id !== activeAccount?.id && a.status !== 'blown')
                     .map((a) => {
                       const isChecked = copyToAccountIds.includes(a.id);
                       return (

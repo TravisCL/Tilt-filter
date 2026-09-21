@@ -94,6 +94,45 @@ export function buildTradesCSV(trades: CompletedTrade[]): string {
   return [headers, ...rows].map((r) => r.join(',')).join('\n');
 }
 
+/**
+ * P&L rollups for Today / This Week / This Month (calendar month), combined
+ * across every account. "This Week" resets on Sunday — the CME Globex weekly
+ * open (6pm ET) — instead of rolling as a trailing 7-day window, so it
+ * matches a futures trader's actual trading week. Dates are keyed the same
+ * EST trading-day basis as the rest of the app (date-only granularity — a
+ * trade only carries a date, not a full timestamp, so the Sunday boundary
+ * is a calendar-day cutover rather than a literal 6pm instant).
+ */
+export function computePnlRollups(
+  trades: CompletedTrade[],
+  est: { year: number; month: number; day: number; dateStr: string }
+): { todayPnl: number; weekPnl: number; monthPnl: number } {
+  const todayStr = est.dateStr;
+  const toDateObj = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
+  const todayObj = toDateObj(est.year, est.month, est.day);
+  const dayOfWeek = todayObj.getUTCDay(); // 0 = Sunday .. 6 = Saturday
+  const weekStartObj = new Date(todayObj);
+  weekStartObj.setUTCDate(weekStartObj.getUTCDate() - dayOfWeek); // back to this week's Sunday
+  const monthPrefix = `${est.year}-${String(est.month).padStart(2, '0')}`;
+
+  let dayTotal = 0;
+  let weekTotal = 0;
+  let monthTotal = 0;
+
+  (trades || []).forEach((t) => {
+    if (!t.date || typeof t.pnl !== 'number') return;
+    const [y, m, d] = t.date.split('-').map(Number);
+    if (!y || !m || !d) return;
+    const tradeObj = toDateObj(y, m, d);
+
+    if (t.date === todayStr) dayTotal += t.pnl;
+    if (tradeObj >= weekStartObj && tradeObj <= todayObj) weekTotal += t.pnl;
+    if (t.date.startsWith(monthPrefix)) monthTotal += t.pnl;
+  });
+
+  return { todayPnl: dayTotal, weekPnl: weekTotal, monthPnl: monthTotal };
+}
+
 // Helper to filter trades that belong strictly and exclusively to a specific account
 export function getAccountTrades(
   account: TradingAccount,
@@ -308,35 +347,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   );
   const blownAccounts = state.accounts.filter((acc) => acc.status === 'blown');
 
-  // P&L rollups for Today / This Week (trailing 7 days) / This Month (calendar month),
-  // combined across every account. Dates are keyed the same EST trading-day basis as
-  // the rest of the app.
-  const { todayPnl, weekPnl, monthPnl } = (() => {
-    const est = getESTDate();
-    const todayStr = est.dateStr;
-    const toDateObj = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
-    const todayObj = toDateObj(est.year, est.month, est.day);
-    const weekStartObj = new Date(todayObj);
-    weekStartObj.setUTCDate(weekStartObj.getUTCDate() - 6);
-    const monthPrefix = `${est.year}-${String(est.month).padStart(2, '0')}`;
-
-    let dayTotal = 0;
-    let weekTotal = 0;
-    let monthTotal = 0;
-
-    (state.trades || []).forEach((t) => {
-      if (!t.date || typeof t.pnl !== 'number') return;
-      const [y, m, d] = t.date.split('-').map(Number);
-      if (!y || !m || !d) return;
-      const tradeObj = toDateObj(y, m, d);
-
-      if (t.date === todayStr) dayTotal += t.pnl;
-      if (tradeObj >= weekStartObj && tradeObj <= todayObj) weekTotal += t.pnl;
-      if (t.date.startsWith(monthPrefix)) monthTotal += t.pnl;
-    });
-
-    return { todayPnl: dayTotal, weekPnl: weekTotal, monthPnl: monthTotal };
-  })();
+  const { todayPnl, weekPnl, monthPnl } = computePnlRollups(state.trades || [], getESTDate());
 
   const handleSetActive = (id: string) => {
     onUpdateState((prev) => ({
@@ -2121,7 +2132,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               </div>
                             )}
 
-                            {state.accounts.filter((a) => a.id !== trade.accountId).length > 0 && (
+                            {state.accounts.filter((a) => a.id !== trade.accountId && a.status !== 'blown').length > 0 && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2159,7 +2170,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               </span>
                               <div className="flex items-center gap-2 flex-wrap">
                                 {state.accounts
-                                  .filter((a) => a.id !== trade.accountId)
+                                  .filter((a) => a.id !== trade.accountId && a.status !== 'blown')
                                   .map((a) => {
                                     const isChecked = shareTargetIds.includes(a.id);
                                     return (
