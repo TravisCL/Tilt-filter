@@ -128,7 +128,7 @@ console.log('\n=== 7. Works even if the app was "closed" for days (no timer ever
     dailyScoreboard: [scoreboardRow('2026-09-15'), scoreboardRow('2026-09-16'), scoreboardRow('2026-09-17')],
     cleanStreak: 999, // deliberately garbage — must be ignored entirely
   });
-  const stats = getNoTiltStats(state);
+  const stats = getNoTiltStats(state, '2026-09-17');
   check('getNoTiltStats never reads state.cleanStreak, computes fresh', stats.noTiltDays, 3);
 }
 
@@ -141,7 +141,7 @@ console.log('\n=== 8. Tier calculation end-to-end matches the computed streak ==
     dates.push(d.toISOString().slice(0, 10));
   }
   const state = baseState({ dailyScoreboard: dates.map((d) => scoreboardRow(d)) });
-  const stats = getNoTiltStats(state);
+  const stats = getNoTiltStats(state, '2026-09-17');
   check('30 consecutive clean days -> Gold tier', stats.currentTier, 'gold');
   check('noTiltDays = 30', stats.noTiltDays, 30);
 }
@@ -149,15 +149,15 @@ console.log('\n=== 8. Tier calculation end-to-end matches the computed streak ==
 console.log('\n=== 9. Live tiltScore (Board page "TILT SCORE" widget) — computed, not stale ===');
 {
   const calm = baseState({ dailyScoreboard: [scoreboardRow('2026-09-17')] });
-  check('no admissions today -> tiltScore 0 (Calm)', getNoTiltStats(calm).tiltScore, 0);
+  check('no admissions today -> tiltScore 0 (Calm)', getNoTiltStats(calm, '2026-09-17').tiltScore, 0);
 
   const frustratedTrade: CompletedTrade = { ...tiltedTrade('t4', '2026-09-17'), emotionalState: 'frustrated' };
   const frustrated = baseState({ dailyScoreboard: [scoreboardRow('2026-09-17')], trades: [frustratedTrade] });
-  check('frustrated today -> tiltScore 1 (Tension)', getNoTiltStats(frustrated).tiltScore, 1);
+  check('frustrated today -> tiltScore 1 (Tension)', getNoTiltStats(frustrated, '2026-09-17').tiltScore, 1);
 
   const chasingTrade: CompletedTrade = { ...tiltedTrade('t5', '2026-09-17'), emotionalState: 'feel_like_chasing' };
   const chasing = baseState({ dailyScoreboard: [scoreboardRow('2026-09-17')], trades: [chasingTrade] });
-  check('chased a loser today -> tiltScore 2 (High Tilt Risk)', getNoTiltStats(chasing).tiltScore, 2);
+  check('chased a loser today -> tiltScore 2 (High Tilt Risk)', getNoTiltStats(chasing, '2026-09-17').tiltScore, 2);
 
   // Even if state.tiltScore (the old, now-dead field) is stuck at some stale value,
   // the live computed one must reflect reality, not that field.
@@ -165,7 +165,7 @@ console.log('\n=== 9. Live tiltScore (Board page "TILT SCORE" widget) — comput
     dailyScoreboard: [scoreboardRow('2026-09-17')],
     tiltScore: 2, // stale leftover from the old (now-removed) 5:35pm rollover
   });
-  check('stale state.tiltScore=2 ignored, computed live as 0 (Calm today)', getNoTiltStats(staleFieldButCalmToday).tiltScore, 0);
+  check('stale state.tiltScore=2 ignored, computed live as 0 (Calm today)', getNoTiltStats(staleFieldButCalmToday, '2026-09-17').tiltScore, 0);
 }
 
 console.log('\n=== 10. computeStreakHistory: best-ever record + total tilt days (client-requested) ===');

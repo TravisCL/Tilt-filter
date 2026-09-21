@@ -227,6 +227,8 @@ export interface AppState {
   customRiskInput: string;
   selectedSizingTier: 'B' | 'A' | 'A_PLUS';
   tiltEvents?: TiltEvent[];
+  discordWebhookEnabled?: boolean;
+  discordWebhookUrl?: string;
 }
 
 // Backward compatibility types

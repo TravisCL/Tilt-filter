@@ -11,6 +11,7 @@ import { AppState, CompletedTrade, TierLevel } from './types';
 import { loadAppState, saveAppState, resetToCleanSlate, isMorningCheckInCompleted, deduplicateTrades } from './utils/initialData';
 import { getESTDate } from './utils/dailyRollover';
 import { getNoTiltStats } from './utils/tierProgression';
+import { postTradeToDiscord } from './utils/discordWebhook';
 import {
   broadcastStateChange,
   broadcastTradeLogged,
@@ -193,6 +194,13 @@ export default function App() {
     }
     lastTradeSubmitRef.current = { time: now, fingerprint };
 
+    // Precomputed once, outside the state updater (not inside setState — an
+    // updater can be re-invoked by React, and a network side effect like a
+    // Discord post must fire exactly once, not on every re-invocation).
+    const tradeId = `tr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    const tradeTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const tradeDate = tradeData.date || getESTDate().dateStr;
+
     setState((prev) => {
       // Check if identical trade was already recorded in state within the last few seconds
       const isDuplicateInState = (prev.trades || []).some(
@@ -216,10 +224,10 @@ export default function App() {
 
       const newTrade: CompletedTrade = {
         ...tradeData,
-        id: `tr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        id: tradeId,
         orderNumber: prev.trades.length + 1,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: tradeData.date || getESTDate().dateStr,
+        timestamp: tradeTimestamp,
+        date: tradeDate,
         accountId: boundAccountId,
         accountName: boundAccountName,
       };
@@ -322,6 +330,26 @@ export default function App() {
 
       return nextState;
     });
+
+    // Save happens above regardless of what follows — Discord posting is a
+    // best-effort side effect and must never block or fail the trade save.
+    if (state.discordWebhookEnabled && state.discordWebhookUrl) {
+      const targetAccountId = tradeData.accountId || state.activeAccountId || (state.accounts[0]?.id ?? '');
+      const targetAccount = state.accounts.find((a) => a.id === targetAccountId) || state.accounts[0];
+      const postedTrade: CompletedTrade = {
+        ...tradeData,
+        id: tradeId,
+        orderNumber: state.trades.length + 1,
+        timestamp: tradeTimestamp,
+        date: tradeDate,
+        accountId: targetAccount?.id || targetAccountId || 'default-account',
+        accountName: targetAccount?.name || tradeData.accountName || 'Primary Account',
+      };
+      postTradeToDiscord(state.discordWebhookUrl, postedTrade).catch(() => {
+        // postTradeToDiscord already swallows its own errors; this catch is
+        // just a safety net so a rejection can never surface here.
+      });
+    }
   };
 
   const handleDeleteTrade = (tradeId: string) => {
@@ -517,7 +545,7 @@ export default function App() {
         )}
 
         {state.currentView === 'profile' && (
-          <ProfileView state={state} onCleanSlate={handleCleanSlate} />
+          <ProfileView state={state} onUpdateState={setState} onCleanSlate={handleCleanSlate} />
         )}
 
         {state.currentView === 'invites' && <InvitesView />}

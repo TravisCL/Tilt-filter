@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { User, Shield, RotateCcw, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { User, Shield, RotateCcw, AlertTriangle, CheckCircle2, RefreshCw, Webhook } from 'lucide-react';
 import { AppState } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
 
 interface ProfileViewProps {
   state: AppState;
+  onUpdateState: (updater: (prev: AppState) => AppState) => void;
   onCleanSlate: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ state, onCleanSlate }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, onCleanSlate }) => {
   const stats = getNoTiltStats(state);
   const { currentTier, tierInfo, noTiltDays } = stats;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [webhookUrlDraft, setWebhookUrlDraft] = useState(state.discordWebhookUrl || '');
 
   const handleExecuteReset = () => {
     onCleanSlate();
@@ -118,6 +120,59 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onCleanSlate })
             <RotateCcw className="w-4 h-4" />
             <span>Refresh Everything</span>
           </button>
+        </div>
+      </div>
+
+      {/* DISCORD WEBHOOK SETTINGS */}
+      <div className="p-6 bg-[#0c1318] border border-[#1a2e38] rounded-2xl space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <Webhook className="w-4 h-4 text-indigo-400" />
+            <span>Discord Webhook</span>
+          </h3>
+          <p className="text-xs text-slate-400">
+            Post each trade to a Discord channel automatically after it saves. If the post fails, the trade is unaffected — it's already saved.
+          </p>
+        </div>
+
+        <div className="p-4 bg-[#081216] border border-[#142831] rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-300">Enable Discord posting</span>
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateState((prev) => ({
+                  ...prev,
+                  discordWebhookEnabled: !prev.discordWebhookEnabled,
+                }))
+              }
+              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                state.discordWebhookEnabled ? 'bg-indigo-500' : 'bg-[#1e3646]'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  state.discordWebhookEnabled ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Webhook URL
+            </label>
+            <input
+              type="text"
+              value={webhookUrlDraft}
+              onChange={(e) => setWebhookUrlDraft(e.target.value)}
+              onBlur={() =>
+                onUpdateState((prev) => ({ ...prev, discordWebhookUrl: webhookUrlDraft.trim() }))
+              }
+              placeholder="https://discord.com/api/webhooks/..."
+              className="w-full px-3 py-2 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-xs font-mono text-slate-200 placeholder:text-slate-600"
+            />
+          </div>
         </div>
       </div>
 

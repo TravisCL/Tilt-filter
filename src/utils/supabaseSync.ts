@@ -217,6 +217,8 @@ function appMetaToRow(s: AppState) {
     current_tier: s.currentTier,
     custom_risk_input: s.customRiskInput,
     selected_sizing_tier: s.selectedSizingTier,
+    discord_webhook_enabled: s.discordWebhookEnabled ?? false,
+    discord_webhook_url: s.discordWebhookUrl ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -244,6 +246,8 @@ export interface PulledState {
     currentTier?: AppState['currentTier'];
     customRiskInput?: string;
     selectedSizingTier?: AppState['selectedSizingTier'];
+    discordWebhookEnabled?: boolean;
+    discordWebhookUrl?: string;
   } | null;
   isEmpty: boolean;
 }
@@ -294,6 +298,8 @@ export async function pullStateFromSupabase(): Promise<PulledState | null> {
             currentTier: metaRow.current_tier ?? undefined,
             customRiskInput: metaRow.custom_risk_input ?? undefined,
             selectedSizingTier: metaRow.selected_sizing_tier ?? undefined,
+            discordWebhookEnabled: metaRow.discord_webhook_enabled ?? undefined,
+            discordWebhookUrl: metaRow.discord_webhook_url ?? undefined,
           }
         : null,
       isEmpty,
@@ -327,6 +333,8 @@ export function mergePulledIntoState(pulled: PulledState, prev: AppState): AppSt
           currentTier: pulled.meta.currentTier || prev.currentTier,
           customRiskInput: pulled.meta.customRiskInput ?? prev.customRiskInput,
           selectedSizingTier: pulled.meta.selectedSizingTier || prev.selectedSizingTier,
+          discordWebhookEnabled: pulled.meta.discordWebhookEnabled ?? prev.discordWebhookEnabled,
+          discordWebhookUrl: pulled.meta.discordWebhookUrl ?? prev.discordWebhookUrl,
         }
       : {}),
   };

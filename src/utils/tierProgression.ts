@@ -220,9 +220,8 @@ export function computeStreakHistory(state: AppState, todayStr?: string): Streak
   return { currentStreak, longestStreak, totalTiltDays };
 }
 
-export function getNoTiltStats(state: AppState): NoTiltStats {
-  const estDate = getESTDate();
-  const todayStr = estDate.dateStr;
+export function getNoTiltStats(state: AppState, todayStrOverride?: string): NoTiltStats {
+  const todayStr = todayStrOverride || getESTDate().dateStr;
 
   // STRICT TILT EVALUATION:
   // A day is a tilt day IF AND ONLY IF the trader admitted to feeling frustrated OR chased after a loser.
