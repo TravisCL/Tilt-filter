@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Terminal,
   ChevronDown,
+  Download,
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
 import { broadcastTradeUpdated } from '../utils/syncService';
@@ -35,6 +36,61 @@ interface AccountsViewProps {
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
   onDeleteTrade?: (tradeId: string) => void;
   onMoveTrade?: (tradeId: string, newAccountId: string) => void;
+}
+
+// ============================================================
+// CSV Export
+// ============================================================
+
+function csvEscape(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/** Inclusive date-range filter on trade.date ("YYYY-MM-DD"). Empty bound = unbounded on that side. */
+export function filterTradesByDateRange(
+  trades: CompletedTrade[],
+  fromDate: string,
+  toDate: string
+): CompletedTrade[] {
+  return (trades || []).filter((t) => {
+    if (!t.date) return false;
+    if (fromDate && t.date < fromDate) return false;
+    if (toDate && t.date > toDate) return false;
+    return true;
+  });
+}
+
+/**
+ * Builds a CSV string: date, time, account, ticker, direction, entry, exit,
+ * result, notes. Direction/entry/exit are always blank — the app doesn't
+ * capture entry/exit price or long/short direction when a trade is logged.
+ */
+export function buildTradesCSV(trades: CompletedTrade[]): string {
+  const headers = ['Date', 'Time', 'Account', 'Ticker', 'Direction', 'Entry', 'Exit', 'Result', 'Notes'];
+  const rows = (trades || []).map((t) => {
+    const result = t.outcome
+      ? t.outcome.charAt(0).toUpperCase() + t.outcome.slice(1)
+      : (t.pnl || 0) > 0
+      ? 'Winner'
+      : (t.pnl || 0) < 0
+      ? 'Loser'
+      : 'Breakeven';
+    return [
+      t.date || '',
+      t.timestamp || '',
+      t.accountName || '',
+      t.symbol || '',
+      '', // Direction — not captured by the app
+      '', // Entry — not captured by the app
+      '', // Exit — not captured by the app
+      result,
+      t.notes || t.memo || '',
+    ].map((v) => csvEscape(String(v)));
+  });
+  return [headers, ...rows].map((r) => r.join(',')).join('\n');
 }
 
 // Helper to filter trades that belong strictly and exclusively to a specific account
@@ -159,6 +215,24 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const [selectedEvalId, setSelectedEvalId] = useState<string>('');
   const [selectedLiveId, setSelectedLiveId] = useState<string>('');
   const [selectedBlownId, setSelectedBlownId] = useState<string>('');
+
+  // CSV export date range
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+
+  const handleExportCSV = () => {
+    const filtered = filterTradesByDateRange(state.trades || [], exportFrom, exportTo);
+    const csv = buildTradesCSV(filtered);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trades_${exportFrom || 'all'}_to_${exportTo || 'all'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Deletion modal state
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
@@ -519,6 +593,38 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             )}
           </div>
         ))}
+      </div>
+
+      {/* CSV Export */}
+      <div className="p-3.5 rounded-2xl bg-[#09151b] border border-[#142831] flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
+          <Download className="w-4 h-4 text-sky-400" />
+          <span>Export Trades</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          <input
+            type="date"
+            value={exportFrom}
+            onChange={(e) => setExportFrom(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+          />
+          <span className="text-slate-500 text-xs">to</span>
+          <input
+            type="date"
+            value={exportTo}
+            onChange={(e) => setExportTo(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+          />
+          <span className="text-[10px] text-slate-500">Leave blank for all-time</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleExportCSV}
+          className="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download CSV</span>
+        </button>
       </div>
 
       {/* Drawdown Disclaimer Notice */}
