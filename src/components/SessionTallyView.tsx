@@ -94,7 +94,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Top Header */}
-      <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-400" />
@@ -123,7 +123,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
       {/* 3 Basic Tally Metrics (Clean, straightforward, no heavy overhead) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Clean Streak */}
-        <div className="p-4 bg-[#0b161b] border border-[#162b34] rounded-2xl flex items-center gap-3.5">
+        <div className="p-4 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
             <Flame className="w-5 h-5" />
           </div>
@@ -141,7 +141,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
         </div>
 
         {/* Average Mindset */}
-        <div className="p-4 bg-[#0b161b] border border-[#162b34] rounded-2xl flex items-center gap-3.5">
+        <div className="p-4 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
             <Activity className="w-5 h-5" />
           </div>
@@ -159,7 +159,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
         </div>
 
         {/* Total Sessions Recorded */}
-        <div className="p-4 bg-[#0b161b] border border-[#162b34] rounded-2xl flex items-center gap-3.5">
+        <div className="p-4 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
@@ -178,8 +178,8 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
       </div>
 
       {/* Today's Quick Status Box */}
-      <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 space-y-3">
-        <div className="flex items-center justify-between border-b border-[#142630] pb-2.5">
+      <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 space-y-3">
+        <div className="flex items-center justify-between border-b border-[var(--c-142630)] pb-2.5">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span className="text-xs font-black text-white uppercase tracking-wider">
@@ -215,7 +215,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                     : todayRecord.sessionOutcome === 'tilted'
                     ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                    : 'bg-[#12252e] text-slate-300 border border-[#1b3644]'
+                    : 'bg-[var(--c-12252e)] text-slate-300 border border-[var(--c-1b3644)]'
                 }`}
               >
                 {todayRecord.sessionOutcome === 'clean'
@@ -230,7 +230,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
               <button
                 type="button"
                 onClick={onGoToCheckIn}
-                className="px-3 py-1 bg-[#122830] hover:bg-[#183642] text-emerald-300 border border-emerald-500/30 rounded-lg font-bold cursor-pointer transition-colors"
+                className="px-3 py-1 bg-[var(--c-122830)] hover:bg-[var(--c-183642)] text-emerald-300 border border-emerald-500/30 rounded-lg font-bold cursor-pointer transition-colors"
               >
                 Edit
               </button>
@@ -253,8 +253,8 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
       </div>
 
       {/* SESSION TALLY LIST (Plain, clean, and straightforward) */}
-      <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-[#142630] pb-3">
+      <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[var(--c-142630)] pb-3">
           <div>
             <h2 className="text-sm font-black text-white uppercase tracking-wider">
               Daily Session History
@@ -281,7 +281,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
               return (
                 <div
                   key={record.id}
-                  className="p-4 bg-[#081317] border border-[#142732] hover:border-[#1c3846] rounded-xl space-y-3 transition-all"
+                  className="p-4 bg-[var(--c-081317)] border border-[var(--c-142732)] hover:border-[var(--c-1c3846)] rounded-xl space-y-3 transition-all"
                 >
                   {/* Row Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -386,7 +386,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
 
                   {/* Inline Outcome Editor */}
                   {isEditingThis && (
-                    <div className="p-3 bg-[#0c1a21] border border-[#183644] rounded-xl space-y-2.5 animate-in fade-in-50">
+                    <div className="p-3 bg-[var(--c-0c1a21)] border border-[var(--c-183644)] rounded-xl space-y-2.5 animate-in fade-in-50">
                       <div className="text-[11px] font-bold text-white">
                         Update Session Outcome:
                       </div>
@@ -398,7 +398,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
                           className={`p-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
                             outcomeSelect === 'clean'
                               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400'
-                              : 'bg-[#081317] border-[#142631] text-slate-400'
+                              : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-400'
                           }`}
                         >
                           🟢 Clean
@@ -409,7 +409,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
                           className={`p-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
                             outcomeSelect === 'minor_slip'
                               ? 'bg-amber-500/20 text-amber-300 border-amber-400'
-                              : 'bg-[#081317] border-[#142631] text-slate-400'
+                              : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-400'
                           }`}
                         >
                           🟡 Minor Slip
@@ -420,7 +420,7 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
                           className={`p-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
                             outcomeSelect === 'tilted'
                               ? 'bg-rose-500/20 text-rose-300 border-rose-400'
-                              : 'bg-[#081317] border-[#142631] text-slate-400'
+                              : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-400'
                           }`}
                         >
                           🔴 Tilted
@@ -432,14 +432,14 @@ export const SessionTallyView: React.FC<SessionTallyViewProps> = ({
                         value={reflectionInput}
                         onChange={(e) => setReflectionInput(e.target.value)}
                         placeholder="Session notes / reflection..."
-                        className="w-full bg-[#071115] border border-[#142831] text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-[var(--c-071115)] border border-[var(--c-142831)] text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500"
                       />
 
                       <div className="flex justify-end gap-2 pt-1">
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-[#091519] text-slate-400 hover:text-white rounded text-xs cursor-pointer"
+                          className="px-2.5 py-1 bg-[var(--c-091519)] text-slate-400 hover:text-white rounded text-xs cursor-pointer"
                         >
                           Cancel
                         </button>

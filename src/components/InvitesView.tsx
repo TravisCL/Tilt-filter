@@ -23,8 +23,8 @@ export const InvitesView: React.FC = () => {
         </p>
       </div>
 
-      <div className="p-6 bg-[#0b161b] border border-[#162b34] rounded-2xl space-y-4 text-center">
-        <div className="w-12 h-12 mx-auto rounded-2xl bg-[#10242e] border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+      <div className="p-6 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl space-y-4 text-center">
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-[var(--c-10242e)] border border-emerald-500/30 flex items-center justify-center text-emerald-400">
           <Users className="w-6 h-6" />
         </div>
 
@@ -36,7 +36,7 @@ export const InvitesView: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-center gap-2 pt-2">
-          <div className="px-4 py-2.5 bg-[#081216] border border-[#17303d] rounded-xl text-xs font-mono font-bold text-emerald-400 select-all">
+          <div className="px-4 py-2.5 bg-[var(--c-081216)] border border-[var(--c-17303d)] rounded-xl text-xs font-mono font-bold text-emerald-400 select-all">
             {inviteCode}
           </div>
           <button

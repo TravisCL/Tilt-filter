@@ -77,10 +77,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
       {/* 2. AUTHENTIC EARNED TIER BOARD (LOCKED PROGRESSION ROADMAP) */}
       <div
         id="board-tier-progression-ladder"
-        className="p-4 sm:p-5 bg-[#081726] border border-[#163852] rounded-2xl space-y-4 shadow-sm"
+        className="p-4 sm:p-5 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-4 shadow-sm"
       >
         {/* Tier Board Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#143247] pb-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--c-143247)] pb-3.5">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-sky-400" />
@@ -93,7 +93,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
             </p>
           </div>
 
-          <div className="text-[11px] text-slate-300 font-mono bg-[#05111c] border border-[#15344a] px-3 py-1.5 rounded-xl flex items-center gap-2 shrink-0">
+          <div className="text-[11px] text-slate-300 font-mono bg-[var(--c-05111c)] border border-[var(--c-15344a)] px-3 py-1.5 rounded-xl flex items-center gap-2 shrink-0">
             <Flame className="w-3.5 h-3.5 text-sky-400" />
             <span>Active Record: <strong className="text-sky-300 font-black">{noTiltDays} No Tilt Days</strong></span>
           </div>
@@ -116,8 +116,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
                   isCurrent
                     ? `bg-gradient-to-r ${milestone.bgGradient} ${milestone.borderColor} ring-2 ${milestone.glowColor} shadow-lg shadow-sky-950/40`
                     : isCompleted
-                    ? 'bg-[#091e2e] border-emerald-500/40 opacity-90'
-                    : 'bg-[#06121c] border-[#132d3f] opacity-60'
+                    ? 'bg-[var(--c-091e2e)] border-emerald-500/40 opacity-90'
+                    : 'bg-[var(--c-06121c)] border-[var(--c-132d3f)] opacity-60'
                 }`}
               >
                 {/* Visual Status Indicator Strip on Current Tier */}
@@ -134,7 +134,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
                           ? `bg-gradient-to-br ${milestone.bgGradient} ${milestone.borderColor} ${milestone.accentColor} shadow-md`
                           : isCompleted
                           ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                          : 'bg-[#091b26] border-[#183a50] text-slate-500'
+                          : 'bg-[var(--c-091b26)] border-[var(--c-183a50)] text-slate-500'
                       }`}
                     >
                       {getTierIcon(tierLevel, 'w-5 h-5')}
@@ -158,7 +158,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
                             <span>COMPLETED MILESTONE</span>
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-[#081724] border border-[#16354b] text-slate-400 font-bold text-[10px] uppercase flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-md bg-[var(--c-081724)] border border-[var(--c-16354b)] text-slate-400 font-bold text-[10px] uppercase flex items-center gap-1">
                             <Lock className="w-3 h-3" />
                             <span>LOCKED STATUS</span>
                           </span>
@@ -181,10 +181,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
                       <span
                         className={`inline-block px-3 py-1 rounded-lg text-xs font-mono font-bold border ${
                           isCurrent
-                            ? `bg-[#061420] ${milestone.borderColor} ${milestone.accentColor}`
+                            ? `bg-[var(--c-061420)] ${milestone.borderColor} ${milestone.accentColor}`
                             : isCompleted
-                            ? 'bg-[#071924] border-emerald-500/40 text-emerald-300'
-                            : 'bg-[#050f17] border-[#132e42] text-slate-500'
+                            ? 'bg-[var(--c-071924)] border-emerald-500/40 text-emerald-300'
+                            : 'bg-[var(--c-050f17)] border-[var(--c-132e42)] text-slate-500'
                         }`}
                       >
                         {milestone.minDays === 0 ? 'Reset Tier' : `Requires ${milestone.minDays}+ No Tilt Days`}
@@ -208,14 +208,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
         </div>
 
         {/* Timeline Bar */}
-        <div className="pt-3.5 border-t border-[#143247] space-y-2">
+        <div className="pt-3.5 border-t border-[var(--c-143247)] space-y-2">
           <div className="text-xs text-slate-300 font-medium">
             {rawScoreboard.length > 0
               ? `Day ${state.dayCounter || 1} in progress • ${noTiltDays} clean ${noTiltDays === 1 ? 'day' : 'days'} logged`
               : `Day ${state.dayCounter || 1} • Clean slate session in progress`}
           </div>
 
-          <div className="flex items-end gap-2 h-16 pt-2 px-1 border-b border-[#143247]">
+          <div className="flex items-end gap-2 h-16 pt-2 px-1 border-b border-[var(--c-143247)]">
             {timelineDates.map((item, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
                 <div
@@ -233,7 +233,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
       {/* Top Stat Cards Grid */}
       <div className={`grid grid-cols-2 ${hasActiveTiltTab ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
         {/* NO TILT DAYS / CLEAN STREAK */}
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
             <span>NO TILT DAYS</span>
             <span className="text-sky-400 font-mono text-[10px]">Day {state.dayCounter || 1}</span>
@@ -245,7 +245,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
         </div>
 
         {/* TILT SCORE */}
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             TILT SCORE
           </div>
@@ -269,7 +269,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
 
         {/* TILT TAB */}
         {hasActiveTiltTab && (
-          <div className="p-4 bg-[#081726] border border-rose-900/40 bg-gradient-to-b from-[#1c0c14] to-[#081726] rounded-2xl space-y-1 shadow-sm">
+          <div className="p-4 bg-[var(--c-081726)] border border-rose-900/40 bg-gradient-to-b from-[var(--c-1c0c14)] to-[var(--c-081726)] rounded-2xl space-y-1 shadow-sm">
             <div className="text-[10px] font-extrabold uppercase tracking-wider text-rose-300 flex items-center justify-between">
               <span>TILT TAB</span>
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
@@ -282,7 +282,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
         )}
 
         {/* TODAY */}
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             TODAY
           </div>
@@ -295,7 +295,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
 
       {/* Your Record: best-ever streak + total tilt days across all history */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-4 bg-[#081726] border border-emerald-900/40 rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-emerald-900/40 rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             BEST STREAK
           </div>
@@ -305,7 +305,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
           </div>
         </div>
 
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             DAYS TILTED
           </div>
@@ -316,7 +316,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
 
       {/* Row 2: PLANNED and UNPLANNED Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             PLANNED
           </div>
@@ -324,7 +324,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ state }) => {
           <div className="text-xs text-slate-400 font-medium">this week &bull; through the rules</div>
         </div>
 
-        <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-1 shadow-xs">
+        <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-1 shadow-xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
             UNPLANNED
           </div>

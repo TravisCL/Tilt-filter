@@ -1,0 +1,581 @@
+/* Auto-generated light/dark theme variables. Dark values match the
+ * app's existing colors (unchanged default); light values are computed
+ * light-mode counterparts. Toggle via [data-theme] on <html>. */
+:root {
+  --c-050f14: #050f14;
+  --c-050f17: #050f17;
+  --c-051014: #051014;
+  --c-051015: #051015;
+  --c-05111a: #05111a;
+  --c-05111c: #05111c;
+  --c-05161d: #05161d;
+  --c-060e11: #060e11;
+  --c-060f17: #060f17;
+  --c-061014: #061014;
+  --c-061015: #061015;
+  --c-061116: #061116;
+  --c-061217: #061217;
+  --c-06121b: #06121b;
+  --c-06121c: #06121c;
+  --c-06141a: #06141a;
+  --c-061420: #061420;
+  --c-06171d: #06171d;
+  --c-071115: #071115;
+  --c-071116: #071116;
+  --c-071216: #071216;
+  --c-071217: #071217;
+  --c-07121b: #07121b;
+  --c-071318: #071318;
+  --c-071319: #071319;
+  --c-071522: #071522;
+  --c-071624: #071624;
+  --c-071924: #071924;
+  --c-071d24: #071d24;
+  --c-081216: #081216;
+  --c-081317: #081317;
+  --c-081318: #081318;
+  --c-081418: #081418;
+  --c-08151a: #08151a;
+  --c-08151b: #08151b;
+  --c-08151c: #08151c;
+  --c-081522: #081522;
+  --c-081622: #081622;
+  --c-081624: #081624;
+  --c-08171f: #08171f;
+  --c-081724: #081724;
+  --c-081726: #081726;
+  --c-081822: #081822;
+  --c-08191f: #08191f;
+  --c-081b2b: #081b2b;
+  --c-081c24: #081c24;
+  --c-081d26: #081d26;
+  --c-08232e: #08232e;
+  --c-091519: #091519;
+  --c-09151b: #09151b;
+  --c-09181f: #09181f;
+  --c-091b22: #091b22;
+  --c-091b24: #091b24;
+  --c-091b26: #091b26;
+  --c-091e2e: #091e2e;
+  --c-091e30: #091e30;
+  --c-09222c: #09222c;
+  --c-0a1216: #0a1216;
+  --c-0a1712: #0a1712;
+  --c-0a1716: #0a1716;
+  --c-0a171d: #0a171d;
+  --c-0a1813: #0a1813;
+  --c-0a181e: #0a181e;
+  --c-0a1820: #0a1820;
+  --c-0a1921: #0a1921;
+  --c-0a1a29: #0a1a29;
+  --c-0a232b: #0a232b;
+  --c-0b161b: #0b161b;
+  --c-0b171c: #0b171c;
+  --c-0b181f: #0b181f;
+  --c-0b1820: #0b1820;
+  --c-0b1a26: #0b1a26;
+  --c-0b1b22: #0b1b22;
+  --c-0b1c24: #0b1c24;
+  --c-0b1d26: #0b1d26;
+  --c-0b1f29: #0b1f29;
+  --c-0b2123: #0b2123;
+  --c-0b2133: #0b2133;
+  --c-0c1318: #0c1318;
+  --c-0c161b: #0c161b;
+  --c-0c1a21: #0c1a21;
+  --c-0c1e28: #0c1e28;
+  --c-0c1e30: #0c1e30;
+  --c-0c1f30: #0c1f30;
+  --c-0c2229: #0c2229;
+  --c-0c222c: #0c222c;
+  --c-0c2233: #0c2233;
+  --c-0c2236: #0c2236;
+  --c-0d0a0c: #0d0a0c;
+  --c-0d1e25: #0d1e25;
+  --c-0d1e26: #0d1e26;
+  --c-0d2338: #0d2338;
+  --c-0e171b: #0e171b;
+  --c-0e1b21: #0e1b21;
+  --c-0e1c23: #0e1c23;
+  --c-0e1d24: #0e1d24;
+  --c-0e212b: #0e212b;
+  --c-0e2233: #0e2233;
+  --c-0e242d: #0e242d;
+  --c-0e2430: #0e2430;
+  --c-0e2730: #0e2730;
+  --c-0e2733: #0e2733;
+  --c-0e273a: #0e273a;
+  --c-0f2027: #0f2027;
+  --c-0f2e38: #0f2e38;
+  --c-102027: #102027;
+  --c-10242c: #10242c;
+  --c-10242e: #10242e;
+  --c-102934: #102934;
+  --c-102a35: #102a35;
+  --c-102c2e: #102c2e;
+  --c-102d45: #102d45;
+  --c-11242d: #11242d;
+  --c-112433: #112433;
+  --c-11252e: #11252e;
+  --c-112733: #112733;
+  --c-112937: #112937;
+  --c-11314a: #11314a;
+  --c-12242c: #12242c;
+  --c-12242f: #12242f;
+  --c-12252e: #12252e;
+  --c-122733: #122733;
+  --c-122830: #122830;
+  --c-122832: #122832;
+  --c-122834: #122834;
+  --c-122e44: #122e44;
+  --c-122e47: #122e47;
+  --c-13232b: #13232b;
+  --c-13252f: #13252f;
+  --c-132731: #132731;
+  --c-132832: #132832;
+  --c-132833: #132833;
+  --c-132b38: #132b38;
+  --c-132c39: #132c39;
+  --c-132c3f: #132c3f;
+  --c-132d3f: #132d3f;
+  --c-132e42: #132e42;
+  --c-133047: #133047;
+  --c-14080d: #14080d;
+  --c-140c10: #140c10;
+  --c-140e12: #140e12;
+  --c-140f13: #140f13;
+  --c-14222b: #14222b;
+  --c-142329: #142329;
+  --c-142630: #142630;
+  --c-142631: #142631;
+  --c-142732: #142732;
+  --c-142831: #142831;
+  --c-142832: #142832;
+  --c-142833: #142833;
+  --c-142933: #142933;
+  --c-142934: #142934;
+  --c-142a35: #142a35;
+  --c-142c38: #142c38;
+  --c-142d39: #142d39;
+  --c-142d3b: #142d3b;
+  --c-142f3d: #142f3d;
+  --c-143247: #143247;
+  --c-14334a: #14334a;
+  --c-150a0e: #150a0e;
+  --c-150a0f: #150a0f;
+  --c-15231c: #15231c;
+  --c-152a34: #152a34;
+  --c-152a35: #152a35;
+  --c-153442: #153442;
+  --c-153444: #153444;
+  --c-15344a: #15344a;
+  --c-153847: #153847;
+  --c-153850: #153850;
+  --c-153a47: #153a47;
+  --c-160b0e: #160b0e;
+  --c-16120a: #16120a;
+  --c-162731: #162731;
+  --c-162a33: #162a33;
+  --c-162a34: #162a34;
+  --c-162a36: #162a36;
+  --c-162b34: #162b34;
+  --c-162b37: #162b37;
+  --c-162c38: #162c38;
+  --c-162d37: #162d37;
+  --c-162e3a: #162e3a;
+  --c-162f3c: #162f3c;
+  --c-16303c: #16303c;
+  --c-16313f: #16313f;
+  --c-163342: #163342;
+  --c-163442: #163442;
+  --c-163546: #163546;
+  --c-16354b: #16354b;
+  --c-16354d: #16354d;
+  --c-163644: #163644;
+  --c-163645: #163645;
+  --c-16364d: #16364d;
+  --c-16384d: #16384d;
+  --c-163852: #163852;
+  --c-170e0a: #170e0a;
+  --c-171009: #171009;
+  --c-172d38: #172d38;
+  --c-17303d: #17303d;
+  --c-173342: #173342;
+  --c-173646: #173646;
+  --c-173752: #173752;
+  --c-18090d: #18090d;
+  --c-182d38: #182d38;
+  --c-18303a: #18303a;
+  --c-18313d: #18313d;
+  --c-183340: #183340;
+  --c-183441: #183441;
+  --c-183442: #183442;
+  --c-183444: #183444;
+  --c-183642: #183642;
+  --c-183644: #183644;
+  --c-183645: #183645;
+  --c-183747: #183747;
+  --c-18394a: #18394a;
+  --c-183a50: #183a50;
+  --c-183a54: #183a54;
+  --c-193747: #193747;
+  --c-193949: #193949;
+  --c-193a4a: #193a4a;
+  --c-193a4c: #193a4c;
+  --c-1a2e38: #1a2e38;
+  --c-1a3745: #1a3745;
+  --c-1a3746: #1a3746;
+  --c-1a3847: #1a3847;
+  --c-1a3848: #1a3848;
+  --c-1a4154: #1a4154;
+  --c-1b3542: #1b3542;
+  --c-1b3644: #1b3644;
+  --c-1b3846: #1b3846;
+  --c-1b3a4a: #1b3a4a;
+  --c-1b4363: #1b4363;
+  --c-1c0c14: #1c0c14;
+  --c-1c1216: #1c1216;
+  --c-1c1809: #1c1809;
+  --c-1c303d: #1c303d;
+  --c-1c3644: #1c3644;
+  --c-1c3846: #1c3846;
+  --c-1c4355: #1c4355;
+  --c-1c4464: #1c4464;
+  --c-1c4668: #1c4668;
+  --c-1d170b: #1d170b;
+  --c-1d3744: #1d3744;
+  --c-1d3b4b: #1d3b4b;
+  --c-1d3d4b: #1d3d4b;
+  --c-1d3d4e: #1d3d4e;
+  --c-1e3646: #1e3646;
+  --c-1e3845: #1e3845;
+  --c-1e3a4a: #1e3a4a;
+  --c-1e3b4a: #1e3b4a;
+  --c-1e3c4c: #1e3c4c;
+  --c-1e3d4c: #1e3d4c;
+  --c-1e4255: #1e4255;
+  --c-204555: #204555;
+  --c-204557: #204557;
+  --c-204a69: #204a69;
+  --c-220d15: #220d15;
+  --c-221a0d: #221a0d;
+  --c-230d12: #230d12;
+  --c-234354: #234354;
+  --c-27171d: #27171d;
+  --c-f1f5f9: #f1f5f9;
+}
+
+[data-theme="light"] {
+  --c-050f14: #f9fbfd;
+  --c-050f17: #f5f8fb;
+  --c-051014: #f9fcfd;
+  --c-051015: #f7fbfc;
+  --c-05111a: #f1f6fa;
+  --c-05111c: #eef4f9;
+  --c-05161d: #edf5f8;
+  --c-060e11: #fbfdfe;
+  --c-060f17: #f3f7fb;
+  --c-061014: #f7fbfc;
+  --c-061015: #f6fafc;
+  --c-061116: #f5f9fb;
+  --c-061217: #f3f8fb;
+  --c-06121b: #eef4f9;
+  --c-06121c: #edf3f8;
+  --c-06141a: #eff6f9;
+  --c-061420: #e7eff6;
+  --c-06171d: #ebf4f8;
+  --c-071115: #f5f9fb;
+  --c-071116: #f3f8fb;
+  --c-071216: #f3f9fb;
+  --c-071217: #f2f8fa;
+  --c-07121b: #edf3f8;
+  --c-071318: #f1f7fa;
+  --c-071319: #eff6f9;
+  --c-071522: #e3ecf5;
+  --c-071624: #e1eaf4;
+  --c-071924: #e1ecf4;
+  --c-071d24: #e1eff4;
+  --c-081216: #f2f8fa;
+  --c-081317: #f1f7f9;
+  --c-081318: #eff6f9;
+  --c-081418: #eff7f9;
+  --c-08151a: #edf5f8;
+  --c-08151b: #ebf4f8;
+  --c-08151c: #eaf2f7;
+  --c-081522: #e2ebf4;
+  --c-081622: #e2ecf4;
+  --c-081624: #dfe9f3;
+  --c-08171f: #e6f0f6;
+  --c-081724: #dfeaf3;
+  --c-081726: #dde7f2;
+  --c-081822: #e2edf4;
+  --c-08191f: #e6f1f6;
+  --c-081b2b: #d6e4ef;
+  --c-081c24: #dfedf3;
+  --c-081d26: #ddecf2;
+  --c-08232e: #d2e6ee;
+  --c-091519: #edf5f8;
+  --c-09151b: #eaf3f7;
+  --c-09181f: #e5f0f5;
+  --c-091b22: #e1eef4;
+  --c-091b24: #deecf3;
+  --c-091b26: #dbe9f1;
+  --c-091e2e: #d1e1ed;
+  --c-091e30: #cedeec;
+  --c-09222c: #d3e7ee;
+  --c-0a1216: #f1f5f8;
+  --c-0a1712: #eff7f4;
+  --c-0a1716: #eff7f7;
+  --c-0a171d: #e6f1f5;
+  --c-0a1813: #eef7f4;
+  --c-0a181e: #e5f0f5;
+  --c-0a1820: #e2edf4;
+  --c-0a1921: #e1edf4;
+  --c-0a1a29: #d6e3ef;
+  --c-0a232b: #d3e8ee;
+  --c-0b161b: #e9f1f5;
+  --c-0b171c: #e7f1f5;
+  --c-0b181f: #e2eef4;
+  --c-0b1820: #e1ecf3;
+  --c-0b1a26: #d9e6f0;
+  --c-0b1b22: #deecf3;
+  --c-0b1c24: #dbeaf1;
+  --c-0b1d26: #d9e9f0;
+  --c-0b1f29: #d5e6ef;
+  --c-0b2123: #ddf0f2;
+  --c-0b2133: #c7daea;
+  --c-0c1318: #ecf1f5;
+  --c-0c161b: #e8f0f4;
+  --c-0c1a21: #dfebf2;
+  --c-0c1e28: #d5e6ef;
+  --c-0c1e30: #cadbeb;
+  --c-0c1f30: #cadbeb;
+  --c-0c2229: #d3e8ee;
+  --c-0c222c: #cfe4ed;
+  --c-0c2233: #c6dae9;
+  --c-0c2236: #c2d6e8;
+  --c-0d0a0c: #fdfcfd;
+  --c-0d1e25: #d8e9ef;
+  --c-0d1e26: #d6e7ef;
+  --c-0d2338: #bed3e6;
+  --c-0e171b: #e7eef1;
+  --c-0e1b21: #deeaef;
+  --c-0e1c23: #dae8ef;
+  --c-0e1d24: #d9e8ef;
+  --c-0e212b: #cee2ec;
+  --c-0e2233: #c3d7e8;
+  --c-0e242d: #cbe2eb;
+  --c-0e2430: #c7deea;
+  --c-0e2730: #c7e1ea;
+  --c-0e2733: #c3dce8;
+  --c-0e273a: #bad2e5;
+  --c-0f2027: #d4e5ec;
+  --c-0f2e38: #bbdbe5;
+  --c-102027: #d3e4eb;
+  --c-10242c: #cbe1ea;
+  --c-10242e: #c8dee9;
+  --c-102934: #bfdbe7;
+  --c-102a35: #bedae6;
+  --c-102c2e: #c8e7e9;
+  --c-102d45: #a9c6de;
+  --c-11242d: #c9dee8;
+  --c-112433: #bfd6e7;
+  --c-11252e: #c8dee8;
+  --c-112733: #bfd9e7;
+  --c-112937: #bad5e5;
+  --c-11314a: #a1c2db;
+  --c-12242c: #cadee7;
+  --c-12242f: #c5dae6;
+  --c-12252e: #c7dce7;
+  --c-122733: #bfd8e6;
+  --c-122830: #c4dde6;
+  --c-122832: #c1dae6;
+  --c-122834: #bdd7e5;
+  --c-122e44: #a8c6de;
+  --c-122e47: #a4c2dc;
+  --c-13232b: #cbdde6;
+  --c-13252f: #c5dae5;
+  --c-132731: #c2d9e5;
+  --c-132832: #c0d9e4;
+  --c-132833: #bfd7e4;
+  --c-132b38: #b6d3e3;
+  --c-132c39: #b5d3e3;
+  --c-132c3f: #adcae0;
+  --c-132d3f: #adcbe0;
+  --c-132e42: #a9c8de;
+  --c-133047: #a2c2dc;
+  --c-14080d: #fbf5f7;
+  --c-140c10: #f7f2f4;
+  --c-140e12: #f4f0f3;
+  --c-140f13: #f3f0f2;
+  --c-14222b: #cbdbe5;
+  --c-142329: #cedfe5;
+  --c-142630: #c3d8e3;
+  --c-142631: #c1d6e3;
+  --c-142732: #c0d6e3;
+  --c-142831: #c1d9e3;
+  --c-142832: #c0d7e3;
+  --c-142833: #bed6e3;
+  --c-142933: #bed7e3;
+  --c-142934: #bdd5e3;
+  --c-142a35: #bbd5e2;
+  --c-142c38: #b6d3e2;
+  --c-142d39: #b4d3e1;
+  --c-142d3b: #b1d0e1;
+  --c-142f3d: #aecfe0;
+  --c-143247: #a1c3db;
+  --c-14334a: #9dc0da;
+  --c-150a0e: #f8f2f4;
+  --c-150a0f: #f8f2f5;
+  --c-15231c: #d7e6de;
+  --c-152a34: #bcd5e1;
+  --c-152a35: #bad4e1;
+  --c-153442: #a6ccdd;
+  --c-153444: #a4c9dc;
+  --c-15344a: #9cc0d9;
+  --c-153847: #a0c9db;
+  --c-153850: #94bbd6;
+  --c-153a47: #a0cbdb;
+  --c-160b0e: #f7f0f2;
+  --c-16120a: #f8f5f1;
+  --c-162731: #c0d5e0;
+  --c-162a33: #bdd5e0;
+  --c-162a34: #bcd4e0;
+  --c-162a36: #b8d1df;
+  --c-162b34: #bcd5e0;
+  --c-162b37: #b7d0df;
+  --c-162c38: #b5d0df;
+  --c-162d37: #b7d3df;
+  --c-162e3a: #b2d0de;
+  --c-162f3c: #afcede;
+  --c-16303c: #afcfde;
+  --c-16313f: #aaccdd;
+  --c-163342: #a5cadd;
+  --c-163442: #a5cbdd;
+  --c-163546: #a0c6db;
+  --c-16354b: #99bed8;
+  --c-16354d: #96bbd7;
+  --c-163644: #a2cadc;
+  --c-163645: #a1c9db;
+  --c-16364d: #96bcd7;
+  --c-16384d: #96bed7;
+  --c-163852: #90b7d5;
+  --c-170e0a: #f7f2ef;
+  --c-171009: #f8f4f0;
+  --c-172d38: #b5d0dd;
+  --c-17303d: #adccdc;
+  --c-173342: #a4c8db;
+  --c-173646: #9ec6da;
+  --c-173752: #8eb4d4;
+  --c-18090d: #f8eef1;
+  --c-182d38: #b4cedc;
+  --c-18303a: #b1cfdb;
+  --c-18313d: #acccdb;
+  --c-183340: #a7cada;
+  --c-183441: #a6c9da;
+  --c-183442: #a4c8da;
+  --c-183444: #a1c5da;
+  --c-183642: #a4cbda;
+  --c-183644: #a1c7da;
+  --c-183645: #9fc6d9;
+  --c-183747: #9cc4d9;
+  --c-18394a: #98c2d8;
+  --c-183a50: #90bad5;
+  --c-183a54: #8ab3d3;
+  --c-193747: #9cc3d7;
+  --c-193949: #98c2d7;
+  --c-193a4a: #97c2d7;
+  --c-193a4c: #94bfd6;
+  --c-1a2e38: #b4cdd9;
+  --c-1a3745: #9ec4d6;
+  --c-1a3746: #9dc3d6;
+  --c-1a3847: #9bc2d6;
+  --c-1a3848: #9ac1d6;
+  --c-1a4154: #88b9d2;
+  --c-1b3542: #a3c5d5;
+  --c-1b3644: #a0c3d5;
+  --c-1b3846: #9cc2d5;
+  --c-1b3a4a: #96bfd4;
+  --c-1b4363: #72a3ca;
+  --c-1c0c14: #f3e6ed;
+  --c-1c1216: #ece3e6;
+  --c-1c1809: #f7f4e9;
+  --c-1c303d: #abc4d5;
+  --c-1c3644: #9fc1d4;
+  --c-1c3846: #9cc1d3;
+  --c-1c4355: #84b8d0;
+  --c-1c4464: #70a1c9;
+  --c-1c4668: #6a9dc7;
+  --c-1d170b: #f4efe6;
+  --c-1d3744: #9fc1d2;
+  --c-1d3b4b: #94bbd1;
+  --c-1d3d4b: #94bed1;
+  --c-1d3d4e: #8fb9d0;
+  --c-1e3646: #9bbbd0;
+  --c-1e3845: #9dbfd0;
+  --c-1e3a4a: #95bacf;
+  --c-1e3b4a: #95bbcf;
+  --c-1e3c4c: #92bacf;
+  --c-1e3d4c: #92bbcf;
+  --c-1e4255: #83b4cd;
+  --c-204555: #82b5ca;
+  --c-204557: #7fb1ca;
+  --c-204a69: #649bc4;
+  --c-220d15: #f0dde4;
+  --c-221a0d: #f0e9dd;
+  --c-230d12: #f0dbe0;
+  --c-234354: #83afc6;
+  --c-27171d: #e2d0d6;
+  --c-f1f5f9: #222e39;
+}
+
+/* Named neutral Tailwind utilities used directly (not via arbitrary hex) —
+ * overridden only in light mode via higher CSS specificity. */
+[data-theme="light"] .text-white { color: #0f172a; }
+[data-theme="light"] .text-slate-100 { color: #0f172a; }
+[data-theme="light"] .text-slate-200 { color: #1e293b; }
+[data-theme="light"] .text-slate-300 { color: #334155; }
+[data-theme="light"] .text-slate-400 { color: #475569; }
+[data-theme="light"] .text-slate-500 { color: #64748b; }
+[data-theme="light"] .text-slate-600 { color: #94a3b8; }
+[data-theme="light"] .bg-slate-500 { background-color: #cbd5e1; }
+[data-theme="light"] .bg-slate-600 { background-color: #e2e8f0; }
+[data-theme="light"] .bg-slate-700 { background-color: #f1f5f9; }
+[data-theme="light"] .bg-slate-800 { background-color: #f8fafc; }
+[data-theme="light"] .bg-slate-900 { background-color: #ffffff; }
+[data-theme="light"] .border-slate-400 { border-color: #94a3b8; }
+[data-theme="light"] .border-slate-500 { border-color: #cbd5e1; }
+[data-theme="light"] .border-slate-600 { border-color: #e2e8f0; }
+[data-theme="light"] .border-slate-700 { border-color: #e2e8f0; }
+[data-theme="light"] .placeholder-slate-500::placeholder { color: #94a3b8; }
+[data-theme="light"] .ring-slate-400 { --tw-ring-color: #94a3b8; }
+
+/* Light-toned accent text colors (designed for contrast on dark backgrounds)
+ * darkened in light mode so they stay readable on a light page. */
+[data-theme="light"] .text-amber-100 { color: #b45309; }
+[data-theme="light"] .text-amber-200 { color: #b45309; }
+[data-theme="light"] .text-amber-300 { color: #b45309; }
+[data-theme="light"] .text-amber-400 { color: #d97706; }
+[data-theme="light"] .text-cyan-200 { color: #0e7490; }
+[data-theme="light"] .text-cyan-300 { color: #0e7490; }
+[data-theme="light"] .text-cyan-400 { color: #0891b2; }
+[data-theme="light"] .text-emerald-200 { color: #047857; }
+[data-theme="light"] .text-emerald-300 { color: #047857; }
+[data-theme="light"] .text-emerald-400 { color: #059669; }
+[data-theme="light"] .text-indigo-400 { color: #4f46e5; }
+[data-theme="light"] .text-orange-400 { color: #ea580c; }
+[data-theme="light"] .text-rose-200 { color: #be123c; }
+[data-theme="light"] .text-rose-300 { color: #be123c; }
+[data-theme="light"] .text-rose-400 { color: #e11d48; }
+[data-theme="light"] .text-sky-200 { color: #0369a1; }
+[data-theme="light"] .text-sky-300 { color: #0369a1; }
+[data-theme="light"] .text-sky-400 { color: #0284c7; }
+[data-theme="light"] .text-teal-300 { color: #0f766e; }
+[data-theme="light"] .text-teal-400 { color: #0d9488; }
+
+/* Date input calendar icon: inverted for visibility on dark backgrounds;
+ * cancel that in light mode so the icon isn't white-on-white. */
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+}
+

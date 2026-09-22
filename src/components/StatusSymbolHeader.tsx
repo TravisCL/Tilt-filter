@@ -46,11 +46,11 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
     return (
       <div
         id="compact-status-symbol-bar"
-        className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[#081726] border border-[#163852] rounded-xl text-xs shadow-xs"
+        className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-xl text-xs shadow-xs"
       >
         {/* Left: Status Symbol */}
         <div className="flex items-center gap-2.5">
-          <div className={`w-7 h-7 rounded-lg bg-[#0b2133] border ${tierInfo.borderColor} flex items-center justify-center ${tierInfo.accentColor} shadow-inner`}>
+          <div className={`w-7 h-7 rounded-lg bg-[var(--c-0b2133)] border ${tierInfo.borderColor} flex items-center justify-center ${tierInfo.accentColor} shadow-inner`}>
             {getTierIcon(currentTier, 'w-4 h-4')}
           </div>
           <div>
@@ -65,7 +65,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
         </div>
 
         {/* Right: No Tilt Days Counter */}
-        <div className="flex items-center gap-2 bg-[#05111c] border border-[#133047] px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-2 bg-[var(--c-05111c)] border border-[var(--c-133047)] px-3 py-1.5 rounded-lg">
           <Flame className="w-3.5 h-3.5 text-sky-400" />
           <span className="text-xs font-black text-white font-mono">{noTiltDays}</span>
           <span className="text-[11px] font-bold text-sky-300 uppercase tracking-wider">No Tilt Days</span>
@@ -77,7 +77,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
   return (
     <div
       id="prestige-status-symbol-hero"
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#071624] via-[#091e30] to-[#06121c] border-2 border-sky-400/40 p-4 sm:p-5 lg:p-6 shadow-xl space-y-4"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--c-071624)] via-[var(--c-091e30)] to-[var(--c-06121c)] border-2 border-sky-400/40 p-4 sm:p-5 lg:p-6 shadow-xl space-y-4"
     >
       {/* Decorative background glow */}
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -95,7 +95,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
               {getTierIcon(currentTier, 'w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]')}
             </div>
             {/* Little checkmark seal */}
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#061420] border border-sky-400 flex items-center justify-center text-sky-300">
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--c-061420)] border border-sky-400 flex items-center justify-center text-sky-300">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -105,7 +105,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
               <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-950/80 border border-sky-600/40 px-2.5 py-0.5 rounded-md">
                 TRADER STATUS SYMBOL
               </span>
-              <span className={`text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#081b2b] border ${tierInfo.borderColor} ${tierInfo.accentColor}`}>
+              <span className={`text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md bg-[var(--c-081b2b)] border ${tierInfo.borderColor} ${tierInfo.accentColor}`}>
                 {tierInfo.badgeLabel}
               </span>
             </div>
@@ -122,9 +122,9 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
         <div className="shrink-0 flex items-center sm:self-center">
           <div
             id="no-tilt-days-counter-card"
-            className="w-full sm:w-auto p-4 rounded-xl bg-gradient-to-b from-[#0b2133] to-[#071522] border-2 border-sky-400/60 shadow-lg shadow-sky-950/50 space-y-1 min-w-[200px]"
+            className="w-full sm:w-auto p-4 rounded-xl bg-gradient-to-b from-[var(--c-0b2133)] to-[var(--c-071522)] border-2 border-sky-400/60 shadow-lg shadow-sky-950/50 space-y-1 min-w-[200px]"
           >
-            <div className="flex items-center justify-between gap-2 border-b border-[#14334a] pb-1.5">
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--c-14334a)] pb-1.5">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-sky-300">
                 <Flame className="w-3.5 h-3.5 text-sky-400" />
                 <span>CLEAN TRADING RECORD</span>
@@ -150,7 +150,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
       </div>
 
       {/* Bottom Progress Bar: Road to Next Rank */}
-      <div className="relative z-10 pt-3 border-t border-[#122e44] space-y-2">
+      <div className="relative z-10 pt-3 border-t border-[var(--c-122e44)] space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-3.5 h-3.5 text-sky-400" />
@@ -174,7 +174,7 @@ export const StatusSymbolHeader: React.FC<StatusSymbolHeaderProps> = ({ state, c
         </div>
 
         {/* Visual Progress Bar */}
-        <div className="w-full bg-[#05111a] border border-[#143247] h-2.5 rounded-full overflow-hidden p-0.5">
+        <div className="w-full bg-[var(--c-05111a)] border border-[var(--c-143247)] h-2.5 rounded-full overflow-hidden p-0.5">
           <div
             className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400`}
             style={{ width: `${Math.max(5, Math.min(100, progressPercent))}%` }}

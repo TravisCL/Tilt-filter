@@ -32,10 +32,24 @@ import { isSupabaseConfigured } from './utils/supabaseClient';
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    return saved === 'light' ? 'light' : 'dark';
+  });
   const isRemoteUpdateRef = useRef<boolean>(false);
   const hasMountedRef = useRef<boolean>(false);
   const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
   const supabaseBootstrappedRef = useRef<boolean>(false);
+
+  // Apply the light/dark theme to the document root and persist the choice.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // One-time Supabase bootstrap on app load: adopt cloud data if it exists
   // (so data survives redeploys/code changes), or seed the cloud from
@@ -437,14 +451,14 @@ export default function App() {
   const noTiltStats = getNoTiltStats(state);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#060f17] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[var(--c-060f17)] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
       {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between px-3 py-2.5 bg-[#081522] border-b border-[#132c3f]">
+      <div className="md:hidden flex items-center justify-between px-3 py-2.5 bg-[var(--c-081522)] border-b border-[var(--c-132c3f)]">
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}
           aria-label="Open navigation menu"
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#0c1e30] border border-[#173752] text-slate-200"
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--c-0c1e30)] border border-[var(--c-173752)] text-slate-200"
         >
           <Menu className="w-4 h-4" />
         </button>
@@ -452,7 +466,7 @@ export default function App() {
           <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
           <span className="text-white font-black text-xs uppercase">Trader Status</span>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0c1e30] border border-[#173752] text-[10px] font-mono font-black text-sky-300">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--c-0c1e30)] border border-[var(--c-173752)] text-[10px] font-mono font-black text-sky-300">
           <span>{noTiltStats.noTiltDays} NO TILT DAYS</span>
         </div>
       </div>
@@ -470,7 +484,7 @@ export default function App() {
               type="button"
               onClick={() => setMobileNavOpen(false)}
               aria-label="Close navigation menu"
-              className="absolute top-3 right-[-44px] flex items-center justify-center w-8 h-8 rounded-lg bg-[#0c1e30] border border-[#173752] text-slate-200"
+              className="absolute top-3 right-[-44px] flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--c-0c1e30)] border border-[var(--c-173752)] text-slate-200"
             >
               <X className="w-4 h-4" />
             </button>
@@ -487,6 +501,8 @@ export default function App() {
                 setMobileNavOpen(false);
               }}
               isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
             />
           </div>
         </div>
@@ -501,11 +517,13 @@ export default function App() {
           syncVersion="9.68"
           onCleanSlate={handleCleanSlate}
           isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#07121b] overflow-x-hidden min-h-screen">
+      <main className="flex-1 flex flex-col min-w-0 bg-[var(--c-07121b)] overflow-x-hidden min-h-screen">
         {(state.currentView === 'session' || state.currentView === 'checkin') && (
           <SessionView
             state={state}

@@ -58,7 +58,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
         </p>
       </div>
 
-      <div className="p-6 bg-[#0b161b] border border-[#162b34] rounded-2xl space-y-4">
+      <div className="p-6 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl space-y-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-500/50">
             <img
@@ -70,7 +70,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
           <div>
             <h2 className="text-lg font-black text-white">Travis</h2>
             <p className="text-xs text-slate-400">Trading with Travis &bull; Desk Operator</p>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-md bg-[#11252e] border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-md bg-[var(--c-11252e)] border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
               <Shield className="w-3 h-3" />
               <span>{tierInfo.badgeLabel} ({noTiltDays} {noTiltDays === 1 ? 'clean day' : 'clean days'})</span>
             </div>
@@ -78,15 +78,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-          <div className="p-3 bg-[#081216] border border-[#142831] rounded-xl">
+          <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl">
             <div className="text-[10px] text-slate-500 uppercase font-bold">Primary Market</div>
             <div className="text-xs font-black text-white mt-0.5">MNQ / NQ Futures</div>
           </div>
-          <div className="p-3 bg-[#081216] border border-[#142831] rounded-xl">
+          <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl">
             <div className="text-[10px] text-slate-500 uppercase font-bold">Active Live Books</div>
             <div className="text-xs font-black text-emerald-400 mt-0.5">{liveBooksCount} Live</div>
           </div>
-          <div className="p-3 bg-[#081216] border border-[#142831] rounded-xl">
+          <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl">
             <div className="text-[10px] text-slate-500 uppercase font-bold">Total Books</div>
             <div className="text-xs font-black text-white mt-0.5">{activeBooksCount} Accounts</div>
           </div>
@@ -94,7 +94,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
       </div>
 
       {/* SYSTEM & DATA MANAGEMENT / REFRESH EVERYTHING SECTION */}
-      <div className="p-6 bg-[#0c1318] border border-[#1a2e38] rounded-2xl space-y-4">
+      <div className="p-6 bg-[var(--c-0c1318)] border border-[var(--c-1a2e38)] rounded-2xl space-y-4">
         <div className="space-y-1">
           <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
             <RefreshCw className="w-4 h-4 text-rose-400" />
@@ -105,7 +105,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
           </p>
         </div>
 
-        <div className="p-4 bg-[#140c10] border border-rose-950/70 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 bg-[var(--c-140c10)] border border-rose-950/70 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1 max-w-md">
             <div className="text-xs font-bold text-rose-300">Refresh Everything (Clean Slate)</div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -124,7 +124,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
       </div>
 
       {/* DISCORD WEBHOOK SETTINGS */}
-      <div className="p-6 bg-[#0c1318] border border-[#1a2e38] rounded-2xl space-y-4">
+      <div className="p-6 bg-[var(--c-0c1318)] border border-[var(--c-1a2e38)] rounded-2xl space-y-4">
         <div className="space-y-1">
           <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
             <Webhook className="w-4 h-4 text-indigo-400" />
@@ -135,7 +135,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
           </p>
         </div>
 
-        <div className="p-4 bg-[#081216] border border-[#142831] rounded-xl space-y-3">
+        <div className="p-4 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">Enable Discord posting</span>
             <button
@@ -147,7 +147,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
                 }))
               }
               className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                state.discordWebhookEnabled ? 'bg-indigo-500' : 'bg-[#1e3646]'
+                state.discordWebhookEnabled ? 'bg-indigo-500' : 'bg-[var(--c-1e3646)]'
               }`}
             >
               <span
@@ -170,7 +170,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
                 onUpdateState((prev) => ({ ...prev, discordWebhookUrl: webhookUrlDraft.trim() }))
               }
               placeholder="https://discord.com/api/webhooks/..."
-              className="w-full px-3 py-2 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-xs font-mono text-slate-200 placeholder:text-slate-600"
+              className="w-full px-3 py-2 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-xs font-mono text-slate-200 placeholder:text-slate-600"
             />
           </div>
         </div>
@@ -179,7 +179,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
       {/* REFRESH EVERYTHING CONFIRMATION MODAL */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0c161b] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-5 text-center">
+          <div className="w-full max-w-md bg-[var(--c-0c161b)] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-5 text-center">
             <div className="w-14 h-14 mx-auto rounded-full bg-rose-950/70 border border-rose-800/80 flex items-center justify-center text-rose-400">
               <AlertTriangle className="w-7 h-7" />
             </div>
@@ -199,7 +199,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-2.5 bg-[#12242c] hover:bg-[#18303a] text-slate-300 font-bold text-xs rounded-xl border border-[#1d3744] transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[var(--c-12242c)] hover:bg-[var(--c-18303a)] text-slate-300 font-bold text-xs rounded-xl border border-[var(--c-1d3744)] transition-all cursor-pointer"
               >
                 Cancel / Keep Data
               </button>

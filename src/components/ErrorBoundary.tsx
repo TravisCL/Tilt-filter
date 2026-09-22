@@ -40,8 +40,8 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#060e11] text-slate-100 flex items-center justify-center p-6 select-none font-sans">
-          <div className="max-w-md w-full bg-[#09151b] border border-rose-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+        <div className="min-h-screen bg-[var(--c-060e11)] text-slate-100 flex items-center justify-center p-6 select-none font-sans">
+          <div className="max-w-md w-full bg-[var(--c-09151b)] border border-rose-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
               <AlertTriangle className="w-6 h-6" />
             </div>
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="px-4 py-2 rounded-xl bg-[#11242d] hover:bg-[#16303c] border border-[#1d3d4b] text-slate-300 font-bold text-xs transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[var(--c-11242d)] hover:bg-[var(--c-16303c)] border border-[var(--c-1d3d4b)] text-slate-300 font-bold text-xs transition-all cursor-pointer"
               >
                 <span>Reset Local Cache</span>
               </button>

@@ -602,14 +602,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
       {/* Move-trade confirmation toast */}
       {moveToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl bg-[#0c222c] border border-emerald-500/50 text-emerald-300 text-xs font-bold shadow-2xl animate-in fade-in flex items-center gap-2">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl bg-[var(--c-0c222c)] border border-emerald-500/50 text-emerald-300 text-xs font-bold shadow-2xl animate-in fade-in flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{moveToast}</span>
         </div>
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#142933] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--c-142933)] pb-4">
         <div className="space-y-1">
           <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-sky-400" />
@@ -623,7 +623,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
-            className="px-3.5 py-2 bg-[#0c2233] hover:bg-[#11314a] text-sky-300 border border-[#1b4363] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 bg-[var(--c-0c2233)] hover:bg-[var(--c-11314a)] text-sky-300 border border-[var(--c-1b4363)] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             title="Switch to Session tab where accounts are activated and managed"
           >
             <Terminal className="w-3.5 h-3.5 text-sky-400" />
@@ -641,7 +641,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         ].map(({ label, value }) => (
           <div
             key={label}
-            className="p-3.5 rounded-2xl bg-[#09151b] border border-[#142831] flex items-center justify-between"
+            className="p-3.5 rounded-2xl bg-[var(--c-09151b)] border border-[var(--c-142831)] flex items-center justify-between"
           >
             <div className="space-y-0.5">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -667,7 +667,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       </div>
 
       {/* CSV Export */}
-      <div className="p-3.5 rounded-2xl bg-[#09151b] border border-[#142831] flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="p-3.5 rounded-2xl bg-[var(--c-09151b)] border border-[var(--c-142831)] flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
           <Download className="w-4 h-4 text-sky-400" />
           <span>Export Trades</span>
@@ -677,14 +677,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             type="date"
             value={exportFrom}
             onChange={(e) => setExportFrom(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+            className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
           />
           <span className="text-slate-500 text-xs">to</span>
           <input
             type="date"
             value={exportTo}
             onChange={(e) => setExportTo(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+            className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
           />
           <span className="text-[10px] text-slate-500">Leave blank for all-time</span>
         </div>
@@ -701,7 +701,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {/* Drawdown Disclaimer Notice */}
       <div
         id="drawdown-disclaimer-banner"
-        className="p-3 sm:px-4 sm:py-3 bg-[#0a1820] border border-[#18394a] rounded-xl flex items-center gap-3 text-xs text-slate-300 shadow-xs"
+        className="p-3 sm:px-4 sm:py-3 bg-[var(--c-0a1820)] border border-[var(--c-18394a)] rounded-xl flex items-center gap-3 text-xs text-slate-300 shadow-xs"
       >
         <div className="p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
           <Info className="w-4 h-4" />
@@ -729,7 +729,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             COLUMN 1: LIVE ACCOUNTS (LEFT)
            ========================================================================= */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#142933] pb-2.5">
+          <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-2.5">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
               <h2 className="text-xs font-black uppercase tracking-wider text-emerald-400">
@@ -739,7 +739,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           </div>
 
           {liveAccounts.length === 0 ? (
-            <div className="p-5 bg-[#09151b] border border-[#142831] rounded-2xl text-center space-y-3">
+            <div className="p-5 bg-[var(--c-09151b)] border border-[var(--c-142831)] rounded-2xl text-center space-y-3">
               <div className="w-10 h-10 mx-auto rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                 <Zap className="w-5 h-5" />
               </div>
@@ -751,7 +751,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </div>
               <button
                 onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
-                className="px-3.5 py-1.5 bg-[#10242e] hover:bg-[#16313f] text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 bg-[var(--c-10242e)] hover:bg-[var(--c-16313f)] text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Terminal className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Go to Session Tab</span>
@@ -768,7 +768,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         : liveAccounts[0].id
                     }
                     onChange={(e) => setSelectedLiveId(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-[#204555] text-xs font-bold text-emerald-200 cursor-pointer"
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[var(--c-0b161b)] border border-[var(--c-204555)] text-xs font-bold text-emerald-200 cursor-pointer"
                   >
                     {liveAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -798,8 +798,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     key={acc.id}
                     className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3.5 ${
                       isActive
-                        ? 'bg-[#0c2229] border-emerald-500/60 shadow-lg ring-1 ring-emerald-500/20'
-                        : 'bg-[#0b161b] border-[#162b34] hover:border-[#204555]'
+                        ? 'bg-[var(--c-0c2229)] border-emerald-500/60 shadow-lg ring-1 ring-emerald-500/20'
+                        : 'bg-[var(--c-0b161b)] border-[var(--c-162b34)] hover:border-[var(--c-204555)]'
                     }`}
                   >
                     {/* Top Row: Tag, Name, Active Toggle & Delete */}
@@ -840,7 +840,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         ) : (
                           <button
                             onClick={() => handleSetActive(acc.id)}
-                            className="px-2 py-0.5 rounded-md bg-[#122832] text-slate-400 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
+                            className="px-2 py-0.5 rounded-md bg-[var(--c-122832)] text-slate-400 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
                           >
                             Set Active
                           </button>
@@ -877,7 +877,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     </div>
 
                     {/* Current P&L / Balance Bar */}
-                    <div className="p-2.5 rounded-xl bg-[#071318] border border-[#132731] flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[var(--c-071318)] border border-[var(--c-132731)] flex items-center justify-between">
                       <div className="space-y-0.5">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           Net P&L
@@ -907,7 +907,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         (Replaces Passed/Go Live & Mark Blown buttons) */}
                     <div className="grid grid-cols-3 gap-2 pt-0.5">
                       {/* Metric 1: Win Rate */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Percent className="w-3 h-3 text-emerald-400" />
                           <span>Win Rate</span>
@@ -921,7 +921,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
 
                       {/* Metric 2: RR Ratio */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Scale className="w-3 h-3 text-cyan-400" />
                           <span>RR Ratio</span>
@@ -935,7 +935,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
 
                       {/* Metric 3: Profit Factor */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Target className="w-3 h-3 text-amber-400" />
                           <span>Profit Fact.</span>
@@ -963,11 +963,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         setJournalAccount(acc);
                         setJournalFilter('all');
                       }}
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#112733] hover:bg-[#173646] border border-[#1e4255] hover:border-emerald-500/40 text-xs font-black text-emerald-300 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group"
+                      className="w-full py-2.5 px-3 rounded-xl bg-[var(--c-112733)] hover:bg-[var(--c-173646)] border border-[var(--c-1e4255)] hover:border-emerald-500/40 text-xs font-black text-emerald-300 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group"
                     >
                       <BookOpen className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                       <span>Open Trade Journal</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-[#0b1c24] border border-[#183645] text-[10px] text-slate-300 font-mono font-bold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-[var(--c-0b1c24)] border border-[var(--c-183645)] text-[10px] text-slate-300 font-mono font-bold">
                         {accountTrades.length} {accountTrades.length === 1 ? 'trade' : 'trades'}
                       </span>
                     </button>
@@ -982,7 +982,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             COLUMN 2: EVALS (MIDDLE)
            ========================================================================= */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#142933] pb-2.5">
+          <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-2.5">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
               <h2 className="text-xs font-black uppercase tracking-wider text-cyan-400">
@@ -992,7 +992,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           </div>
 
           {evalAccounts.length === 0 ? (
-            <div className="p-5 bg-[#09151b] border border-[#142831] rounded-2xl text-center space-y-3">
+            <div className="p-5 bg-[var(--c-09151b)] border border-[var(--c-142831)] rounded-2xl text-center space-y-3">
               <div className="w-10 h-10 mx-auto rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                 <Target className="w-5 h-5" />
               </div>
@@ -1004,7 +1004,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </div>
               <button
                 onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'session' }))}
-                className="px-3.5 py-1.5 bg-[#10242e] hover:bg-[#16313f] text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 bg-[var(--c-10242e)] hover:bg-[var(--c-16313f)] text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Terminal className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Go to Session Tab</span>
@@ -1021,7 +1021,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         : evalAccounts[0].id
                     }
                     onChange={(e) => setSelectedEvalId(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-[#204555] text-xs font-bold text-cyan-200 cursor-pointer"
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[var(--c-0b161b)] border border-[var(--c-204555)] text-xs font-bold text-cyan-200 cursor-pointer"
                   >
                     {evalAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -1051,8 +1051,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     key={acc.id}
                     className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3.5 ${
                       isActive
-                        ? 'bg-[#09222c] border-cyan-500/60 shadow-lg ring-1 ring-cyan-500/20'
-                        : 'bg-[#0b161b] border-[#162b34] hover:border-[#204555]'
+                        ? 'bg-[var(--c-09222c)] border-cyan-500/60 shadow-lg ring-1 ring-cyan-500/20'
+                        : 'bg-[var(--c-0b161b)] border-[var(--c-162b34)] hover:border-[var(--c-204555)]'
                     }`}
                   >
                     {/* Top Row: Tag, Name, Active Toggle & Delete */}
@@ -1093,7 +1093,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         ) : (
                           <button
                             onClick={() => handleSetActive(acc.id)}
-                            className="px-2 py-0.5 rounded-md bg-[#122832] text-slate-400 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
+                            className="px-2 py-0.5 rounded-md bg-[var(--c-122832)] text-slate-400 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
                           >
                             Set Active
                           </button>
@@ -1130,7 +1130,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     </div>
 
                     {/* Current P&L / Balance Bar */}
-                    <div className="p-2.5 rounded-xl bg-[#071318] border border-[#132731] flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-[var(--c-071318)] border border-[var(--c-132731)] flex items-center justify-between">
                       <div className="space-y-0.5">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           Net P&L
@@ -1160,7 +1160,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         (Replaces Passed/Go Live & Mark Blown buttons) */}
                     <div className="grid grid-cols-3 gap-2 pt-0.5">
                       {/* Metric 1: Win Rate */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Percent className="w-3 h-3 text-cyan-400" />
                           <span>Win Rate</span>
@@ -1174,7 +1174,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
 
                       {/* Metric 2: RR Ratio */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Scale className="w-3 h-3 text-cyan-400" />
                           <span>RR Ratio</span>
@@ -1188,7 +1188,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
 
                       {/* Metric 3: Profit Factor */}
-                      <div className="p-2.5 rounded-xl bg-[#08171f] border border-[#173342] text-center space-y-1">
+                      <div className="p-2.5 rounded-xl bg-[var(--c-08171f)] border border-[var(--c-173342)] text-center space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
                           <Target className="w-3 h-3 text-amber-400" />
                           <span>Profit Fact.</span>
@@ -1216,11 +1216,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         setJournalAccount(acc);
                         setJournalFilter('all');
                       }}
-                      className="w-full py-2.5 px-3 rounded-xl bg-[#0e2733] hover:bg-[#153444] border border-[#1c4355] hover:border-cyan-500/40 text-xs font-black text-cyan-300 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group"
+                      className="w-full py-2.5 px-3 rounded-xl bg-[var(--c-0e2733)] hover:bg-[var(--c-153444)] border border-[var(--c-1c4355)] hover:border-cyan-500/40 text-xs font-black text-cyan-300 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group"
                     >
                       <BookOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                       <span>Open Trade Journal</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-[#081c24] border border-[#153847] text-[10px] text-slate-300 font-mono font-bold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-[var(--c-081c24)] border border-[var(--c-153847)] text-[10px] text-slate-300 font-mono font-bold">
                         {accountTrades.length} {accountTrades.length === 1 ? 'trade' : 'trades'}
                       </span>
                     </button>
@@ -1235,7 +1235,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             COLUMN 3: BLOWN ACCOUNTS (TOP RIGHT)
            ========================================================================= */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#142933] pb-2.5">
+          <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-2.5">
             <div className="flex items-center gap-2">
               <Flame className="w-4 h-4 text-rose-400" />
               <h2 className="text-xs font-black uppercase tracking-wider text-rose-400">
@@ -1246,7 +1246,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           </div>
 
           {blownAccounts.length === 0 ? (
-            <div className="p-5 bg-[#0a1216] border border-[#162731] rounded-2xl space-y-3">
+            <div className="p-5 bg-[var(--c-0a1216)] border border-[var(--c-162731)] rounded-2xl space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
                   <ShieldCheck className="w-5 h-5" />
@@ -1272,7 +1272,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         : blownAccounts[0].id
                     }
                     onChange={(e) => setSelectedBlownId(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[#0b161b] border border-rose-900/60 text-xs font-bold text-rose-200 cursor-pointer"
+                    className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl bg-[var(--c-0b161b)] border border-rose-900/60 text-xs font-bold text-rose-200 cursor-pointer"
                   >
                     {blownAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -1298,7 +1298,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 return (
                   <div
                     key={acc.id}
-                    className="p-4 sm:p-5 bg-[#140f13] border border-rose-950/70 rounded-2xl space-y-3.5"
+                    className="p-4 sm:p-5 bg-[var(--c-140f13)] border border-rose-950/70 rounded-2xl space-y-3.5"
                   >
                     {/* Top Row: Tag, Name, Reset & Delete */}
                     <div className="flex items-start justify-between gap-2">
@@ -1331,15 +1331,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
                     {/* Metrics for post-mortem review */}
                     <div className="grid grid-cols-3 gap-2 pt-0.5">
-                      <div className="p-2 rounded-xl bg-[#0d0a0c] border border-rose-950/60 text-center space-y-0.5">
+                      <div className="p-2 rounded-xl bg-[var(--c-0d0a0c)] border border-rose-950/60 text-center space-y-0.5">
                         <div className="text-[9px] font-bold text-slate-400 uppercase">Win Rate</div>
                         <div className="text-xs font-black text-white font-mono">{metrics.winRateStr}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-[#0d0a0c] border border-rose-950/60 text-center space-y-0.5">
+                      <div className="p-2 rounded-xl bg-[var(--c-0d0a0c)] border border-rose-950/60 text-center space-y-0.5">
                         <div className="text-[9px] font-bold text-slate-400 uppercase">RR Ratio</div>
                         <div className="text-xs font-black text-slate-300 font-mono">{metrics.rrRatioStr}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-[#0d0a0c] border border-rose-950/60 text-center space-y-0.5">
+                      <div className="p-2 rounded-xl bg-[var(--c-0d0a0c)] border border-rose-950/60 text-center space-y-0.5">
                         <div className="text-[9px] font-bold text-slate-400 uppercase">Profit Fact.</div>
                         <div className="text-xs font-black text-slate-300 font-mono">{metrics.profitFactorStr}</div>
                       </div>
@@ -1351,7 +1351,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         setJournalAccount(acc);
                         setJournalFilter('all');
                       }}
-                      className="w-full py-2 px-3 rounded-xl bg-[#1c1216] hover:bg-[#27171d] border border-rose-950 hover:border-rose-800 text-xs font-black text-rose-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-2 px-3 rounded-xl bg-[var(--c-1c1216)] hover:bg-[var(--c-27171d)] border border-rose-950 hover:border-rose-800 text-xs font-black text-rose-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-rose-400" />
                       <span>Review Post-Mortem Journal ({accountTrades.length})</span>
@@ -1402,9 +1402,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-4xl max-h-[90dvh] bg-[#09151b] border border-[#1b3a4a] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="w-full max-w-4xl max-h-[90dvh] bg-[var(--c-09151b)] border border-[var(--c-1b3a4a)] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
               {/* Journal Modal Header */}
-              <div className="p-4 sm:p-5 border-b border-[#142d3b] bg-[#071116] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 sm:p-5 border-b border-[var(--c-142d3b)] bg-[var(--c-071116)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
@@ -1448,7 +1448,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   )}
                   <button
                     onClick={() => setJournalAccount(null)}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-[#122834] rounded-xl transition-colors cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-white hover:bg-[var(--c-122834)] rounded-xl transition-colors cursor-pointer"
                     title="Close journal"
                   >
                     <X className="w-5 h-5" />
@@ -1457,8 +1457,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </div>
 
               {/* Journal Metrics Bar */}
-              <div className="p-3 sm:p-4 bg-[#0a1820] border-b border-[#142d3b] grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-2 rounded-xl bg-[#061015] border border-[#132c39] space-y-0.5">
+              <div className="p-3 sm:p-4 bg-[var(--c-0a1820)] border-b border-[var(--c-142d3b)] grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-2 rounded-xl bg-[var(--c-061015)] border border-[var(--c-132c39)] space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Net Realized P&L
                   </span>
@@ -1473,7 +1473,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="p-2 rounded-xl bg-[#061015] border border-[#132c39] space-y-0.5">
+                <div className="p-2 rounded-xl bg-[var(--c-061015)] border border-[var(--c-132c39)] space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Win Rate
                   </span>
@@ -1485,7 +1485,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="p-2 rounded-xl bg-[#061015] border border-[#132c39] space-y-0.5">
+                <div className="p-2 rounded-xl bg-[var(--c-061015)] border border-[var(--c-132c39)] space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Realized RR Ratio
                   </span>
@@ -1494,7 +1494,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="p-2 rounded-xl bg-[#061015] border border-[#132c39] space-y-0.5">
+                <div className="p-2 rounded-xl bg-[var(--c-061015)] border border-[var(--c-132c39)] space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Profit Factor
                   </span>
@@ -1513,7 +1513,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {/* DEDICATED TRADE MANAGEMENT SUMMARY TALLY & UNCHECKED COUNTER */}
               <div
                 id="journal-trade-management-tally"
-                className="p-3.5 sm:p-4 bg-[#071319] border-b border-[#142d3b] flex flex-col md:flex-row md:items-center justify-between gap-3"
+                className="p-3.5 sm:p-4 bg-[var(--c-071319)] border-b border-[var(--c-142d3b)] flex flex-col md:flex-row md:items-center justify-between gap-3"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
@@ -1539,7 +1539,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
                       journalFilter === 'managed_well'
                         ? 'bg-emerald-500/25 border-emerald-500 text-emerald-200 ring-1 ring-emerald-500/50'
-                        : 'bg-[#06141a] border-emerald-500/30 text-emerald-300 hover:border-emerald-500/60'
+                        : 'bg-[var(--c-06141a)] border-emerald-500/30 text-emerald-300 hover:border-emerald-500/60'
                     }`}
                     title="Filter trades: Managed well"
                   >
@@ -1559,7 +1559,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
                       journalFilter === 'exited_emotionally'
                         ? 'bg-rose-500/25 border-rose-500 text-rose-200 ring-1 ring-rose-500/50'
-                        : 'bg-[#150a0f] border-rose-500/30 text-rose-300 hover:border-rose-500/60'
+                        : 'bg-[var(--c-150a0f)] border-rose-500/30 text-rose-300 hover:border-rose-500/60'
                     }`}
                     title="Filter trades: Exited emotionally"
                   >
@@ -1579,13 +1579,13 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
                       journalFilter === 'unspecified'
                         ? 'bg-slate-700/40 border-slate-400 text-white ring-1 ring-slate-400/50'
-                        : 'bg-[#081216] border-slate-700/60 text-slate-400 hover:border-slate-500'
+                        : 'bg-[var(--c-081216)] border-slate-700/60 text-slate-400 hover:border-slate-500'
                     }`}
                     title="Filter trades: Unspecified (not yet categorized)"
                   >
                     <div className="w-2 h-2 rounded-full bg-slate-500" />
                     <span className="text-[11px] font-bold">Unspecified:</span>
-                    <span className="text-xs sm:text-sm font-black font-mono text-slate-200 bg-[#0d1e26] px-2 py-0.5 rounded border border-slate-700">
+                    <span className="text-xs sm:text-sm font-black font-mono text-slate-200 bg-[var(--c-0d1e26)] px-2 py-0.5 rounded border border-slate-700">
                       {unspecifiedCount}
                     </span>
                   </button>
@@ -1593,14 +1593,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </div>
 
               {/* Filter Tabs & Quick Action */}
-              <div className="px-4 py-2.5 bg-[#08151c] border-b border-[#132b38] flex items-center justify-between gap-2 flex-wrap">
+              <div className="px-4 py-2.5 bg-[var(--c-08151c)] border-b border-[var(--c-132b38)] flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     onClick={() => setJournalFilter('all')}
                     className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'all'
                         ? 'bg-emerald-500 text-black font-black'
-                        : 'text-slate-400 hover:text-white bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-white bg-[var(--c-0e212b)]'
                     }`}
                   >
                     All ({trades.length})
@@ -1610,7 +1610,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'winner'
                         ? 'bg-emerald-500 text-black font-black'
-                        : 'text-slate-400 hover:text-emerald-300 bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-emerald-300 bg-[var(--c-0e212b)]'
                     }`}
                   >
                     Winners ({metrics.winCount})
@@ -1620,7 +1620,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'loser'
                         ? 'bg-rose-500 text-white font-black'
-                        : 'text-slate-400 hover:text-rose-300 bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-rose-300 bg-[var(--c-0e212b)]'
                     }`}
                   >
                     Losses ({metrics.lossCount})
@@ -1630,7 +1630,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'managed_well'
                         ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/60 font-black'
-                        : 'text-slate-400 hover:text-emerald-300 bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-emerald-300 bg-[var(--c-0e212b)]'
                     }`}
                   >
                     Managed well ({managedWellCount})
@@ -1640,7 +1640,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'exited_emotionally'
                         ? 'bg-rose-500/30 text-rose-300 border border-rose-500/60 font-black'
-                        : 'text-slate-400 hover:text-rose-300 bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-rose-300 bg-[var(--c-0e212b)]'
                     }`}
                   >
                     Exited emotionally ({exitedEmotionallyCount})
@@ -1650,7 +1650,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       journalFilter === 'unspecified'
                         ? 'bg-slate-700/50 text-white border border-slate-500 font-black'
-                        : 'text-slate-400 hover:text-slate-200 bg-[#0e212b]'
+                        : 'text-slate-400 hover:text-slate-200 bg-[var(--c-0e212b)]'
                     }`}
                   >
                     Unspecified ({unspecifiedCount})
@@ -1665,8 +1665,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {/* Trades List View */}
               <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-4">
                 {filteredTrades.length === 0 ? (
-                  <div className="p-8 text-center space-y-4 rounded-2xl bg-[#061116] border border-[#132832]">
-                    <div className="w-12 h-12 mx-auto rounded-full bg-[#0c222c] border border-[#193a4a] flex items-center justify-center text-slate-400">
+                  <div className="p-8 text-center space-y-4 rounded-2xl bg-[var(--c-061116)] border border-[var(--c-132832)]">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-[var(--c-0c222c)] border border-[var(--c-193a4a)] flex items-center justify-center text-slate-400">
                       <BookOpen className="w-6 h-6" />
                     </div>
                     <div className="space-y-1 max-w-md mx-auto">
@@ -1714,15 +1714,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                           key={trade.id}
                           className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3.5 ${
                             isWin
-                              ? 'bg-[#08191f] border-[#153a47] hover:border-emerald-500/50'
-                              : 'bg-[#140e12] border-rose-950/70 hover:border-rose-800/70'
+                              ? 'bg-[var(--c-08191f)] border-[var(--c-153a47)] hover:border-emerald-500/50'
+                              : 'bg-[var(--c-140e12)] border-rose-950/70 hover:border-rose-800/70'
                           }`}
                         >
                           {/* Row 1: Trade Number, Name, Time, PnL, and Specific RR Ratio */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md bg-[#051015] border border-[#142d39] text-slate-300 font-mono text-[10px] font-bold">
+                                <span className="px-2 py-0.5 rounded-md bg-[var(--c-051015)] border border-[var(--c-142d39)] text-slate-300 font-mono text-[10px] font-bold">
                                   #{trade.orderNumber || idx + 1}
                                 </span>
                                 <span className="text-sm font-black text-white">
@@ -1755,7 +1755,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
                                         isManagedWell
                                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 ring-1 ring-emerald-500/30'
-                                          : 'bg-[#08151c] text-slate-500 border border-[#142934] hover:border-slate-500 hover:text-slate-300 opacity-75 hover:opacity-100'
+                                          : 'bg-[var(--c-08151c)] text-slate-500 border border-[var(--c-142934)] hover:border-slate-500 hover:text-slate-300 opacity-75 hover:opacity-100'
                                       }`}
                                       title={isManagedWell ? 'Selected: Click to unselect' : 'Click to select: Managed trade well'}
                                     >
@@ -1773,7 +1773,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
                                         isExitedEmotionally
                                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/60 ring-1 ring-rose-500/30'
-                                          : 'bg-[#08151c] text-slate-500 border border-[#142934] hover:border-slate-500 hover:text-slate-300 opacity-75 hover:opacity-100'
+                                          : 'bg-[var(--c-08151c)] text-slate-500 border border-[var(--c-142934)] hover:border-slate-500 hover:text-slate-300 opacity-75 hover:opacity-100'
                                       }`}
                                       title={isExitedEmotionally ? 'Selected: Click to unselect' : 'Click to select: Exited emotionally'}
                                     >
@@ -1786,7 +1786,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                     </button>
 
                                     {isUnspecified && (
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#071216] border border-[#142832] text-slate-500">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--c-071216)] border border-[var(--c-142832)] text-slate-500">
                                         Unspecified exit
                                       </span>
                                     )}
@@ -1795,7 +1795,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               })()}
 
                               {editingRiskTradeId === trade.id ? (
-                                <div className="p-3 rounded-xl bg-[#06141a] border border-cyan-500/50 space-y-2.5 my-1.5 animate-in fade-in-50 duration-150 shadow-lg">
+                                <div className="p-3 rounded-xl bg-[var(--c-06141a)] border border-cyan-500/50 space-y-2.5 my-1.5 animate-in fade-in-50 duration-150 shadow-lg">
                                   <div className="flex items-center justify-between gap-2 flex-wrap">
                                     <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
                                       <Edit3 className="w-3.5 h-3.5" />
@@ -1821,7 +1821,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                         }}
                                         placeholder="200"
                                         autoFocus
-                                        className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-[#0b1b22] border border-cyan-500/60 text-white font-mono font-bold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                                        className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-[var(--c-0b1b22)] border border-cyan-500/60 text-white font-mono font-bold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
                                       />
                                     </div>
 
@@ -1838,7 +1838,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={handleCancelEditRisk}
-                                      className="px-2.5 py-1.5 rounded-lg bg-[#0e1d24] hover:bg-[#162e3a] text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700"
+                                      className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0e1d24)] hover:bg-[var(--c-162e3a)] text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700"
                                       title="Cancel"
                                     >
                                       <X className="w-3.5 h-3.5" />
@@ -1880,7 +1880,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                         className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
                                           editRiskDraft === String(p.val)
                                             ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200'
-                                            : 'bg-[#09181f] hover:bg-cyan-500/20 border-slate-700 hover:border-cyan-500/40 text-slate-300'
+                                            : 'bg-[var(--c-09181f)] hover:bg-cyan-500/20 border-slate-700 hover:border-cyan-500/40 text-slate-300'
                                         }`}
                                       >
                                         {p.label}
@@ -1937,7 +1937,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => handleStartEditRisk(trade)}
-                                      className="ml-1 px-2 py-0.5 rounded-md bg-[#0b1d26] hover:bg-cyan-500/20 border border-[#163644] hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                                      className="ml-1 px-2 py-0.5 rounded-md bg-[var(--c-0b1d26)] hover:bg-cyan-500/20 border border-[var(--c-163644)] hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                                       title="Edit/Update risk amount for this trade"
                                     >
                                       <Edit3 className="w-3 h-3 text-cyan-400" />
@@ -1969,8 +1969,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               <div
                                 className={`px-3 py-2 rounded-xl border flex flex-col items-center justify-center min-w-[125px] shadow-md transition-all ${
                                   isWin
-                                    ? 'bg-gradient-to-b from-[#08232e] to-[#05161d] border-cyan-400/80 text-cyan-300 ring-1 ring-cyan-400/30'
-                                    : 'bg-gradient-to-b from-[#220d15] to-[#14080d] border-rose-500/70 text-rose-300 ring-1 ring-rose-500/25'
+                                    ? 'bg-gradient-to-b from-[var(--c-08232e)] to-[var(--c-05161d)] border-cyan-400/80 text-cyan-300 ring-1 ring-cyan-400/30'
+                                    : 'bg-gradient-to-b from-[var(--c-220d15)] to-[var(--c-14080d)] border-rose-500/70 text-rose-300 ring-1 ring-rose-500/25'
                                 }`}
                               >
                                 <div className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1 text-cyan-300 mb-0.5">
@@ -1994,7 +1994,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                           </div>
 
                           {/* Row 2: Attachments Section (Screenshot & Memo) */}
-                          <div className="pt-2 border-t border-[#122733] space-y-3">
+                          <div className="pt-2 border-t border-[var(--c-122733)] space-y-3">
                             {/* SCREENSHOT AREA */}
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
@@ -2031,7 +2031,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                   ) : (
                                     <button
                                       onClick={() => triggerFileUpload(trade.id)}
-                                      className="px-2.5 py-1 rounded-lg bg-[#0e2430] hover:bg-[#153444] border border-[#1a4154] text-[10px] font-bold text-cyan-300 hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                                      className="px-2.5 py-1 rounded-lg bg-[var(--c-0e2430)] hover:bg-[var(--c-153444)] border border-[var(--c-1a4154)] text-[10px] font-bold text-cyan-300 hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                                     >
                                       <Upload className="w-3 h-3" />
                                       <span>Upload File</span>
@@ -2044,7 +2044,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                               {trade.screenshotUrl ? (
                                 <div
                                   onClick={() => setLightboxImage(trade.screenshotUrl || null)}
-                                  className="relative max-w-sm rounded-xl overflow-hidden border border-[#1b3a4a] bg-[#051014] cursor-pointer group shadow-sm"
+                                  className="relative max-w-sm rounded-xl overflow-hidden border border-[var(--c-1b3a4a)] bg-[var(--c-051014)] cursor-pointer group shadow-sm"
                                 >
                                   <img
                                     src={trade.screenshotUrl}
@@ -2060,7 +2060,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => triggerFileUpload(trade.id)}
-                                  className="w-full py-2.5 px-3 border border-dashed border-[#1a3847] hover:border-cyan-500/50 rounded-xl bg-[#061217]/50 hover:bg-[#081d26] text-slate-400 hover:text-cyan-300 text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer group"
+                                  className="w-full py-2.5 px-3 border border-dashed border-[var(--c-1a3847)] hover:border-cyan-500/50 rounded-xl bg-[var(--c-061217)]/50 hover:bg-[var(--c-081d26)] text-slate-400 hover:text-cyan-300 text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer group"
                                 >
                                   <Upload className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 group-hover:scale-110 transition-all" />
                                   <span>Click to attach chart screenshot (.png, .jpg)</span>
@@ -2089,7 +2089,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
                               {/* Inline Memo Editor */}
                               {editingMemoTradeId === trade.id ? (
-                                <div className="space-y-2 p-3 bg-[#061217] border border-[#163645] rounded-xl">
+                                <div className="space-y-2 p-3 bg-[var(--c-061217)] border border-[var(--c-163645)] rounded-xl">
                                   <textarea
                                     value={memoDraft}
                                     onChange={(e) => setMemoDraft(e.target.value)}
@@ -2132,7 +2132,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                 (trade.memo || trade.notes) && (
                                   <div
                                     onClick={() => handleStartEditMemo(trade)}
-                                    className="p-3 bg-[#061217] hover:bg-[#091b22] border border-[#142f3d] rounded-xl text-xs text-slate-300 leading-relaxed italic cursor-pointer transition-colors"
+                                    className="p-3 bg-[var(--c-061217)] hover:bg-[var(--c-091b22)] border border-[var(--c-142f3d)] rounded-xl text-xs text-slate-300 leading-relaxed italic cursor-pointer transition-colors"
                                     title="Click to edit memo"
                                   >
                                     &ldquo;{trade.memo || trade.notes}&rdquo;
@@ -2143,7 +2143,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                           </div>
 
                           {/* Row 3: Manage Trade — move to a different account, or delete */}
-                          <div className="pt-2 border-t border-[#122733] flex items-center justify-between gap-2 flex-wrap">
+                          <div className="pt-2 border-t border-[var(--c-122733)] flex items-center justify-between gap-2 flex-wrap">
                             {onMoveTrade && state.accounts.length > 1 && (
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -2159,7 +2159,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                       setTimeout(() => setMoveToast(null), 2000);
                                     }
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg bg-[#0b161b] border border-[#1e3a4a] text-[11px] font-bold text-slate-200 cursor-pointer"
+                                  className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 cursor-pointer"
                                 >
                                   {state.accounts.map((a) => (
                                     <option key={a.id} value={a.id}>
@@ -2202,7 +2202,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                           </div>
 
                           {sharingTradeId === trade.id && (
-                            <div className="p-3 bg-[#061217] border border-sky-500/20 rounded-xl space-y-2">
+                            <div className="p-3 bg-[var(--c-061217)] border border-sky-500/20 rounded-xl space-y-2">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 Copy this trade to:
                               </span>
@@ -2219,7 +2219,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                                         className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
                                           isChecked
                                             ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                                            : 'bg-[#0b1820] border-[#162a34] text-slate-400 hover:text-slate-200'
+                                            : 'bg-[var(--c-0b1820)] border-[var(--c-162a34)] text-slate-400 hover:text-slate-200'
                                         }`}
                                       >
                                         {isChecked ? <Check className="w-2.5 h-2.5" /> : null}
@@ -2257,13 +2257,13 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </div>
 
               {/* Journal Modal Footer */}
-              <div className="p-3 sm:p-4 bg-[#071116] border-t border-[#142d3b] flex items-center justify-between">
+              <div className="p-3 sm:p-4 bg-[var(--c-071116)] border-t border-[var(--c-142d3b)] flex items-center justify-between">
                 <span className="text-xs text-slate-400">
                   {journalAccount.name} &bull; {trades.length} Total Executions Recorded
                 </span>
                 <button
                   onClick={() => setJournalAccount(null)}
-                  className="px-4 py-2 bg-[#122834] hover:bg-[#193747] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-[var(--c-122834)] hover:bg-[var(--c-193747)] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
                   Close Journal
                 </button>
@@ -2283,9 +2283,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-5xl max-h-[90dvh] bg-[#071217] border border-[#193949] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            className="relative max-w-5xl max-h-[90dvh] bg-[var(--c-071217)] border border-[var(--c-193949)] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
           >
-            <div className="p-3 bg-[#050f14] border-b border-[#142f3d] flex items-center justify-between">
+            <div className="p-3 bg-[var(--c-050f14)] border-b border-[var(--c-142f3d)] flex items-center justify-between">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4 text-cyan-400" />
                 <span>Trade Chart Fullscreen View</span>
@@ -2313,7 +2313,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
          ========================================================================= */}
       {accountToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0c161b] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+          <div className="w-full max-w-md bg-[var(--c-0c161b)] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-rose-950/70 border border-rose-800/80 flex items-center justify-center text-rose-400">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -2330,7 +2330,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setAccountToDelete(null)}
-                className="flex-1 py-2.5 bg-[#12242c] hover:bg-[#18303a] text-slate-300 font-bold text-xs rounded-xl border border-[#1d3744] transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[var(--c-12242c)] hover:bg-[var(--c-18303a)] text-slate-300 font-bold text-xs rounded-xl border border-[var(--c-1d3744)] transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -2352,7 +2352,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
          ========================================================================= */}
       {tradeToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0c161b] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+          <div className="w-full max-w-md bg-[var(--c-0c161b)] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-rose-950/70 border border-rose-800/80 flex items-center justify-center text-rose-400">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -2380,7 +2380,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setTradeToDelete(null)}
-                className="flex-1 py-2.5 bg-[#12242c] hover:bg-[#18303a] text-slate-300 font-bold text-xs rounded-xl border border-[#1d3744] transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[var(--c-12242c)] hover:bg-[var(--c-18303a)] text-slate-300 font-bold text-xs rounded-xl border border-[var(--c-1d3744)] transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -2405,7 +2405,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
          ========================================================================= */}
       {accountToMarkBlown && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0c161b] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+          <div className="w-full max-w-md bg-[var(--c-0c161b)] border border-rose-900/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-rose-950/70 border border-rose-800/80 flex items-center justify-center text-rose-400">
               <Flame className="w-6 h-6" />
             </div>
@@ -2422,7 +2422,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setAccountToMarkBlown(null)}
-                className="flex-1 py-2.5 bg-[#12242c] hover:bg-[#18303a] text-slate-300 font-bold text-xs rounded-xl border border-[#1d3744] transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[var(--c-12242c)] hover:bg-[var(--c-18303a)] text-slate-300 font-bold text-xs rounded-xl border border-[var(--c-1d3744)] transition-all cursor-pointer"
               >
                 Cancel
               </button>

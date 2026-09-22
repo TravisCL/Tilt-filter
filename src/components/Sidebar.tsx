@@ -18,6 +18,8 @@ import {
   Sparkles,
   AlertCircle,
   RotateCcw,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { AppState, TierLevel } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
@@ -29,6 +31,8 @@ interface SidebarProps {
   onCleanSlate?: () => void;
   isCheckInCompletedToday?: boolean;
   state?: AppState;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -38,6 +42,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCleanSlate,
   isCheckInCompletedToday,
   state,
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const stats = state ? getNoTiltStats(state) : null;
@@ -94,18 +100,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isInvites = currentView === 'invites';
 
   return (
-    <aside className="w-56 shrink-0 bg-[#081522] border-r border-[#132c3f] flex flex-col justify-between p-3.5 select-none min-h-screen">
+    <aside className="w-56 shrink-0 bg-[var(--c-081522)] border-r border-[var(--c-132c3f)] flex flex-col justify-between p-3.5 select-none min-h-screen">
       <div className="space-y-5">
         {/* Status Symbol Badge Header */}
         <div className="pt-2 px-1 space-y-1.5">
-          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#0c1e30] border border-[#173752] text-slate-300 text-xs font-bold shadow-xs">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[var(--c-0c1e30)] border border-[var(--c-173752)] text-slate-300 text-xs font-bold shadow-xs">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
               {getTierIcon(currentTier)}
               <span className="text-white font-black text-xs">{tierInfo?.title || 'Rules student'}</span>
             </div>
           </div>
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#05111c] border border-[#122e44] text-[10px] font-mono font-bold text-slate-300">
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[var(--c-05111c)] border border-[var(--c-122e44)] text-[10px] font-mono font-bold text-slate-300">
             <span className="flex items-center gap-1 text-sky-400">
               <Flame className="w-3 h-3" />
               <span>{noTiltDays} No Tilt Days</span>
@@ -121,8 +127,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('session')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isSession
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -144,8 +150,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('board')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isBoard
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <LayoutGrid
@@ -159,8 +165,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('accounts')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isAccounts
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <CreditCard
@@ -174,8 +180,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('tracker')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isTracker
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <Activity
@@ -189,8 +195,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('profile')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isProfile
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <User
@@ -204,8 +210,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onSelectView('invites')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isInvites
-                ? 'bg-[#102d45] text-sky-200 border border-sky-400/50 shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1f30]'
+                ? 'bg-[var(--c-102d45)] text-sky-200 border border-sky-400/50 shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[var(--c-0c1f30)]'
             }`}
           >
             <Gift
@@ -217,12 +223,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer Controls */}
-      <div className="pt-4 border-t border-[#132c3f] space-y-2">
+      <div className="pt-4 border-t border-[var(--c-132c3f)] space-y-2">
+        {onToggleTheme && (
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-lg bg-[var(--c-0c1f30)] hover:bg-[var(--c-122e47)] text-slate-300 hover:text-white border border-[var(--c-183a54)] text-xs font-bold transition-colors cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-sky-400" />
+            )}
+            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+        )}
+
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handleToggleFullscreen}
-            className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-lg bg-[#0c1f30] hover:bg-[#122e47] text-slate-300 hover:text-white border border-[#183a54] text-xs font-bold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-lg bg-[var(--c-0c1f30)] hover:bg-[var(--c-122e47)] text-slate-300 hover:text-white border border-[var(--c-183a54)] text-xs font-bold transition-colors cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5 text-sky-400" />}
@@ -239,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               if (btn) btn.innerText = `Sync ${syncVersion}`;
             }, 1200);
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#0c1f30] hover:bg-[#122e47] text-slate-300 hover:text-white text-xs font-bold border border-[#183a54] transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[var(--c-0c1f30)] hover:bg-[var(--c-122e47)] text-slate-300 hover:text-white text-xs font-bold border border-[var(--c-183a54)] transition-all cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
           <span id="sync-btn-txt">Sync {syncVersion}</span>

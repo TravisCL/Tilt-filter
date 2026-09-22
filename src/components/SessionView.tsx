@@ -1492,7 +1492,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
       {/* PENDING / LOCKED MORNING CHECK-IN PROMINENT BANNER */}
       {!isCheckInCompletedToday && (
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/90 via-[#142329] to-[#0a181e] border-2 border-amber-500/70 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/90 via-[var(--c-142329)] to-[var(--c-0a181e)] border-2 border-amber-500/70 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
               <Lock className="w-6 h-6" />
@@ -1527,8 +1527,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
       )}
 
       {/* TOP DESK CONTROL BAR */}
-      <div className="p-4 bg-[#081726] border border-[#163852] rounded-2xl space-y-3.5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#143247] pb-3">
+      <div className="p-4 bg-[var(--c-081726)] border border-[var(--c-163852)] rounded-2xl space-y-3.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--c-143247)] pb-3">
           <div className="flex items-center gap-2.5 flex-wrap">
             {isCheckInCompletedToday ? (
               <div className="flex items-center gap-2">
@@ -1536,7 +1536,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 <span className="text-xs font-black tracking-wider text-sky-400 uppercase">
                   READY
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-[#0e273a] border border-sky-500/30 text-sky-200 font-mono text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-[var(--c-0e273a)] border border-sky-500/30 text-sky-200 font-mono text-[11px] font-bold">
                   Day {state.dayCounter || 1}
                 </span>
               </div>
@@ -1547,14 +1547,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <Lock className="w-3.5 h-3.5" />
                   LOCKED &bull; CHECK-IN REQUIRED
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-[#221a0d] border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-[var(--c-221a0d)] border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold">
                   Day {state.dayCounter || 1}
                 </span>
               </div>
             )}
 
             {/* Status Symbol Badge & No Tilt Days Tracker */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#061420] border border-[#153850] text-[11px] font-bold text-slate-200">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--c-061420)] border border-[var(--c-153850)] text-[11px] font-bold text-slate-200">
               <Shield className="w-3.5 h-3.5 text-sky-400" />
               <span className="text-sky-300 font-black">Status:</span>
               <span className="text-white capitalize">{noTiltStats.currentTier}</span>
@@ -1572,7 +1572,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               onClick={() => setShowMorningCheckInModal(true)}
               className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 isCheckInCompletedToday
-                  ? 'bg-[#0a232b] hover:bg-[#0f2e38] text-emerald-300 border border-emerald-500/40 shadow-xs'
+                  ? 'bg-[var(--c-0a232b)] hover:bg-[var(--c-0f2e38)] text-emerald-300 border border-emerald-500/40 shadow-xs'
                   : 'bg-amber-500 hover:bg-amber-400 text-black border border-amber-400 font-black shadow-md animate-pulse'
               }`}
               title="Record or review your morning emotional check-in & sleep memo"
@@ -1588,7 +1588,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             </button>
 
             {hasValidAccountAndDrawdown && activeAccount && (
-              <div className="px-3 py-1.5 bg-[#071318] border border-[#183442] rounded-xl text-xs flex items-center gap-2">
+              <div className="px-3 py-1.5 bg-[var(--c-071318)] border border-[var(--c-183442)] rounded-xl text-xs flex items-center gap-2">
                 <span className="text-slate-400 font-medium">Active Book:</span>
                 <span className="font-bold text-white">
                   {activeAccount.name}
@@ -1618,8 +1618,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
               onClick={() => setShowSwitchAccount(!showSwitchAccount)}
               className={`px-3 py-1.5 border rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 showSwitchAccount
-                  ? 'bg-[#183747] text-white border-emerald-500/60 shadow-xs'
-                  : 'bg-[#102027] hover:bg-[#162d37] text-slate-200 border-[#1e3845]'
+                  ? 'bg-[var(--c-183747)] text-white border-emerald-500/60 shadow-xs'
+                  : 'bg-[var(--c-102027)] hover:bg-[var(--c-162d37)] text-slate-200 border-[var(--c-1e3845)]'
               }`}
               title="Jump between active books"
             >
@@ -1635,8 +1635,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
         {/* Switch Account Popover / Drawer */}
         {showSwitchAccount && (
-          <div className="p-3.5 bg-[#0a181e] border border-[#1b3542] rounded-2xl shadow-xl space-y-3 animate-in fade-in">
-            <div className="flex items-center justify-between border-b border-[#142933] pb-2">
+          <div className="p-3.5 bg-[var(--c-0a181e)] border border-[var(--c-1b3542)] rounded-2xl shadow-xl space-y-3 animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-2">
               <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Active Trading Books ({state.accounts.filter((a) => a.status !== 'blown').length})</span>
@@ -1650,7 +1650,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             </div>
 
             {state.accounts.filter((a) => a.status !== 'blown').length === 0 ? (
-              <div className="p-3 bg-[#081216] border border-[#142630] rounded-xl text-xs text-slate-400 flex items-center justify-between">
+              <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142630)] rounded-xl text-xs text-slate-400 flex items-center justify-between">
                 <span>No books available.</span>
                 <button
                   onClick={() => {
@@ -1679,8 +1679,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         }}
                         className={`p-3 text-left rounded-xl border transition-all flex items-center justify-between gap-2 cursor-pointer ${
                           isSelected
-                            ? 'bg-[#0e2730] border-emerald-500/80 text-white shadow-sm'
-                            : 'bg-[#0e1c23] border-[#183340] text-slate-300 hover:bg-[#142a35] hover:border-[#204557]'
+                            ? 'bg-[var(--c-0e2730)] border-emerald-500/80 text-white shadow-sm'
+                            : 'bg-[var(--c-0e1c23)] border-[var(--c-183340)] text-slate-300 hover:bg-[var(--c-142a35)] hover:border-[var(--c-204557)]'
                         }`}
                       >
                         <div className="space-y-0.5 truncate">
@@ -1728,7 +1728,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       </div>
 
       {/* Clean Morning Mood Check-In Status Strip */}
-      <div className="bg-[#0b161b] border border-[#162a33] rounded-2xl p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
+      <div className="bg-[var(--c-0b161b)] border border-[var(--c-162a33)] rounded-2xl p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-sm shrink-0">
             🥒
@@ -1754,7 +1754,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
           <button
             type="button"
             onClick={() => setShowMorningCheckInModal(true)}
-            className="px-2.5 py-1 bg-[#122832] hover:bg-[#183441] text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1.5"
+            className="px-2.5 py-1 bg-[var(--c-122832)] hover:bg-[var(--c-183441)] text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1.5"
           >
             <Sun className="w-3 h-3 text-amber-400" />
             <span>{isCheckInCompletedToday ? 'Update Mood' : 'Take Morning Check-In'}</span>
@@ -1762,25 +1762,25 @@ export const SessionView: React.FC<SessionViewProps> = ({
           <button
             type="button"
             onClick={() => onUpdateState((prev) => ({ ...prev, currentView: 'tracker' }))}
-            className="px-2.5 py-1 bg-[#0b161b] hover:bg-[#13232b] text-slate-400 hover:text-white border border-[#182d38] rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1"
+            className="px-2.5 py-1 bg-[var(--c-0b161b)] hover:bg-[var(--c-13232b)] text-slate-400 hover:text-white border border-[var(--c-182d38)] rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1"
           >
             <Activity className="w-3 h-3 text-slate-400" />
             <span>View Tracker</span>
           </button>
         </div>
       </div>
-      <div id="trade-filter-section" className="bg-[#0b1a26] border border-[#16354d] rounded-2xl p-4 lg:p-6 space-y-5">
+      <div id="trade-filter-section" className="bg-[var(--c-0b1a26)] border border-[var(--c-16354d)] rounded-2xl p-4 lg:p-6 space-y-5">
         {/* 2-Column Responsive Layout: Pre-Trade Workflow & Standalone Filter Control Box */}
         <div className="space-y-5">
             <div
               id="top-take-trade-action-area"
-              className="p-3 sm:p-3.5 bg-[#081318] border border-[#162b37] rounded-xl space-y-2.5 shadow-md"
+              className="p-3 sm:p-3.5 bg-[var(--c-081318)] border border-[var(--c-162b37)] rounded-xl space-y-2.5 shadow-md"
             >
               {/* Top Row: Active Account Name only — stripped of extra pills/badges */}
-              <div className="flex items-center gap-2.5 flex-wrap border-b border-[#12242f] pb-2">
+              <div className="flex items-center gap-2.5 flex-wrap border-b border-[var(--c-12242f)] pb-2">
                 <div
                   id="top-area-account-display"
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0b1c24] border border-[#1a3848] text-xs font-bold text-slate-200 shadow-xs"
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[var(--c-0b1c24)] border border-[var(--c-1a3848)] text-xs font-bold text-slate-200 shadow-xs"
                 >
                   <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span className="text-emerald-300 font-black">
@@ -1807,7 +1807,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
                             isChecked
                               ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                              : 'bg-[#0b1820] border-[#162a34] text-slate-400 hover:text-slate-200'
+                              : 'bg-[var(--c-0b1820)] border-[var(--c-162a34)] text-slate-400 hover:text-slate-200'
                           }`}
                         >
                           {isChecked ? <Check className="w-2.5 h-2.5" /> : null}
@@ -1823,7 +1823,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {/* Repositioned Trade Filter Description Message - Sits directly above Filter Control Box */}
             <div
               id="trade-filter-description-box"
-              className="p-3.5 bg-[#081624] border border-[#183a54] rounded-xl text-xs text-slate-300 shadow-xs"
+              className="p-3.5 bg-[var(--c-081624)] border border-[var(--c-183a54)] rounded-xl text-xs text-slate-300 shadow-xs"
             >
               <div className="text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1 flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" />
@@ -1837,10 +1837,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {/* Standalone Filter Control Box */}
             <div
               id="consolidated-interactive-control-box"
-              className="bg-[#0a1a29] border-2 border-sky-400/50 rounded-xl p-4 space-y-4 shadow-xl"
+              className="bg-[var(--c-0a1a29)] border-2 border-sky-400/50 rounded-xl p-4 space-y-4 shadow-xl"
             >
               {/* Header with Step Tracker and Navigation */}
-              <div className="flex items-center justify-between border-b border-[#16364d] pb-2.5">
+              <div className="flex items-center justify-between border-b border-[var(--c-16364d)] pb-2.5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shadow-xs">
                     <Shield className="w-4 h-4" />
@@ -1866,7 +1866,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }
                     }}
                     disabled={currentQuestionIndex === 0}
-                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    className="p-1.5 rounded-md bg-[var(--c-0d2338)] border border-[var(--c-1c4464)] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
                     title="Previous Question"
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -1881,7 +1881,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }
                     }}
                     disabled={currentQuestionIndex === totalQuestions - 1}
-                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    className="p-1.5 rounded-md bg-[var(--c-0d2338)] border border-[var(--c-1c4464)] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
                     title="Next Question"
                   >
                     <span className="hidden sm:inline">Next</span>
@@ -1905,7 +1905,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       onClick={() => handleSelectStep(q.id)}
                       className={`py-1 px-1 rounded-md text-[10px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
                         !isUnlocked
-                          ? 'bg-[#06121b] border border-[#112433] text-slate-500 opacity-60'
+                          ? 'bg-[var(--c-06121b)] border border-[var(--c-112433)] text-slate-500 opacity-60'
                           : isCurrent
                           ? 'bg-sky-400 text-black font-black ring-1 ring-sky-200'
                           : status === true
@@ -1914,7 +1914,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           ? 'bg-amber-950/70 border border-amber-700/60 text-amber-300'
                           : status === false
                           ? 'bg-rose-950/70 border border-rose-700/60 text-rose-300'
-                          : 'bg-[#0d2338] border border-[#173752] text-slate-400 hover:text-slate-200'
+                          : 'bg-[var(--c-0d2338)] border border-[var(--c-173752)] text-slate-400 hover:text-slate-200'
                       }`}
                       title={!isUnlocked ? `Step ${idx + 1} locked - complete previous steps first` : q.title}
                     >
@@ -1926,7 +1926,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               </div>
 
               {/* Active Question Spotlight */}
-              <div className="p-3.5 rounded-xl bg-[#0c2236] border border-[#1c4668] space-y-2">
+              <div className="p-3.5 rounded-xl bg-[var(--c-0c2236)] border border-[var(--c-1c4668)] space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold text-slate-400 uppercase tracking-wider">
                     {currentQuestion.title}
@@ -1939,7 +1939,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         ? 'bg-amber-950 text-amber-300 border border-amber-800'
                         : getCurrentStatus(currentQuestion.id) === false
                         ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                        : 'bg-[#081622] text-slate-400 border border-[#16364d]'
+                        : 'bg-[var(--c-081622)] text-slate-400 border border-[var(--c-16364d)]'
                     }`}
                   >
                     {getCurrentStatus(currentQuestion.id) === true
@@ -1964,7 +1964,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       }}
                       autoFocus
                       placeholder="Enter rule text..."
-                      className="w-full px-2.5 py-1.5 text-sm font-bold bg-[#08151a] border border-emerald-400 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      className="w-full px-2.5 py-1.5 text-sm font-bold bg-[var(--c-08151a)] border border-emerald-400 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400"
                     />
                     <button
                       type="button"
@@ -2007,7 +2007,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 /* Inline Override Question: "Not all criteria met. Take it anyway?" */
                 <div
                   id="inline-override-prompt"
-                  className="p-3.5 rounded-xl bg-[#1d170b] border-2 border-amber-500/80 space-y-3 shadow-lg"
+                  className="p-3.5 rounded-xl bg-[var(--c-1d170b)] border-2 border-amber-500/80 space-y-3 shadow-lg"
                 >
                   <div className="flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
@@ -2037,7 +2037,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       type="button"
                       id="override-cancel-btn"
                       onClick={handleCancelOverride}
-                      className="py-2.5 px-3 rounded-lg bg-[#0e2233] hover:bg-[#16364d] text-slate-300 border border-[#204a69] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+                      className="py-2.5 px-3 rounded-lg bg-[var(--c-0e2233)] hover:bg-[var(--c-16364d)] text-slate-300 border border-[var(--c-204a69)] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
                     >
                       <X className="w-3.5 h-3.5" />
                       <span>No, Stay Flat</span>
@@ -2094,20 +2094,20 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {isStepUnlocked('q4') && (
               <>
               {/* Optional Trade Details: Direction / Entry / Exit */}
-              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
+              <div className="space-y-2 pt-2.5 border-t border-[var(--c-162f3c)]">
                 <div className="flex items-center gap-1.5 font-bold text-slate-200 text-[11px]">
                   <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Direction / Entry / Exit (Optional)</span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center rounded-lg border border-[#142c38] overflow-hidden">
+                  <div className="flex items-center rounded-lg border border-[var(--c-142c38)] overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setTradeDirection(tradeDirection === 'LONG' ? '' : 'LONG')}
                       className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
                         tradeDirection === 'LONG'
                           ? 'bg-emerald-500/20 text-emerald-300'
-                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                          : 'bg-[var(--c-071115)] text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       LONG
@@ -2115,10 +2115,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setTradeDirection(tradeDirection === 'SHORT' ? '' : 'SHORT')}
-                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer border-l border-[#142c38] ${
+                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer border-l border-[var(--c-142c38)] ${
                         tradeDirection === 'SHORT'
                           ? 'bg-rose-500/20 text-rose-300'
-                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                          : 'bg-[var(--c-071115)] text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       SHORT
@@ -2129,14 +2129,14 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     value={entryPriceInput}
                     onChange={(e) => setEntryPriceInput(e.target.value)}
                     placeholder="Entry Price"
-                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                    className="flex-1 min-w-[110px] bg-[var(--c-071115)] border border-[var(--c-142c38)] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
                   />
                   <input
                     type="number"
                     value={exitPriceInput}
                     onChange={(e) => setExitPriceInput(e.target.value)}
                     placeholder="Exit Price"
-                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                    className="flex-1 min-w-[110px] bg-[var(--c-071115)] border border-[var(--c-142c38)] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -2144,7 +2144,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {/* Risk Calculator: B / A / A+ sizing, Max DD, risk $ */}
                   <div id="account-sizing-tier-cards" className="space-y-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                     {/* Dynamic Account Connection & Max Drawdown Row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#081318] p-2 rounded-lg border border-[#142934]">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[var(--c-081318)] p-2 rounded-lg border border-[var(--c-142934)]">
                       <div className="flex-1 min-w-0 flex items-center gap-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Account:</span>
                         <select
@@ -2166,7 +2166,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                               }
                             }
                           }}
-                          className="bg-[#0f2027] border border-[#1c3644] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
+                          className="bg-[var(--c-0f2027)] border border-[var(--c-1c3644)] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
                         >
                           <option value="">Manual Entry (No Account Linked)</option>
                           {state.accounts
@@ -2189,7 +2189,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                             value={maxDrawdownInput}
                             onChange={(e) => handleMaxDrawdownChange(e.target.value)}
                             placeholder="2000"
-                            className="w-24 pl-5 pr-2 py-1 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                            className="w-24 pl-5 pr-2 py-1 bg-[var(--c-0f2027)] border border-[var(--c-1c3644)] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
                           />
                         </div>
                         {activeAccount && (
@@ -2215,8 +2215,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                           selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                            ? 'bg-[var(--c-102c2e)] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[var(--c-081418)] border-[var(--c-152a35)] hover:border-[var(--c-1d3d4e)]'
                         }`}
                       >
                         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
@@ -2277,8 +2277,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                           selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                            ? 'bg-[var(--c-102c2e)] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[var(--c-081418)] border-[var(--c-152a35)] hover:border-[var(--c-1d3d4e)]'
                         }`}
                       >
                         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
@@ -2339,8 +2339,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                           selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                            ? 'bg-[var(--c-102c2e)] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[var(--c-081418)] border-[var(--c-152a35)] hover:border-[var(--c-1d3d4e)]'
                         }`}
                       >
                         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
@@ -2390,7 +2390,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     </div>
 
                     {/* Active Sizing Status Callout */}
-                    <div className="p-2.5 bg-[#061217] border border-[#142833] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
+                    <div className="p-2.5 bg-[var(--c-061217)] border border-[var(--c-142833)] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
                       <div className="flex items-center gap-2">
                         <Calculator className="w-4 h-4 text-teal-400 shrink-0" />
                         <div>
@@ -2443,7 +2443,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                               }
                             }}
                             placeholder="Input risk $"
-                            className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                            className="w-full pl-6 pr-2 py-1.5 bg-[var(--c-0f2027)] border border-[var(--c-1c3644)] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
                           />
                         </div>
 
@@ -2487,7 +2487,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
                                     isSelected
                                       ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
-                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
+                                      : 'bg-[var(--c-0b171c)] hover:bg-[var(--c-12252e)] border-[var(--c-18313d)] text-slate-300 hover:text-white'
                                   }`}
                                 >
                                   {preset.label}
@@ -2502,7 +2502,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-400">Take Profit Target:</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[#08151c] px-1.5 py-0.2 rounded border border-[#163342]">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[var(--c-08151c)] px-1.5 py-0.2 rounded border border-[var(--c-163342)]">
                             Optional
                           </span>
                         </div>
@@ -2514,7 +2514,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                             value={optionalTakeProfitInput}
                             onChange={(e) => setOptionalTakeProfitInput(e.target.value)}
                             placeholder="e.g. 400 (Optional)"
-                            className="w-full pl-6 pr-20 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
+                            className="w-full pl-6 pr-20 py-1.5 bg-[var(--c-0f2027)] border border-[var(--c-1c3644)] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
                           />
                           {(() => {
                             const tp = parseFloat(optionalTakeProfitInput);
@@ -2533,7 +2533,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     </div>
 
                     {/* Quick Confirmation Bar */}
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#132833]">
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[var(--c-132833)]">
                       <button
                         type="button"
                         id="confirm-risk-sized-btn"
@@ -2570,7 +2570,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {q5NotFomo !== null && (
               <>
               {/* Optional Trade Notes Input */}
-              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
+              <div className="space-y-2 pt-2.5 border-t border-[var(--c-162f3c)]">
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 font-bold text-slate-200">
                     <PenLine className="w-3.5 h-3.5 text-emerald-400" />
@@ -2587,7 +2587,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   value={consolidatedNote}
                   onChange={(e) => setConsolidatedNote(e.target.value)}
                   placeholder="Type trade type or context (e.g., IB sweep long, 5m FVG bounce, scalp)..."
-                  className="w-full bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                  className="w-full bg-[var(--c-071115)] border border-[var(--c-142c38)] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
                 />
 
                 </div>
@@ -2597,7 +2597,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {/* Tag Control Box — always visible per Travis's request */}
                 <div
                   id="centralized-tag-control-box"
-                  className="p-3 bg-[#071318] border border-[#163342] rounded-xl space-y-2.5"
+                  className="p-3 bg-[var(--c-071318)] border border-[var(--c-163342)] rounded-xl space-y-2.5"
                 >
                   {/* Header with Title and Strict Max 10 Counter */}
                   <div className="flex items-center justify-between">
@@ -2638,7 +2638,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           }}
                           placeholder="Create new tag (e.g. Scalp, Trend, FVG)..."
                           maxLength={24}
-                          className="w-full pl-6 pr-2.5 py-1.5 text-xs font-medium bg-[#09181f] border border-[#1a3848] text-white rounded-lg focus:outline-none focus:border-emerald-400 placeholder:text-slate-500 transition-colors"
+                          className="w-full pl-6 pr-2.5 py-1.5 text-xs font-medium bg-[var(--c-09181f)] border border-[var(--c-1a3848)] text-white rounded-lg focus:outline-none focus:border-emerald-400 placeholder:text-slate-500 transition-colors"
                         />
                       </div>
                       <button
@@ -2676,7 +2676,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         return (
                           <div
                             key={tIdx}
-                            className="flex items-center gap-1 bg-[#0b1f29] border border-emerald-400 rounded-lg px-2 py-0.5 shadow-sm"
+                            className="flex items-center gap-1 bg-[var(--c-0b1f29)] border border-emerald-400 rounded-lg px-2 py-0.5 shadow-sm"
                           >
                             <span className="text-emerald-400 font-bold text-xs">#</span>
                             <input
@@ -2720,7 +2720,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       return (
                         <div
                           key={tIdx}
-                          className="group/systag inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0b1c24] hover:bg-[#112937] border border-[#163546] hover:border-emerald-500/50 text-[11px] font-bold text-slate-200 transition-all shadow-2xs"
+                          className="group/systag inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--c-0b1c24)] hover:bg-[var(--c-112937)] border border-[var(--c-163546)] hover:border-emerald-500/50 text-[11px] font-bold text-slate-200 transition-all shadow-2xs"
                         >
                           <button
                             type="button"
@@ -2731,7 +2731,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                             #{tag}
                           </button>
 
-                          <div className="flex items-center gap-0.5 opacity-60 group-hover/systag:opacity-100 transition-opacity border-l border-[#193a4c] pl-1 ml-0.5">
+                          <div className="flex items-center gap-0.5 opacity-60 group-hover/systag:opacity-100 transition-opacity border-l border-[var(--c-193a4c)] pl-1 ml-0.5">
                             <button
                               type="button"
                               onClick={() => {
@@ -2763,7 +2763,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     )}
                   </div>
 
-                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-[#122834]">
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-[var(--c-122834)]">
                     <span>Click tag to insert into Trade Notes</span>
                     {consolidatedNote && (
                       <button
@@ -2815,7 +2815,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     : filterSavedFeedback
                     ? 'bg-emerald-400 text-black cursor-pointer'
                     : tradeInPosition
-                    ? 'bg-[#15231c] text-emerald-300 border-2 border-emerald-500/50 cursor-not-allowed opacity-95 shadow-emerald-950/30'
+                    ? 'bg-[var(--c-15231c)] text-emerald-300 border-2 border-emerald-500/50 cursor-not-allowed opacity-95 shadow-emerald-950/30'
                     : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/40 cursor-pointer'
                 }`}
                 title={tradeInPosition ? 'In a trade: Resolve current trade outcome below before taking a new trade' : undefined}
@@ -2859,7 +2859,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 id="execute-skip-trade-btn"
                 type="button"
                 onClick={handleSkipTheTrade}
-                className="py-3.5 px-5 bg-[#14222b] hover:bg-[#1c303d] text-slate-200 hover:text-white border border-[#234354] hover:border-slate-400 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                className="py-3.5 px-5 bg-[var(--c-14222b)] hover:bg-[var(--c-1c303d)] text-slate-200 hover:text-white border border-[var(--c-234354)] hover:border-slate-400 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
                 title="Chickened out or decided to pass? Cancel trade setup and reset checklist"
               >
                 <XCircle className="w-4 h-4 text-slate-400" />
@@ -2870,7 +2870,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {skipTradeFeedback && (
               <div
                 id="skip-trade-bottom-alert-banner"
-                className="p-3 rounded-xl bg-[#091b24] border border-sky-500/50 text-sky-200 text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in"
+                className="p-3 rounded-xl bg-[var(--c-091b24)] border border-sky-500/50 text-sky-200 text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in"
               >
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-sky-400 shrink-0" />
@@ -2923,16 +2923,16 @@ export const SessionView: React.FC<SessionViewProps> = ({
             {/* OUTCOME TRACKER BOX: Placed right immediately following trade button */}
             <div
               id="outcome-tracker-box"
-              className={`p-4 rounded-2xl bg-[#09151b] border-2 transition-all space-y-3.5 shadow-xl ${
+              className={`p-4 rounded-2xl bg-[var(--c-09151b)] border-2 transition-all space-y-3.5 shadow-xl ${
                 !isCheckInCompletedToday
                   ? 'border-amber-500/40 shadow-black/40'
                   : tradeInPosition
                   ? 'border-amber-500/60 shadow-amber-950/30 ring-1 ring-amber-500/30'
-                  : 'border-[#172d38] shadow-black/40'
+                  : 'border-[var(--c-172d38)] shadow-black/40'
               }`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between gap-2 border-b border-[#142833] pb-2.5 flex-wrap">
+              <div className="flex items-center justify-between gap-2 border-b border-[var(--c-142833)] pb-2.5 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs ${
                     !isCheckInCompletedToday
@@ -2966,7 +2966,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 text-[11px]">
-                  <span className="px-2 py-0.5 rounded bg-[#061014] border border-[#142833] text-slate-300 font-mono font-bold">
+                  <span className="px-2 py-0.5 rounded bg-[var(--c-061014)] border border-[var(--c-142833)] text-slate-300 font-mono font-bold">
                     Accepted Risk: <strong className="text-rose-300">${acceptedRisk}</strong>
                   </span>
                 </div>
@@ -2976,7 +2976,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               {tradeInPosition && (
                 <div
                   id="in-a-trade-active-banner"
-                  className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/70 via-[#0b2123] to-[#071d24] border-2 border-emerald-500/60 text-emerald-200 shadow-md flex items-center justify-between gap-3 animate-in fade-in"
+                  className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/70 via-[var(--c-0b2123)] to-[var(--c-071d24)] border-2 border-emerald-500/60 text-emerald-200 shadow-md flex items-center justify-between gap-3 animate-in fade-in"
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="relative flex items-center justify-center shrink-0">
@@ -2988,7 +2988,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         <span className="text-xs font-black text-emerald-300 tracking-wider">
                           IN A TRADE
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#06171d] border border-emerald-500/40 text-[10px] font-bold text-emerald-200">
+                        <span className="px-1.5 py-0.5 rounded bg-[var(--c-06171d)] border border-emerald-500/40 text-[10px] font-bold text-emerald-200">
                           {activeAccount ? activeAccount.name : 'Active Account'}
                         </span>
                         <span className="px-1.5 py-0.5 rounded bg-rose-950/60 border border-rose-600/40 text-[10px] font-mono font-bold text-rose-300">
@@ -3003,7 +3003,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <button
                     type="button"
                     onClick={handleSkipTheTrade}
-                    className="px-2.5 py-1 rounded-lg bg-[#0a1921] hover:bg-[#122834] border border-[#1d3d4e] text-slate-300 hover:text-white text-[10px] font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-[var(--c-0a1921)] hover:bg-[var(--c-122834)] border border-[var(--c-1d3d4e)] text-slate-300 hover:text-white text-[10px] font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                     title="Cancel active trade position state and reset checklist"
                   >
                     Cancel Position
@@ -3046,7 +3046,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     className={`w-full py-2.5 px-3.5 rounded-xl border text-xs font-bold flex items-center justify-between transition-all ${
                       tradeInPosition
                         ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/40 text-rose-200 cursor-pointer group'
-                        : 'bg-[#08151c] border-[#162a36] text-slate-500 opacity-40 cursor-not-allowed'
+                        : 'bg-[var(--c-08151c)] border-[var(--c-162a36)] text-slate-500 opacity-40 cursor-not-allowed'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -3057,7 +3057,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       className={`font-mono font-black text-xs px-2.5 py-0.5 rounded border ${
                         tradeInPosition
                           ? 'bg-rose-950/80 border-rose-700/60 text-rose-300'
-                          : 'bg-[#0c1e28] border-[#183444] text-slate-500'
+                          : 'bg-[var(--c-0c1e28)] border-[var(--c-183444)] text-slate-500'
                       }`}
                     >
                       -${acceptedRisk}
@@ -3075,7 +3075,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       className={`py-3 px-3 rounded-xl border-2 font-black text-xs flex flex-col items-center justify-center gap-1 transition-all ${
                         tradeInPosition
                           ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/50 hover:border-emerald-400 text-emerald-200 cursor-pointer shadow-lg shadow-emerald-950/20'
-                          : 'bg-[#08151c] border-[#162a36] text-slate-500 opacity-40 cursor-not-allowed'
+                          : 'bg-[var(--c-08151c)] border-[var(--c-162a36)] text-slate-500 opacity-40 cursor-not-allowed'
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
@@ -3096,7 +3096,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       className={`py-3 px-3 rounded-xl border-2 font-black text-xs flex flex-col items-center justify-center gap-1 transition-all ${
                         tradeInPosition
                           ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/50 hover:border-rose-400 text-rose-200 cursor-pointer shadow-lg shadow-rose-950/20'
-                          : 'bg-[#08151c] border-[#162a36] text-slate-500 opacity-40 cursor-not-allowed'
+                          : 'bg-[var(--c-08151c)] border-[var(--c-162a36)] text-slate-500 opacity-40 cursor-not-allowed'
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
@@ -3113,7 +3113,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
               {/* WIN FLOW: If Winner is selected, trigger follow-up question "How much?" */}
               {outcomeMode === 'winner' && (
-                <div className="space-y-3 p-3 rounded-xl bg-[#061014] border border-emerald-500/30 animate-in fade-in-50 duration-200">
+                <div className="space-y-3 p-3 rounded-xl bg-[var(--c-061014)] border border-emerald-500/30 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black text-[10px] uppercase tracking-wider border border-emerald-500/40">
@@ -3141,7 +3141,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       value={winAmountInput}
                       onChange={(e) => setWinAmountInput(e.target.value)}
                       placeholder={String(acceptedRisk)}
-                      className="w-full pl-8 pr-3 py-2.5 rounded-lg bg-[#0c1a21] border border-emerald-500/50 text-white font-mono font-bold text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                      className="w-full pl-8 pr-3 py-2.5 rounded-lg bg-[var(--c-0c1a21)] border border-emerald-500/50 text-white font-mono font-bold text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                     />
                   </div>
 
@@ -3155,7 +3155,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           key={r}
                           type="button"
                           onClick={() => setWinAmountInput(String(val))}
-                          className="px-2 py-1 rounded bg-[#0b181f] hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-300 text-[10px] font-mono font-bold transition-all cursor-pointer"
+                          className="px-2 py-1 rounded bg-[var(--c-0b181f)] hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-300 text-[10px] font-mono font-bold transition-all cursor-pointer"
                         >
                           +{r}R (${val})
                         </button>
@@ -3182,7 +3182,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
               {/* LOSS FLOW: Warning message "Answering honestly..." followed by three distinct buttons */}
               {outcomeMode === 'loser' && (
-                <div className="space-y-3 p-3 rounded-xl bg-[#061014] border border-rose-500/30 animate-in fade-in-50 duration-200">
+                <div className="space-y-3 p-3 rounded-xl bg-[var(--c-061014)] border border-rose-500/30 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-black text-[10px] uppercase tracking-wider border border-rose-500/40">
@@ -3226,7 +3226,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           value={lossAmountInput}
                           onChange={(e) => setLossAmountInput(e.target.value)}
                           placeholder={String(acceptedRisk || 200)}
-                          className="w-24 px-2 py-1 rounded bg-[#0b171c] border border-rose-500/50 text-white font-mono font-bold text-xs focus:outline-none focus:border-rose-400"
+                          className="w-24 px-2 py-1 rounded bg-[var(--c-0b171c)] border border-rose-500/50 text-white font-mono font-bold text-xs focus:outline-none focus:border-rose-400"
                         />
                       </div>
                     </div>
@@ -3250,7 +3250,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                           className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
                             lossAmountInput === String(preset.val)
                               ? 'bg-rose-500/30 border-rose-400 text-rose-200'
-                              : 'bg-[#0b181f] hover:bg-rose-500/20 border-slate-700 hover:border-rose-500/50 text-slate-300 hover:text-rose-300'
+                              : 'bg-[var(--c-0b181f)] hover:bg-rose-500/20 border-slate-700 hover:border-rose-500/50 text-slate-300 hover:text-rose-300'
                           }`}
                         >
                           {preset.label}
@@ -3266,7 +3266,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       type="button"
                       id="loss-fine-btn"
                       onClick={() => handleConfirmLoss('fine')}
-                      className="w-full py-2.5 px-3.5 rounded-xl bg-[#091b22] hover:bg-emerald-950/50 border border-emerald-500/50 hover:border-emerald-400 text-emerald-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-sm group"
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-[var(--c-091b22)] hover:bg-emerald-950/50 border border-emerald-500/50 hover:border-emerald-400 text-emerald-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-sm group"
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -3289,7 +3289,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       type="button"
                       id="loss-frustrated-btn"
                       onClick={() => handleConfirmLoss('frustrated')}
-                      className="w-full py-2.5 px-3.5 rounded-xl bg-[#1c1809] hover:bg-amber-950/50 border border-amber-500/50 hover:border-amber-400 text-amber-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-sm group"
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-[var(--c-1c1809)] hover:bg-amber-950/50 border border-amber-500/50 hover:border-amber-400 text-amber-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-sm group"
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -3312,7 +3312,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       type="button"
                       id="loss-chasing-btn"
                       onClick={() => handleConfirmLoss('feel_like_chasing')}
-                      className="w-full py-2.5 px-3.5 rounded-xl bg-[#230d12] hover:bg-rose-950/60 border-2 border-rose-500/60 hover:border-rose-400 text-rose-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-md group"
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-[var(--c-230d12)] hover:bg-rose-950/60 border-2 border-rose-500/60 hover:border-rose-400 text-rose-200 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-md group"
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-lg bg-rose-500/30 text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform animate-pulse">
@@ -3355,8 +3355,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* NEW ACCOUNT CREATION MODAL */}
       {showAddAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#142933] pb-3">
+          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--c-0b161b)] border border-[var(--c-1b3542)] rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-black uppercase tracking-wider text-white">
@@ -3372,7 +3372,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             </div>
 
             {/* Type Selector Pills */}
-            <div className="flex items-center gap-1.5 p-1 bg-[#081216] border border-[#142630] rounded-xl">
+            <div className="flex items-center gap-1.5 p-1 bg-[var(--c-081216)] border border-[var(--c-142630)] rounded-xl">
               <button
                 type="button"
                 onClick={() => setNewAccType('live')}
@@ -3411,7 +3411,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     value={newAccName}
                     onChange={(e) => setNewAccName(e.target.value)}
                     placeholder=""
-                    className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
+                    className="w-full bg-[var(--c-081216)] border border-[var(--c-142831)] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
                   />
                 </div>
 
@@ -3426,7 +3426,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     value={newAccMaxDD}
                     onChange={(e) => setNewAccMaxDD(e.target.value)}
                     placeholder=""
-                    className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
+                    className="w-full bg-[var(--c-081216)] border border-[var(--c-142831)] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
                   />
                 </div>
 
@@ -3437,7 +3437,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <select
                     value={newAccDrawdownType}
                     onChange={(e) => setNewAccDrawdownType(e.target.value as AccountDrawdownType)}
-                    className="w-full bg-[#081216] border border-[#142831] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
+                    className="w-full bg-[var(--c-081216)] border border-[var(--c-142831)] text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500 font-bold"
                   >
                     <option value="eod">End of Day Trailing (6 PM ET)</option>
                     <option value="intraday_trailing">Intraday Trailing (HWM)</option>
@@ -3446,7 +3446,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-[#081216] border border-[#142831] rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl flex items-center justify-between">
                 <div>
                   <div className="text-xs font-bold text-white">
                     Does drawdown stop trailing at starting balance?
@@ -3463,7 +3463,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     className={`px-3 py-1 text-xs font-bold rounded-lg border cursor-pointer ${
                       newAccStopFloor
                         ? 'bg-emerald-500 text-black border-emerald-400'
-                        : 'bg-[#102027] text-slate-400 border-[#1a3746]'
+                        : 'bg-[var(--c-102027)] text-slate-400 border-[var(--c-1a3746)]'
                     }`}
                   >
                     Yes
@@ -3474,7 +3474,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     className={`px-3 py-1 text-xs font-bold rounded-lg border cursor-pointer ${
                       !newAccStopFloor
                         ? 'bg-rose-600 text-white border-rose-500'
-                        : 'bg-[#102027] text-slate-400 border-[#1a3746]'
+                        : 'bg-[var(--c-102027)] text-slate-400 border-[var(--c-1a3746)]'
                     }`}
                   >
                     No
@@ -3482,11 +3482,11 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-[#142933]">
+              <div className="flex justify-end gap-2 pt-2 border-t border-[var(--c-142933)]">
                 <button
                   type="button"
                   onClick={() => setShowAddAccountModal(false)}
-                  className="px-4 py-2 bg-[#102027] text-slate-400 hover:text-white rounded-xl text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 bg-[var(--c-102027)] text-slate-400 hover:text-white rounded-xl text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -3505,9 +3505,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* MORNING EMOTIONAL CHECK-IN MODAL (JUST ONE QUESTION) */}
       {showMorningCheckInModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0b161b] border border-[#1b3644] rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
+          <div className="bg-[var(--c-0b161b)] border border-[var(--c-1b3644)] rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#142630] pb-3">
+            <div className="flex items-center justify-between border-b border-[var(--c-142630)] pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                   <Sun className="w-4 h-4" />
@@ -3531,7 +3531,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   setShowMorningCheckInModal(false);
                   setMorningCheckInDismissed(true);
                 }}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#142831] text-xs font-bold cursor-pointer"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[var(--c-142831)] text-xs font-bold cursor-pointer"
                 title="Close modal (Session remains locked until completed)"
               >
                 ✕
@@ -3567,10 +3567,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         isSelected
                           ? isAnchor5
                             ? 'bg-emerald-500 text-black border-emerald-300 shadow-lg ring-2 ring-emerald-400 scale-105'
-                            : 'bg-[#153442] text-white border-emerald-400 shadow-md ring-2 ring-emerald-500/50 scale-105'
+                            : 'bg-[var(--c-153442)] text-white border-emerald-400 shadow-md ring-2 ring-emerald-500/50 scale-105'
                           : isAnchor5
                           ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 hover:border-emerald-400'
-                          : 'bg-[#081317] border-[#142732] text-slate-400 hover:border-[#1d3b4b] hover:text-white'
+                          : 'bg-[var(--c-081317)] border-[var(--c-142732)] text-slate-400 hover:border-[var(--c-1d3b4b)] hover:text-white'
                       }`}
                       title={f.title}
                     >
@@ -3621,7 +3621,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             </div>
 
             {/* Modal Action - Lock in baseline and unlock session */}
-            <div className="pt-2 border-t border-[#142630]">
+            <div className="pt-2 border-t border-[var(--c-142630)]">
               <button
                 type="button"
                 id="modal-complete-checkin-btn"
@@ -3639,8 +3639,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
       {/* QUICK RESTORE / MANUAL ADD TRADE MODAL */}
       {showRestoreTradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[#0b161b] border border-[#1b3542] rounded-2xl shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#142933] pb-3">
+          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--c-0b161b)] border border-[var(--c-1b3542)] rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--c-142933)] pb-3">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-black uppercase tracking-wider text-white">
@@ -3665,7 +3665,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   value={restoreTradeName}
                   onChange={(e) => setRestoreTradeName(e.target.value)}
                   placeholder="e.g. Trade #1 - NQ Long Pullback"
-                  className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden"
                 />
               </div>
 
@@ -3679,7 +3679,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     value={restoreTradePnl}
                     onChange={(e) => setRestoreTradePnl(e.target.value)}
                     placeholder="e.g. -250 or 500"
-                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-mono font-bold focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-mono font-bold focus:border-emerald-500 outline-hidden"
                   />
                 </div>
 
@@ -3690,7 +3690,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <select
                     value={restoreTradeQuality}
                     onChange={(e) => setRestoreTradeQuality(e.target.value as TradeQualityGrade)}
-                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
                   >
                     <option value="A_PLUS">A+ (Full Setup)</option>
                     <option value="A">A (Standard Setup)</option>
@@ -3707,7 +3707,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <select
                     value={restoreTradeDiscipline}
                     onChange={(e) => setRestoreTradeDiscipline(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
                   >
                     <option value="managed_well">Managed Well</option>
                     <option value="exited_emotionally">Exited Emotionally</option>
@@ -3721,7 +3721,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <select
                     value={restoreTradeAccountId || activeAccount?.id || ''}
                     onChange={(e) => setRestoreTradeAccountId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-bold focus:border-emerald-500 outline-hidden"
                   >
                     {state.accounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
@@ -3741,16 +3741,16 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   onChange={(e) => setRestoreTradeNotes(e.target.value)}
                   rows={2}
                   placeholder="Key observations, levels, or execution notes..."
-                  className="w-full px-3 py-2 bg-[#081216] border border-[#162c38] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden resize-none"
+                  className="w-full px-3 py-2 bg-[var(--c-081216)] border border-[var(--c-162c38)] rounded-xl text-white font-medium focus:border-emerald-500 outline-hidden resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#142933]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--c-142933)]">
               <button
                 type="button"
                 onClick={() => setShowRestoreTradeModal(false)}
-                className="px-4 py-2 rounded-xl bg-[#0e1d24] hover:bg-[#152a34] text-slate-300 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[var(--c-0e1d24)] hover:bg-[var(--c-152a34)] text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>

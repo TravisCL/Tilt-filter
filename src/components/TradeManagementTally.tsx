@@ -162,16 +162,16 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
   return (
     <div
       id="board-trade-management-tally"
-      className="p-4 sm:p-5 bg-[#0b161b] border border-[#162a33] rounded-2xl space-y-4 shadow-xs"
+      className="p-4 sm:p-5 bg-[var(--c-0b161b)] border border-[var(--c-162a33)] rounded-2xl space-y-4 shadow-xs"
     >
       {/* Header with Monthly Title & Month Selector Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#142630] pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--c-142630)] pb-3.5">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black uppercase tracking-wider text-slate-300">
               Trade Management Tally
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-[#0e242d] border border-emerald-500/30 text-emerald-300 font-mono text-[10px] font-extrabold uppercase">
+            <span className="px-2 py-0.5 rounded-md bg-[var(--c-0e242d)] border border-emerald-500/30 text-emerald-300 font-mono text-[10px] font-extrabold uppercase">
               Monthly Aggregation
             </span>
           </div>
@@ -181,14 +181,14 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
         </div>
 
         {/* Month Navigation Controls */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-[#071318] border border-[#142933] p-1 rounded-xl">
+        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-[var(--c-071318)] border border-[var(--c-142933)] p-1 rounded-xl">
           <button
             type="button"
             onClick={handlePrevMonth}
             disabled={!hasPrev}
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               hasPrev
-                ? 'hover:bg-[#122832] text-slate-300 hover:text-white'
+                ? 'hover:bg-[var(--c-122832)] text-slate-300 hover:text-white'
                 : 'text-slate-600 cursor-not-allowed opacity-40'
             }`}
             title="Previous Month"
@@ -207,7 +207,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
             disabled={!hasNext}
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               hasNext
-                ? 'hover:bg-[#122832] text-slate-300 hover:text-white'
+                ? 'hover:bg-[var(--c-122832)] text-slate-300 hover:text-white'
                 : 'text-slate-600 cursor-not-allowed opacity-40'
             }`}
             title="Next Month"
@@ -220,7 +220,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
       {/* Monthly Summary Statistics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Managed Well (Monthly Total) */}
-        <div className="p-3.5 rounded-xl bg-[#08151a] border border-emerald-500/25 flex flex-col justify-between space-y-2">
+        <div className="p-3.5 rounded-xl bg-[var(--c-08151a)] border border-emerald-500/25 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
@@ -244,7 +244,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
         </div>
 
         {/* Exited Emotionally (Monthly Total) */}
-        <div className="p-3.5 rounded-xl bg-[#150a0e] border border-rose-500/25 flex flex-col justify-between space-y-2">
+        <div className="p-3.5 rounded-xl bg-[var(--c-150a0e)] border border-rose-500/25 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" />
@@ -268,7 +268,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
         </div>
 
         {/* Monthly Discipline Execution Score */}
-        <div className="p-3.5 rounded-xl bg-[#081216] border border-[#13252f] flex flex-col justify-between space-y-2">
+        <div className="p-3.5 rounded-xl bg-[var(--c-081216)] border border-[var(--c-13252f)] flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-400 shrink-0" />
@@ -307,7 +307,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
           </span>
         </div>
 
-        <div className="w-full h-2.5 bg-[#0a171d] rounded-full overflow-hidden flex shadow-inner">
+        <div className="w-full h-2.5 bg-[var(--c-0a171d)] rounded-full overflow-hidden flex shadow-inner">
           {currentStats.totalTrades > 0 ? (
             <>
               <div
@@ -333,7 +333,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
               />
             </>
           ) : (
-            <div className="w-full h-full bg-[#12242c]" title="Day 1 Clean Slate - No trades recorded" />
+            <div className="w-full h-full bg-[var(--c-12242c)]" title="Day 1 Clean Slate - No trades recorded" />
           )}
         </div>
 
@@ -364,7 +364,7 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
 
       {/* Month-over-Month Comparison when multiple months exist */}
       {availableMonths.length > 1 && (
-        <div className="pt-3 border-t border-[#142630] space-y-2">
+        <div className="pt-3 border-t border-[var(--c-142630)] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               Month-over-Month History
@@ -390,8 +390,8 @@ export const TradeManagementTally: React.FC<TradeManagementTallyProps> = ({ stat
                     onClick={() => setSelectedMonth(mKey)}
                     className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 text-xs transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#10242e] border-emerald-500/50 shadow-xs'
-                        : 'bg-[#081216] border-[#13252f] hover:border-[#1a3745]'
+                        ? 'bg-[var(--c-10242e)] border-emerald-500/50 shadow-xs'
+                        : 'bg-[var(--c-081216)] border-[var(--c-13252f)] hover:border-[var(--c-1a3745)]'
                     }`}
                   >
                     <div className="flex items-center gap-2">

@@ -285,7 +285,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Top Header Card */}
-      <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
@@ -302,7 +302,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 bg-[#081317] border border-[#142631] rounded-xl text-left">
+          <div className="px-3.5 py-1.5 bg-[var(--c-081317)] border border-[var(--c-142631)] rounded-xl text-left">
             <div className="text-[10px] uppercase font-bold text-slate-400">Today</div>
             <div className="text-xs font-black text-white">{dayName}</div>
           </div>
@@ -310,7 +310,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
           <button
             type="button"
             onClick={onGoToTally}
-            className="px-3.5 py-2 bg-[#122830] hover:bg-[#183642] text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-[var(--c-122830)] hover:bg-[var(--c-183642)] text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <span>Session Tally</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -322,8 +322,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
       {isCheckedInToday ? (
         <div className="space-y-6 animate-in fade-in-50">
           {/* Summary Card */}
-          <div className="bg-[#0b161b] border border-emerald-500/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#142630] pb-4">
+          <div className="bg-[var(--c-0b161b)] border border-emerald-500/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--c-142630)] pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                   <CheckCircle2 className="w-5 h-5" />
@@ -341,7 +341,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
               <button
                 type="button"
                 onClick={handleRetake}
-                className="px-3 py-1.5 bg-[#081317] hover:bg-[#12252e] text-slate-300 hover:text-white border border-[#162e3a] rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[var(--c-081317)] hover:bg-[var(--c-12252e)] text-slate-300 hover:text-white border border-[var(--c-162e3a)] rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Update Answers</span>
@@ -351,7 +351,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
             {/* 4 Clean Answer Badges */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Question 1 Answer */}
-              <div className="p-3.5 bg-[#081317] border border-[#142631] rounded-xl space-y-1">
+              <div className="p-3.5 bg-[var(--c-081317)] border border-[var(--c-142631)] rounded-xl space-y-1">
                 <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-emerald-400" />
                   <span>1. Emotional Baseline</span>
@@ -372,7 +372,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
               </div>
 
               {/* Question 2 Answer */}
-              <div className="p-3.5 bg-[#081317] border border-[#142631] rounded-xl space-y-1">
+              <div className="p-3.5 bg-[var(--c-081317)] border border-[var(--c-142631)] rounded-xl space-y-1">
                 <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5">
                   <Moon className="w-3.5 h-3.5 text-indigo-400" />
                   <span>2. Sleep & Rest</span>
@@ -388,7 +388,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
               </div>
 
               {/* Question 3 Answer */}
-              <div className="p-3.5 bg-[#081317] border border-[#142631] rounded-xl space-y-1">
+              <div className="p-3.5 bg-[var(--c-081317)] border border-[var(--c-142631)] rounded-xl space-y-1">
                 <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5">
                   <Compass className="w-3.5 h-3.5 text-amber-400" />
                   <span>3. Primary Focus Rule</span>
@@ -399,7 +399,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
               </div>
 
               {/* Question 4 Answer */}
-              <div className="p-3.5 bg-[#081317] border border-[#142631] rounded-xl space-y-1">
+              <div className="p-3.5 bg-[var(--c-081317)] border border-[var(--c-142631)] rounded-xl space-y-1">
                 <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5 text-teal-400" />
                   <span>4. Trigger Guard</span>
@@ -417,8 +417,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
           </div>
 
           {/* Simple Session Outcome Logger Card */}
-          <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#142630] pb-3">
+          <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--c-142630)] pb-3">
               <div className="space-y-0.5">
                 <h3 className="text-sm font-black text-white">
                   Session Wrap-Up & Outcome
@@ -443,7 +443,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                   sessionOutcome === 'clean'
                     ? 'bg-emerald-950/40 border-emerald-400 text-white ring-1 ring-emerald-400'
-                    : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1e3b4a]'
+                    : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1e3b4a)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -463,7 +463,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                   sessionOutcome === 'minor_slip'
                     ? 'bg-amber-950/40 border-amber-400 text-white ring-1 ring-amber-400'
-                    : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1e3b4a]'
+                    : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1e3b4a)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -483,7 +483,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                   sessionOutcome === 'tilted'
                     ? 'bg-rose-950/40 border-rose-400 text-white ring-1 ring-rose-400'
-                    : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1e3b4a]'
+                    : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1e3b4a)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -508,7 +508,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                 value={reflectionNote}
                 onChange={(e) => setReflectionNote(e.target.value)}
                 placeholder="e.g. Took only 1 clean trade, respected target, stepped away calmly..."
-                className="w-full bg-[#081216] border border-[#152a34] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
+                className="w-full bg-[var(--c-081216)] border border-[var(--c-152a34)] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
               />
             </div>
 
@@ -535,7 +535,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
         </div>
       ) : (
         /* ACTIVE STEP-BY-STEP Q&A FLOW */
-        <div className="bg-[#0b161b] border border-[#162b34] rounded-2xl p-5 sm:p-7 space-y-6 shadow-sm">
+        <div className="bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl p-5 sm:p-7 space-y-6 shadow-sm">
           {/* Step Progress Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -553,7 +553,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
               </span>
             </div>
 
-            <div className="w-full bg-[#081317] h-1.5 rounded-full overflow-hidden flex">
+            <div className="w-full bg-[var(--c-081317)] h-1.5 rounded-full overflow-hidden flex">
               <div
                 className="bg-emerald-400 h-full rounded-full transition-all duration-300"
                 style={{ width: `${(currentStep / 4) * 100}%` }}
@@ -592,10 +592,10 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                         isSelected
                           ? isAnchor5
                             ? 'bg-emerald-500 text-black border-emerald-300 shadow-md ring-2 ring-emerald-400 scale-105'
-                            : 'bg-[#153442] text-white border-emerald-400 shadow-md ring-2 ring-emerald-500/50 scale-105'
+                            : 'bg-[var(--c-153442)] text-white border-emerald-400 shadow-md ring-2 ring-emerald-500/50 scale-105'
                           : isAnchor5
                           ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 hover:border-emerald-400'
-                          : 'bg-[#081317] border-[#142732] text-slate-400 hover:border-[#1d3b4b] hover:text-white'
+                          : 'bg-[var(--c-081317)] border-[var(--c-142732)] text-slate-400 hover:border-[var(--c-1d3b4b)] hover:text-white'
                       }`}
                     >
                       <span className="text-sm font-black">{item.level}</span>
@@ -673,8 +673,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                       onClick={() => setSelectedSleep(opt.title)}
                       className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                         isSelected
-                          ? 'bg-[#102a35] border-emerald-400 text-white ring-1 ring-emerald-400 shadow-sm'
-                          : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1b3846]'
+                          ? 'bg-[var(--c-102a35)] border-emerald-400 text-white ring-1 ring-emerald-400 shadow-sm'
+                          : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1b3846)]'
                       }`}
                     >
                       <span className="text-2xl shrink-0 mt-0.5">{opt.icon}</span>
@@ -709,7 +709,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                   value={sleepNote}
                   onChange={(e) => setSleepNote(e.target.value)}
                   placeholder="e.g. Slept 8 hours, woke up early with clear head..."
-                  className="w-full bg-[#081216] border border-[#152a34] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full bg-[var(--c-081216)] border border-[var(--c-152a34)] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
             </div>
@@ -748,8 +748,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                         }}
                         className={`w-full p-3 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
                           isSelected
-                            ? 'bg-[#102a35] border-emerald-400 text-emerald-300 ring-1 ring-emerald-400'
-                            : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1e3d4c] hover:text-white'
+                            ? 'bg-[var(--c-102a35)] border-emerald-400 text-emerald-300 ring-1 ring-emerald-400'
+                            : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1e3d4c)] hover:text-white'
                         }`}
                       >
                         <span>{rule}</span>
@@ -772,7 +772,7 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                   value={customFocusRule}
                   onChange={(e) => setCustomFocusRule(e.target.value)}
                   placeholder="e.g. Only take trade if 15m candle closes outside range..."
-                  className="w-full bg-[#081216] border border-[#152a34] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full bg-[var(--c-081216)] border border-[var(--c-152a34)] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
             </div>
@@ -804,8 +804,8 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                       onClick={() => setSelectedTrigger(opt.title)}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                         isSelected
-                          ? 'bg-[#102a35] border-emerald-400 text-white ring-1 ring-emerald-400 shadow-sm'
-                          : 'bg-[#081317] border-[#142631] text-slate-300 hover:border-[#1b3846]'
+                          ? 'bg-[var(--c-102a35)] border-emerald-400 text-white ring-1 ring-emerald-400 shadow-sm'
+                          : 'bg-[var(--c-081317)] border-[var(--c-142631)] text-slate-300 hover:border-[var(--c-1b3846)]'
                       }`}
                     >
                       <span className="text-2xl shrink-0 mt-0.5">{opt.icon}</span>
@@ -837,12 +837,12 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
                   value={triggerNote}
                   onChange={(e) => setTriggerNote(e.target.value)}
                   placeholder="e.g. Taking a 5-minute break after each trade..."
-                  className="w-full bg-[#081216] border border-[#152a34] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full bg-[var(--c-081216)] border border-[var(--c-152a34)] text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
 
               {/* Summary of choices preview */}
-              <div className="p-3 bg-[#081317] border border-[#142732] rounded-xl flex items-center justify-between text-xs text-slate-300">
+              <div className="p-3 bg-[var(--c-081317)] border border-[var(--c-142732)] rounded-xl flex items-center justify-between text-xs text-slate-300">
                 <span className="flex items-center gap-1.5 font-semibold">
                   <span>Level {selectedFeel}/10</span> &bull; <span>{selectedSleep}</span> &bull;{' '}
                   <span className="truncate max-w-[200px] text-emerald-300">
@@ -855,12 +855,12 @@ export const MoodQAView: React.FC<MoodQAViewProps> = ({
           )}
 
           {/* Bottom Step Navigation Controls */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#142630]">
+          <div className="flex items-center justify-between pt-4 border-t border-[var(--c-142630)]">
             {currentStep > 1 ? (
               <button
                 type="button"
                 onClick={() => setCurrentStep((prev) => prev - 1)}
-                className="px-4 py-2.5 bg-[#091519] hover:bg-[#10242c] text-slate-300 border border-[#142631] rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 bg-[var(--c-091519)] hover:bg-[var(--c-10242c)] text-slate-300 border border-[var(--c-142631)] rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
