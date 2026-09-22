@@ -1770,16 +1770,6 @@ export const SessionView: React.FC<SessionViewProps> = ({
         </div>
       </div>
       <div id="trade-filter-section" className="bg-[#0b1a26] border border-[#16354d] rounded-2xl p-4 lg:p-6 space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#142f45] pb-3">
-          <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2">
-            <span>THE TRADER FILTER</span>
-          </h2>
-          <span className="text-[11px] font-mono font-bold text-slate-400 bg-[#071520] px-2.5 py-1 rounded-lg border border-[#173752]">
-            {state.rules.length}/5 RULES ACTIVE
-          </span>
-        </div>
-
         {/* 2-Column Responsive Layout: Pre-Trade Workflow & Standalone Filter Control Box */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: The Pre-Trade Rules Workflow (lg:col-span-7 xl:col-span-7 space-y-3.5) */}
@@ -1954,760 +1944,6 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               )}
             </div>
-
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span>PRE-TRADE CHECKLIST OVERVIEW</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#12242e] border border-[#1b3746] text-[10px] font-mono font-bold text-slate-300">
-                  {state.rules.length}/5 RULES (MAX 5)
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400 font-normal normal-case">
-                Click rule text to edit inline
-              </span>
-            </div>
-
-            <div className="space-y-2.5">
-              {state.rules.map((rule, idx) => {
-                const isYes = ruleCheckboxes[rule.id] === true;
-                const isNo = ruleCheckboxes[rule.id] === false;
-                const isOverridden = overriddenRules[rule.id] === true;
-                const isActive = activeRuleFocus === rule.id;
-                const isUnlocked = isStepUnlocked(rule.id);
-
-                return (
-                  <div
-                    key={rule.id}
-                    id={`rule-card-${rule.id}`}
-                    onClick={() => handleSelectStep(rule.id)}
-                    className={`p-3.5 rounded-xl text-xs transition-all space-y-2 cursor-pointer ${
-                      !isUnlocked
-                        ? 'border border-[#132530] bg-[#071318] opacity-60 hover:opacity-85'
-                        : isActive
-                        ? 'border-2 border-emerald-400 bg-[#0d222b] ring-2 ring-emerald-500/25 shadow-lg shadow-emerald-950/40'
-                        : isYes
-                        ? 'border border-emerald-500/40 bg-[#0c1f26]'
-                        : isNo && isOverridden
-                        ? 'border border-amber-500/40 bg-[#16160e]'
-                        : isNo
-                        ? 'border border-rose-900/60 bg-[#161a1d]'
-                        : 'border border-[#17303d] bg-[#0c181e] opacity-90 hover:opacity-100 hover:border-[#22485c]'
-                    }`}
-                  >
-                    {/* Top Row: Index, Rule Text (Inline Editable), Status Pill, Reorder */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-slate-500 font-bold text-xs w-4 shrink-0">{idx + 1}</span>
-
-                        {/* Inline Editable Rule Text */}
-                        {editingRuleId === rule.id ? (
-                          <div
-                            className="flex items-center gap-1.5 flex-1 min-w-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="text"
-                              value={editingRuleText}
-                              onChange={(e) => setEditingRuleText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveRuleText(rule.id);
-                                if (e.key === 'Escape') handleCancelEditRule();
-                              }}
-                              autoFocus
-                              placeholder="Enter rule text..."
-                              className="w-full px-2.5 py-1 text-xs font-bold bg-[#08151a] border border-emerald-400 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveRuleText(rule.id)}
-                              className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 rounded cursor-pointer shrink-0"
-                              title="Save rule text"
-                            >
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelEditRule}
-                              className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded cursor-pointer shrink-0"
-                              title="Cancel"
-                            >
-                              <X className="w-3.5 h-3.5 stroke-[2.5]" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0 group/rule">
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartEditRule(rule.id, rule.text);
-                              }}
-                              className="tracking-wide text-xs font-bold text-slate-200 hover:text-emerald-300 transition-colors truncate cursor-pointer"
-                              title="Click to edit rule text"
-                            >
-                              {rule.text}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartEditRule(rule.id, rule.text);
-                              }}
-                              className="opacity-60 group-hover/rule:opacity-100 p-0.5 text-slate-400 hover:text-emerald-300 transition-opacity cursor-pointer shrink-0"
-                              title="Edit rule text inline"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </button>
-                            {isActive && (
-                              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shrink-0">
-                                <span className="relative flex h-1.5 w-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
-                                </span>
-                                <span>Active</span>
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Status badge - Reflects answer from consolidated control box */}
-                        {isYes ? (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                            <span>YES</span>
-                          </span>
-                        ) : isNo && isOverridden ? (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            <span>Override</span>
-                          </span>
-                        ) : isNo ? (
-                          <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                            <X className="w-3 h-3 stroke-[3]" />
-                            <span>NO</span>
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-[#081418] border border-[#17303d] text-slate-400 text-[10px] font-bold">
-                            Pending
-                          </span>
-                        )}
-
-                        {/* Reorder Buttons */}
-                        <div className="flex items-center text-slate-500">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMoveRule(idx, 'up');
-                            }}
-                            disabled={idx === 0}
-                            className="p-1 hover:text-slate-200 disabled:opacity-20 cursor-pointer"
-                            title="Move Up"
-                          >
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMoveRule(idx, 'down');
-                            }}
-                            disabled={idx === state.rules.length - 1}
-                            className="p-1 hover:text-slate-200 disabled:opacity-20 cursor-pointer"
-                            title="Move Down"
-                          >
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Question 4: Max Drawdown & Sizing Calculator directly embedded in workflow */}
-            {(() => {
-              const isQ4Unlocked = isStepUnlocked('q4');
-              const isQ4Active = activeRuleFocus === 'q4';
-              const isQ4Overridden = overriddenRules['q4'] === true;
-              return (
-                <div
-                  id="account-sizing-tier-cards"
-                  onClick={() => handleSelectStep('q4')}
-                  className={`p-3.5 rounded-xl text-xs transition-all space-y-2.5 cursor-pointer ${
-                    !isQ4Unlocked
-                      ? 'border border-[#132530] bg-[#071318] opacity-65 hover:opacity-85'
-                      : isQ4Active
-                      ? 'border-2 border-emerald-400 bg-[#0d222b] ring-2 ring-emerald-500/25 shadow-lg shadow-emerald-950/40'
-                      : q4Risk === true
-                      ? 'border border-emerald-500/40 bg-[#0c1f26]'
-                      : q4Risk === false && isQ4Overridden
-                      ? 'border border-amber-500/40 bg-[#16160e]'
-                      : q4Risk === false
-                      ? 'border border-rose-900/60 bg-[#161a1d]'
-                      : 'border border-[#17303d] bg-[#0c181e] opacity-90 hover:opacity-100 hover:border-[#22485c]'
-                  }`}
-                >
-                  {/* Top Row: Index, Rule Text, Active Tag, Status Pill - Standardized with Rule 1-3 & Q5 */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-slate-500 font-bold text-xs w-4 shrink-0">4</span>
-                      <span className="tracking-wide text-xs font-bold text-slate-200 truncate">
-                        Have you calculated your risk?
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-normal hidden md:inline truncate">
-                        &bull; Max Drawdown &amp; Sizing
-                      </span>
-                      {!isQ4Unlocked ? (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0d1e28] border border-[#1a384b] text-slate-400 text-[10px] font-bold shrink-0">
-                          <Lock className="w-2.5 h-2.5 text-slate-400" />
-                          <span>Complete Rules 1–{state.rules.length} First</span>
-                        </span>
-                      ) : isQ4Active ? (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shrink-0">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
-                          </span>
-                          <span>Active</span>
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="shrink-0 flex items-center gap-2">
-                      {!isQ4Unlocked ? (
-                        <span className="px-2 py-0.5 rounded-md bg-[#071318] border border-[#142934] text-slate-500 text-[10px] font-bold flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" />
-                          <span>Step 4 Locked</span>
-                        </span>
-                      ) : q4Risk === true ? (
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                          <span>SIZED ({explicitRiskAmount ? `$${explicitRiskAmount}` : 'Custom'})</span>
-                        </span>
-                      ) : q4Risk === false && isQ4Overridden ? (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>Override</span>
-                        </span>
-                      ) : q4Risk === false ? (
-                        <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <X className="w-3 h-3 stroke-[3]" />
-                          <span>NO</span>
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-md bg-[#081418] border border-[#17303d] text-slate-400 text-[10px] font-bold">
-                          Pending
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Calculator Body - Fully Rendered and Active at All Times */}
-                  <div className="space-y-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Dynamic Account Connection & Max Drawdown Row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#081318] p-2 rounded-lg border border-[#142934]">
-                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Account:</span>
-                        <select
-                          id="calculator-account-selector"
-                          value={state.activeAccountId || ''}
-                          onChange={(e) => {
-                            const accId = e.target.value;
-                            onUpdateState((prev) => ({ ...prev, activeAccountId: accId }));
-                            if (accId) {
-                              const acc = state.accounts.find((a) => a.id === accId);
-                              if (acc && acc.maxDrawdown) {
-                                const dd = acc.maxDrawdown;
-                                setMaxDrawdownInput(dd.toString());
-                                setRiskAmounts({
-                                  B: Math.max(5, Math.round(dd * 0.05)),
-                                  A: Math.max(10, Math.round(dd * 0.10)),
-                                  A_PLUS: Math.max(15, Math.round(dd * 0.15)),
-                                });
-                              }
-                            }
-                          }}
-                          className="bg-[#0f2027] border border-[#1c3644] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
-                        >
-                          <option value="">Manual Entry (No Account Linked)</option>
-                          {state.accounts.map((acc) => (
-                            <option key={acc.id} value={acc.id}>
-                              {acc.name} (${acc.maxDrawdown?.toLocaleString()} Max DD &bull; {acc.accountType?.toUpperCase()})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Max DD:</span>
-                        <div className="relative flex items-center">
-                          <span className="absolute left-2 text-[11px] text-slate-400 font-bold">$</span>
-                          <input
-                            id="calculator-max-drawdown-input"
-                            type="number"
-                            value={maxDrawdownInput}
-                            onChange={(e) => handleMaxDrawdownChange(e.target.value)}
-                            placeholder="2000"
-                            className="w-24 pl-5 pr-2 py-1 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
-                          />
-                        </div>
-                        {activeAccount && (
-                          <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                            Linked
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 3 Quality Sizing Buttons: B (5%), A (10%), A+ (15%) */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* B (5%) */}
-                      <div
-                        id="preset-risk-tier-b"
-                        onClick={() => {
-                          const val = riskAmounts.B;
-                          setSelectedQuality('B');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>B Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(5, riskAmounts.B - 25);
-                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                setSelectedQuality('B');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease B tier risk by $25"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.B + 25;
-                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                setSelectedQuality('B');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase B tier risk by $25"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">5%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.B}
-                        </div>
-                      </div>
-
-                      {/* A (10%) */}
-                      <div
-                        id="preset-risk-tier-a"
-                        onClick={() => {
-                          const val = riskAmounts.A;
-                          setSelectedQuality('A');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>A Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(10, riskAmounts.A - 50);
-                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                setSelectedQuality('A');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease A tier risk by $50"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.A + 50;
-                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                setSelectedQuality('A');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase A tier risk by $50"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">10%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.A}
-                        </div>
-                      </div>
-
-                      {/* A+ (15%) */}
-                      <div
-                        id="preset-risk-tier-aplus"
-                        onClick={() => {
-                          const val = riskAmounts.A_PLUS;
-                          setSelectedQuality('A_PLUS');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>A+ Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(15, riskAmounts.A_PLUS - 50);
-                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                setSelectedQuality('A_PLUS');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease A+ tier risk by $50"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.A_PLUS + 50;
-                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                setSelectedQuality('A_PLUS');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase A+ tier risk by $50"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">15%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.A_PLUS}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Active Sizing Status Callout */}
-                    <div className="p-2.5 bg-[#061217] border border-[#142833] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="w-4 h-4 text-teal-400 shrink-0" />
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1.5">Trade Sizing:</span>
-                          {explicitRiskAmount ? (
-                            <span className="text-emerald-400 font-extrabold font-mono text-xs">
-                              ${explicitRiskAmount}{' '}
-                              <span className="text-slate-400 font-normal">
-                                ({selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality} Setup &bull;{' '}
-                                {((explicitRiskAmount / (parseFloat(maxDrawdownInput) || 2000)) * 100).toFixed(1)}% of DD)
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="text-amber-400 font-semibold text-xs">
-                              Select a preset risk box above or click a quick-fill button below
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {explicitRiskAmount ? (
-                        <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                          Sized for Execution
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {/* Sizing & Target Inputs (Custom Risk + Optional Take Profit) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {/* Custom Risk Input & Quick-Fill Presets */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400">Risk Amount ($):</span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Active: {explicitRiskAmount ? `$${explicitRiskAmount}` : 'Not set'}
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                          <input
-                            id="calculator-custom-risk-input"
-                            type="number"
-                            value={customRiskInput}
-                            onChange={(e) => {
-                              setCustomRiskInput(e.target.value);
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val) && val > 0) {
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(e.target.value);
-                              }
-                            }}
-                            placeholder="Input risk $"
-                            className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
-                          />
-                        </div>
-
-                        {/* Quick-Fill Preset Risk Buttons */}
-                        <div className="space-y-1 pt-0.5">
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                            <span>Quick-Fill Presets:</span>
-                            <span className="text-slate-500 font-normal">Click to auto-input</span>
-                          </div>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {[
-                              { label: 'B ($' + riskAmounts.B + ')', val: riskAmounts.B, tier: 'B' as const },
-                              { label: 'A ($' + riskAmounts.A + ')', val: riskAmounts.A, tier: 'A' as const },
-                              { label: 'A+ ($' + riskAmounts.A_PLUS + ')', val: riskAmounts.A_PLUS, tier: 'A_PLUS' as const },
-                              { label: '$50', val: 50 },
-                              { label: '$100', val: 100 },
-                              { label: '$150', val: 150 },
-                              { label: '$200', val: 200 },
-                              { label: '$250', val: 250 },
-                              { label: '$300', val: 300 },
-                              { label: '$500', val: 500 },
-                            ].map((preset, pIdx) => {
-                              const isSelected = customRiskInput === String(preset.val);
-                              return (
-                                <button
-                                  key={pIdx}
-                                  type="button"
-                                  onClick={() => {
-                                    setCustomRiskInput(String(preset.val));
-                                    if (preset.tier) {
-                                      setSelectedQuality(preset.tier);
-                                    } else {
-                                      if (preset.val === riskAmounts.B) setSelectedQuality('B');
-                                      else if (preset.val === riskAmounts.A) setSelectedQuality('A');
-                                      else if (preset.val === riskAmounts.A_PLUS) setSelectedQuality('A_PLUS');
-                                    }
-                                    setQ4Risk(true);
-                                    setOverriddenRules((p) => ({ ...p, q4: false }));
-                                    setLossAmountInput(String(preset.val));
-                                  }}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                                    isSelected
-                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
-                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
-                                  }`}
-                                >
-                                  {preset.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Optional Take Profit Target */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400">Take Profit Target:</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[#08151c] px-1.5 py-0.2 rounded border border-[#163342]">
-                            Optional
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                          <input
-                            id="calculator-take-profit-input"
-                            type="number"
-                            value={optionalTakeProfitInput}
-                            onChange={(e) => setOptionalTakeProfitInput(e.target.value)}
-                            placeholder="e.g. 400 (Optional)"
-                            className="w-full pl-6 pr-20 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
-                          />
-                          {(() => {
-                            const tp = parseFloat(optionalTakeProfitInput);
-                            if (!isNaN(tp) && tp > 0 && acceptedRisk > 0) {
-                              const projectedR = (tp / acceptedRisk).toFixed(1);
-                              return (
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
-                                  {projectedR}R Target
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Confirmation Bar */}
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#132833]">
-                      <button
-                        type="button"
-                        id="confirm-risk-sized-btn"
-                        onClick={() => {
-                          if (!explicitRiskAmount) {
-                            setCustomRiskInput(String(riskAmounts[selectedQuality] ?? 200));
-                          }
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setActiveRuleFocus('q5');
-                        }}
-                        className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>Confirm Risk ({explicitRiskAmount ? `$${explicitRiskAmount}` : `$${riskAmounts[selectedQuality] ?? 200}`}) &rarr;</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQ4Risk(false);
-                          setOverriddenRules((p) => ({ ...p, q4: true }));
-                          setActiveRuleFocus('q5');
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        Override
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Question 5: This is not a revenge or FOMO click (REQUIRED) */}
-            {(() => {
-              const isQ5Unlocked = isStepUnlocked('q5');
-              const isQ5Active = activeRuleFocus === 'q5';
-              const isQ5Overridden = overriddenRules['q5'] === true;
-              return (
-                <div
-                  id="rule-card-q5"
-                  onClick={() => handleSelectStep('q5')}
-                  className={`p-3.5 rounded-xl text-xs transition-all space-y-2 cursor-pointer ${
-                    !isQ5Unlocked
-                      ? 'border border-[#132530] bg-[#071318] opacity-65 hover:opacity-85'
-                      : isQ5Active
-                      ? 'border-2 border-emerald-400 bg-[#0d222b] ring-2 ring-emerald-500/25 shadow-lg shadow-emerald-950/40'
-                      : q5NotFomo === true
-                      ? 'border border-emerald-500/40 bg-[#0c1f26]'
-                      : q5NotFomo === false && isQ5Overridden
-                      ? 'border border-amber-500/40 bg-[#16160e]'
-                      : q5NotFomo === false
-                      ? 'border border-rose-900/60 bg-[#161a1d]'
-                      : 'border-2 border-amber-500/60 bg-[#1a1509] opacity-95 hover:opacity-100 hover:border-amber-400/80 shadow-md shadow-amber-950/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-slate-500 font-bold text-xs w-4 shrink-0">5</span>
-                      <span className="tracking-wide text-xs font-bold text-slate-200">
-                        This is not a revenge or FOMO click
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-rose-950/80 border border-rose-800 text-rose-400 text-[10px] font-black tracking-wider uppercase shrink-0">
-                        REQUIRED
-                      </span>
-                      {!isQ5Unlocked ? (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0d1e28] border border-[#1a384b] text-slate-400 text-[10px] font-bold shrink-0">
-                          <Lock className="w-2.5 h-2.5 text-slate-400" />
-                          <span>Complete Step 4 (Risk) First</span>
-                        </span>
-                      ) : isQ5Active ? (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shrink-0">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
-                          </span>
-                          <span>Active</span>
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="shrink-0">
-                      {!isQ5Unlocked ? (
-                        <span className="px-2 py-0.5 rounded-md bg-[#071318] border border-[#142934] text-slate-500 text-[10px] font-bold flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" />
-                          <span>Step 5 Locked</span>
-                        </span>
-                      ) : q5NotFomo === true ? (
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                          <span>YES</span>
-                        </span>
-                      ) : q5NotFomo === false && isQ5Overridden ? (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>Override</span>
-                        </span>
-                      ) : q5NotFomo === false ? (
-                        <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <X className="w-3 h-3 stroke-[3]" />
-                          <span>NO</span>
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-md bg-[#081418] border border-[#17303d] text-slate-400 text-[10px] font-bold">
-                          Pending
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Execution Buttons: EXECUTION TRADE and SKIPPED THE TRADE */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch gap-2.5">
@@ -3262,7 +2498,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             >
               <div className="text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1 flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" />
-                <span>THE TRADER FILTER DESCRIPTION</span>
+                <span>FILTER CONTROL BOX</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed font-medium">
                 Before you click Buy, it has to go through the filter. 3 of 3 on your rules. Risk in Q4. Revenge/FOMO on Q5.
@@ -3527,6 +2763,427 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Risk Calculator: B / A / A+ sizing, Max DD, risk $ */}
+                  <div id="account-sizing-tier-cards" className="space-y-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Dynamic Account Connection & Max Drawdown Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#081318] p-2 rounded-lg border border-[#142934]">
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Account:</span>
+                        <select
+                          id="calculator-account-selector"
+                          value={state.activeAccountId || ''}
+                          onChange={(e) => {
+                            const accId = e.target.value;
+                            onUpdateState((prev) => ({ ...prev, activeAccountId: accId }));
+                            if (accId) {
+                              const acc = state.accounts.find((a) => a.id === accId);
+                              if (acc && acc.maxDrawdown) {
+                                const dd = acc.maxDrawdown;
+                                setMaxDrawdownInput(dd.toString());
+                                setRiskAmounts({
+                                  B: Math.max(5, Math.round(dd * 0.05)),
+                                  A: Math.max(10, Math.round(dd * 0.10)),
+                                  A_PLUS: Math.max(15, Math.round(dd * 0.15)),
+                                });
+                              }
+                            }
+                          }}
+                          className="bg-[#0f2027] border border-[#1c3644] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
+                        >
+                          <option value="">Manual Entry (No Account Linked)</option>
+                          {state.accounts.map((acc) => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name} (${acc.maxDrawdown?.toLocaleString()} Max DD &bull; {acc.accountType?.toUpperCase()})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Max DD:</span>
+                        <div className="relative flex items-center">
+                          <span className="absolute left-2 text-[11px] text-slate-400 font-bold">$</span>
+                          <input
+                            id="calculator-max-drawdown-input"
+                            type="number"
+                            value={maxDrawdownInput}
+                            onChange={(e) => handleMaxDrawdownChange(e.target.value)}
+                            placeholder="2000"
+                            className="w-24 pl-5 pr-2 py-1 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+                        {activeAccount && (
+                          <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                            Linked
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3 Quality Sizing Buttons: B (5%), A (10%), A+ (15%) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* B (5%) */}
+                      <div
+                        id="preset-risk-tier-b"
+                        onClick={() => {
+                          const val = riskAmounts.B;
+                          setSelectedQuality('B');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>B Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(5, riskAmounts.B - 25);
+                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease B tier risk by $25"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.B + 25;
+                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase B tier risk by $25"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">5%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.B}
+                        </div>
+                      </div>
+
+                      {/* A (10%) */}
+                      <div
+                        id="preset-risk-tier-a"
+                        onClick={() => {
+                          const val = riskAmounts.A;
+                          setSelectedQuality('A');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>A Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(10, riskAmounts.A - 50);
+                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease A tier risk by $50"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.A + 50;
+                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase A tier risk by $50"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">10%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.A}
+                        </div>
+                      </div>
+
+                      {/* A+ (15%) */}
+                      <div
+                        id="preset-risk-tier-aplus"
+                        onClick={() => {
+                          const val = riskAmounts.A_PLUS;
+                          setSelectedQuality('A_PLUS');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>A+ Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(15, riskAmounts.A_PLUS - 50);
+                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease A+ tier risk by $50"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.A_PLUS + 50;
+                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase A+ tier risk by $50"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">15%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.A_PLUS}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Active Sizing Status Callout */}
+                    <div className="p-2.5 bg-[#061217] border border-[#142833] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-teal-400 shrink-0" />
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1.5">Trade Sizing:</span>
+                          {explicitRiskAmount ? (
+                            <span className="text-emerald-400 font-extrabold font-mono text-xs">
+                              ${explicitRiskAmount}{' '}
+                              <span className="text-slate-400 font-normal">
+                                ({selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality} Setup &bull;{' '}
+                                {((explicitRiskAmount / (parseFloat(maxDrawdownInput) || 2000)) * 100).toFixed(1)}% of DD)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-semibold text-xs">
+                              Select a preset risk box above or click a quick-fill button below
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {explicitRiskAmount ? (
+                        <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                          Sized for Execution
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Sizing & Target Inputs (Custom Risk + Optional Take Profit) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {/* Custom Risk Input & Quick-Fill Presets */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400">Risk Amount ($):</span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            Active: {explicitRiskAmount ? `$${explicitRiskAmount}` : 'Not set'}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                          <input
+                            id="calculator-custom-risk-input"
+                            type="number"
+                            value={customRiskInput}
+                            onChange={(e) => {
+                              setCustomRiskInput(e.target.value);
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val > 0) {
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(e.target.value);
+                              }
+                            }}
+                            placeholder="Input risk $"
+                            className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+
+                        {/* Quick-Fill Preset Risk Buttons */}
+                        <div className="space-y-1 pt-0.5">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                            <span>Quick-Fill Presets:</span>
+                            <span className="text-slate-500 font-normal">Click to auto-input</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {[
+                              { label: 'B ($' + riskAmounts.B + ')', val: riskAmounts.B, tier: 'B' as const },
+                              { label: 'A ($' + riskAmounts.A + ')', val: riskAmounts.A, tier: 'A' as const },
+                              { label: 'A+ ($' + riskAmounts.A_PLUS + ')', val: riskAmounts.A_PLUS, tier: 'A_PLUS' as const },
+                              { label: '$50', val: 50 },
+                              { label: '$100', val: 100 },
+                              { label: '$150', val: 150 },
+                              { label: '$200', val: 200 },
+                              { label: '$250', val: 250 },
+                              { label: '$300', val: 300 },
+                              { label: '$500', val: 500 },
+                            ].map((preset, pIdx) => {
+                              const isSelected = customRiskInput === String(preset.val);
+                              return (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomRiskInput(String(preset.val));
+                                    if (preset.tier) {
+                                      setSelectedQuality(preset.tier);
+                                    } else {
+                                      if (preset.val === riskAmounts.B) setSelectedQuality('B');
+                                      else if (preset.val === riskAmounts.A) setSelectedQuality('A');
+                                      else if (preset.val === riskAmounts.A_PLUS) setSelectedQuality('A_PLUS');
+                                    }
+                                    setQ4Risk(true);
+                                    setOverriddenRules((p) => ({ ...p, q4: false }));
+                                    setLossAmountInput(String(preset.val));
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
+                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Optional Take Profit Target */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400">Take Profit Target:</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[#08151c] px-1.5 py-0.2 rounded border border-[#163342]">
+                            Optional
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                          <input
+                            id="calculator-take-profit-input"
+                            type="number"
+                            value={optionalTakeProfitInput}
+                            onChange={(e) => setOptionalTakeProfitInput(e.target.value)}
+                            placeholder="e.g. 400 (Optional)"
+                            className="w-full pl-6 pr-20 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
+                          />
+                          {(() => {
+                            const tp = parseFloat(optionalTakeProfitInput);
+                            if (!isNaN(tp) && tp > 0 && acceptedRisk > 0) {
+                              const projectedR = (tp / acceptedRisk).toFixed(1);
+                              return (
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                  {projectedR}R Target
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Confirmation Bar */}
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#132833]">
+                      <button
+                        type="button"
+                        id="confirm-risk-sized-btn"
+                        onClick={() => {
+                          if (!explicitRiskAmount) {
+                            setCustomRiskInput(String(riskAmounts[selectedQuality] ?? 200));
+                          }
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setActiveRuleFocus('q5');
+                        }}
+                        className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Confirm Risk ({explicitRiskAmount ? `$${explicitRiskAmount}` : `$${riskAmounts[selectedQuality] ?? 200}`}) &rarr;</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQ4Risk(false);
+                          setOverriddenRules((p) => ({ ...p, q4: true }));
+                          setActiveRuleFocus('q5');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Override
+                      </button>
+                    </div>
+                  </div>
 
               {/* Optional Trade Notes Input */}
               <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
