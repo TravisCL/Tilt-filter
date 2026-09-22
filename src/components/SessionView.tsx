@@ -1771,10 +1771,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       </div>
       <div id="trade-filter-section" className="bg-[#0b1a26] border border-[#16354d] rounded-2xl p-4 lg:p-6 space-y-5">
         {/* 2-Column Responsive Layout: Pre-Trade Workflow & Standalone Filter Control Box */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT: The Pre-Trade Rules Workflow (lg:col-span-7 xl:col-span-7 space-y-3.5) */}
-          <div className="lg:col-span-7 xl:col-span-7 space-y-3.5">
-            {/* Primary Action Buttons Row - Positioned directly above where the checklist rules start */}
+        <div className="space-y-5">
             <div
               id="top-take-trade-action-area"
               className="p-3 sm:p-3.5 bg-[#081318] border border-[#162b37] rounded-xl space-y-2.5 shadow-md"
@@ -1821,79 +1818,984 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               )}
 
-              {/* Action Buttons: TAKE THE TRADE and SKIPPED THE TRADE */}
-              <div className="flex items-center gap-2.5 flex-wrap">
-                {/* TAKE THE TRADE */}
-                <button
-                  id="take-the-trade-top-btn"
-                  type="button"
-                  onClick={handleTakeTheTrade}
-                  disabled={tradeInPosition}
-                  className={`px-4 py-2 text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2 ${
-                    !isCheckInCompletedToday
-                      ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/40 ring-2 ring-amber-400/60 animate-pulse cursor-pointer'
-                      : filterSavedFeedback
-                      ? 'bg-emerald-400 text-black cursor-pointer'
-                      : tradeInPosition
-                      ? 'bg-[#15231c] text-emerald-300 border-2 border-emerald-500/50 cursor-not-allowed opacity-95 shadow-emerald-950/30'
-                      : explicitRiskAmount
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-950/40 cursor-pointer'
-                      : 'bg-emerald-600/80 hover:bg-emerald-500 text-black shadow-emerald-950/40 cursor-pointer'
-                  }`}
-                  title={tradeInPosition ? 'In a trade: Resolve current trade in Outcome Tracker before taking a new setup' : undefined}
-                >
-                  {!isCheckInCompletedToday ? (
-                    <>
-                      <Lock className="w-4 h-4 stroke-[2.5]" />
-                      <span>🔒 COMPLETE MORNING CHECK-IN TO UNLOCK TRADING</span>
-                    </>
-                  ) : filterSavedFeedback ? (
-                    <>
-                      <Check className="w-4 h-4 stroke-[3]" />
-                      <span>TRADE TAKEN!</span>
-                    </>
-                  ) : tradeInPosition ? (
-                    <>
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block shrink-0" />
-                      <span>
-                        IN A TRADE &bull; {activeAccount ? activeAccount.name : 'Account'} ({explicitRiskAmount ? `$${explicitRiskAmount} Risk` : 'Active'})
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                      <span>
-                        TAKE THE TRADE ({activeAccount ? activeAccount.name : 'Account'} &bull;{' '}
-                        {firstUnverifiedQuestion
-                          ? `Verify ${firstUnverifiedQuestion.title}`
-                          : explicitRiskAmount
-                          ? `$${explicitRiskAmount} Risk`
-                          : 'Set Risk in Calculator'}
-                        )
-                      </span>
-                    </>
-                  )}
-                </button>
+            </div>
+
+            {/* Repositioned Trade Filter Description Message - Sits directly above Filter Control Box */}
+            <div
+              id="trade-filter-description-box"
+              className="p-3.5 bg-[#081624] border border-[#183a54] rounded-xl text-xs text-slate-300 shadow-xs"
+            >
+              <div className="text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" />
+                <span>FILTER CONTROL BOX</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                Before you click Buy, it has to go through the filter. 3 of 3 on your rules. Risk in Q4. Revenge/FOMO on Q5.
+              </p>
+            </div>
+
+            {/* Standalone Filter Control Box */}
+            <div
+              id="consolidated-interactive-control-box"
+              className="bg-[#0a1a29] border-2 border-sky-400/50 rounded-xl p-4 space-y-4 shadow-xl"
+            >
+              {/* Header with Step Tracker and Navigation */}
+              <div className="flex items-center justify-between border-b border-[#16364d] pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shadow-xs">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
+                      FILTER CONTROL BOX
+                    </span>
+                    <div className="text-[10px] text-sky-400 font-bold">
+                      Rule {currentQuestionIndex + 1} of {totalQuestions}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step Navigation Arrows */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentQuestionIndex > 0) {
+                        setOverridePromptFor(null);
+                        setActiveRuleFocus(checklistQuestions[currentQuestionIndex - 1].id);
+                      }
+                    }}
+                    disabled={currentQuestionIndex === 0}
+                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    title="Previous Question"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span className="hidden sm:inline">Prev</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentQuestionIndex < totalQuestions - 1) {
+                        const nextQ = checklistQuestions[currentQuestionIndex + 1];
+                        handleSelectStep(nextQ.id);
+                      }
+                    }}
+                    disabled={currentQuestionIndex === totalQuestions - 1}
+                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
+                    title="Next Question"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
-              {/* Skipped Trade Banner Confirmation */}
-              {skipTradeFeedback && (
+              {/* Step indicator pips */}
+              <div className="grid grid-cols-5 gap-1.5">
+                {checklistQuestions.map((q, idx) => {
+                  const status = getCurrentStatus(q.id);
+                  const isCurrent = activeRuleFocus === q.id;
+                  const isOverridden = overriddenRules[q.id];
+                  const isUnlocked = isStepUnlocked(q.id);
+
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => handleSelectStep(q.id)}
+                      className={`py-1 px-1 rounded-md text-[10px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                        !isUnlocked
+                          ? 'bg-[#06121b] border border-[#112433] text-slate-500 opacity-60'
+                          : isCurrent
+                          ? 'bg-sky-400 text-black font-black ring-1 ring-sky-200'
+                          : status === true
+                          ? 'bg-sky-950/80 border border-sky-600/60 text-sky-200'
+                          : status === false && isOverridden
+                          ? 'bg-amber-950/70 border border-amber-700/60 text-amber-300'
+                          : status === false
+                          ? 'bg-rose-950/70 border border-rose-700/60 text-rose-300'
+                          : 'bg-[#0d2338] border border-[#173752] text-slate-400 hover:text-slate-200'
+                      }`}
+                      title={!isUnlocked ? `Step ${idx + 1} locked - complete previous steps first` : q.title}
+                    >
+                      {!isUnlocked && <Lock className="w-2.5 h-2.5 text-slate-500 shrink-0" />}
+                      <span>{q.shortTitle}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Question Spotlight */}
+              <div className="p-3.5 rounded-xl bg-[#0c2236] border border-[#1c4668] space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-slate-400 uppercase tracking-wider">
+                    {currentQuestion.title}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      getCurrentStatus(currentQuestion.id) === true
+                        ? 'bg-sky-950 text-sky-200 border border-sky-700'
+                        : getCurrentStatus(currentQuestion.id) === false && overriddenRules[currentQuestion.id]
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : getCurrentStatus(currentQuestion.id) === false
+                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                        : 'bg-[#081622] text-slate-400 border border-[#16364d]'
+                    }`}
+                  >
+                    {getCurrentStatus(currentQuestion.id) === true
+                      ? 'Status: Verified YES ✓'
+                      : getCurrentStatus(currentQuestion.id) === false && overriddenRules[currentQuestion.id]
+                      ? 'Status: Overridden ⚠️'
+                      : getCurrentStatus(currentQuestion.id) === false
+                      ? 'Status: Flagged NO ✗'
+                      : 'Status: Pending Verification'}
+                  </span>
+                </div>
+
+                {currentQuestion.type === 'rule' && editingRuleId === currentQuestion.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={editingRuleText}
+                      onChange={(e) => setEditingRuleText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRuleText(currentQuestion.id);
+                        if (e.key === 'Escape') handleCancelEditRule();
+                      }}
+                      autoFocus
+                      placeholder="Enter rule text..."
+                      className="w-full px-2.5 py-1.5 text-sm font-bold bg-[#08151a] border border-emerald-400 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRuleText(currentQuestion.id)}
+                      className="p-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 rounded cursor-pointer shrink-0"
+                      title="Save rule text"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditRule}
+                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded cursor-pointer shrink-0"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 group/rule">
+                    <div className="text-sm font-black text-white leading-snug">
+                      &ldquo;{currentQuestion.text}&rdquo;
+                    </div>
+                    {currentQuestion.type === 'rule' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditRule(currentQuestion.id, currentQuestion.text)}
+                        className="opacity-60 group-hover/rule:opacity-100 p-0.5 text-slate-400 hover:text-emerald-300 transition-opacity cursor-pointer shrink-0"
+                        title="Edit rule text"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Area: Yes/No Buttons or "Take It Anyway?" Override Prompt */}
+              {overridePromptFor === currentQuestion.id ? (
+                /* Inline Override Question: "Not all criteria met. Take it anyway?" */
                 <div
-                  id="skip-trade-alert-banner"
-                  className="p-2.5 rounded-xl bg-[#091b24] border border-sky-500/50 text-sky-200 text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in"
+                  id="inline-override-prompt"
+                  className="p-3.5 rounded-xl bg-[#1d170b] border-2 border-amber-500/80 space-y-3 shadow-lg"
                 >
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-sky-400 shrink-0" />
-                    <span className="font-bold">
-                      Trade Skipped & Setup Cancelled: Account drawdown & capital protected. Checklist reset to fresh state.
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs font-black text-amber-300 tracking-wide">
+                        Not all criteria met. Take it anyway?
+                      </div>
+                      <p className="text-[11px] text-amber-100/90 leading-relaxed">
+                        Criteria is not met for &ldquo;{currentQuestion.text}&rdquo;. Trades can still be taken even if every rule isn&apos;t checked. Do you wish to confirm and proceed with this trade setup?
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      id="override-take-anyway-btn"
+                      onClick={handleConfirmOverride}
+                      className="py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 text-center"
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Yes, Take It Anyway</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="override-cancel-btn"
+                      onClick={handleCancelOverride}
+                      className="py-2.5 px-3 rounded-lg bg-[#0e2233] hover:bg-[#16364d] text-slate-300 border border-[#204a69] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>No, Stay Flat</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Primary Interactive Control: YES / NO */
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      id="control-box-yes-btn"
+                      onClick={() => handleControlAnswer(true)}
+                      className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
+                        getCurrentStatus(currentQuestion.id) === true
+                          ? 'bg-sky-400 text-black ring-2 ring-sky-300 shadow-sky-950/50'
+                          : 'bg-sky-500 hover:bg-sky-400 text-black'
+                      }`}
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>YES (Criteria Met)</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="control-box-no-btn"
+                      onClick={() => handleControlAnswer(false)}
+                      className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
+                        getCurrentStatus(currentQuestion.id) === false
+                          ? 'bg-rose-600 text-white ring-2 ring-rose-400 shadow-rose-950/50'
+                          : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/50'
+                      }`}
+                    >
+                      <X className="w-4 h-4 stroke-[3]" />
+                      <span>NO (Not Met)</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                    <span>Answers advance to the next rule in sequence</span>
+                    {currentQuestionIndex < totalQuestions - 1 ? (
+                      <span className="text-sky-400 font-bold flex items-center gap-0.5">
+                        <span>Next: {checklistQuestions[currentQuestionIndex + 1].shortTitle}</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    ) : (
+                      <span className="text-sky-400 font-bold">Step 5 of 5 reached</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Direction/Entry/Exit + Risk Calculator only reveal once rules 1-N are resolved (progressive disclosure) */}
+              {isStepUnlocked('q4') && (
+              <>
+              {/* Optional Trade Details: Direction / Entry / Exit */}
+              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
+                <div className="flex items-center gap-1.5 font-bold text-slate-200 text-[11px]">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Direction / Entry / Exit (Optional)</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center rounded-lg border border-[#142c38] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setTradeDirection(tradeDirection === 'LONG' ? '' : 'LONG')}
+                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
+                        tradeDirection === 'LONG'
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      LONG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTradeDirection(tradeDirection === 'SHORT' ? '' : 'SHORT')}
+                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer border-l border-[#142c38] ${
+                        tradeDirection === 'SHORT'
+                          ? 'bg-rose-500/20 text-rose-300'
+                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      SHORT
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    value={entryPriceInput}
+                    onChange={(e) => setEntryPriceInput(e.target.value)}
+                    placeholder="Entry Price"
+                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                  />
+                  <input
+                    type="number"
+                    value={exitPriceInput}
+                    onChange={(e) => setExitPriceInput(e.target.value)}
+                    placeholder="Exit Price"
+                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Risk Calculator: B / A / A+ sizing, Max DD, risk $ */}
+                  <div id="account-sizing-tier-cards" className="space-y-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Dynamic Account Connection & Max Drawdown Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#081318] p-2 rounded-lg border border-[#142934]">
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Account:</span>
+                        <select
+                          id="calculator-account-selector"
+                          value={state.activeAccountId || ''}
+                          onChange={(e) => {
+                            const accId = e.target.value;
+                            onUpdateState((prev) => ({ ...prev, activeAccountId: accId }));
+                            if (accId) {
+                              const acc = state.accounts.find((a) => a.id === accId);
+                              if (acc && acc.maxDrawdown) {
+                                const dd = acc.maxDrawdown;
+                                setMaxDrawdownInput(dd.toString());
+                                setRiskAmounts({
+                                  B: Math.max(5, Math.round(dd * 0.05)),
+                                  A: Math.max(10, Math.round(dd * 0.10)),
+                                  A_PLUS: Math.max(15, Math.round(dd * 0.15)),
+                                });
+                              }
+                            }
+                          }}
+                          className="bg-[#0f2027] border border-[#1c3644] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
+                        >
+                          <option value="">Manual Entry (No Account Linked)</option>
+                          {state.accounts
+                            .filter((acc) => acc.status !== 'blown')
+                            .map((acc) => (
+                              <option key={acc.id} value={acc.id}>
+                                {acc.name} (${acc.maxDrawdown?.toLocaleString()} Max DD &bull; {acc.accountType?.toUpperCase()})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Max DD:</span>
+                        <div className="relative flex items-center">
+                          <span className="absolute left-2 text-[11px] text-slate-400 font-bold">$</span>
+                          <input
+                            id="calculator-max-drawdown-input"
+                            type="number"
+                            value={maxDrawdownInput}
+                            onChange={(e) => handleMaxDrawdownChange(e.target.value)}
+                            placeholder="2000"
+                            className="w-24 pl-5 pr-2 py-1 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+                        {activeAccount && (
+                          <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                            Linked
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3 Quality Sizing Buttons: B (5%), A (10%), A+ (15%) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* B (5%) */}
+                      <div
+                        id="preset-risk-tier-b"
+                        onClick={() => {
+                          const val = riskAmounts.B;
+                          setSelectedQuality('B');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>B Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(5, riskAmounts.B - 25);
+                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease B tier risk by $25"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.B + 25;
+                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
+                                setSelectedQuality('B');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase B tier risk by $25"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">5%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.B}
+                        </div>
+                      </div>
+
+                      {/* A (10%) */}
+                      <div
+                        id="preset-risk-tier-a"
+                        onClick={() => {
+                          const val = riskAmounts.A;
+                          setSelectedQuality('A');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>A Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(10, riskAmounts.A - 50);
+                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease A tier risk by $50"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.A + 50;
+                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
+                                setSelectedQuality('A');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase A tier risk by $50"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">10%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.A}
+                        </div>
+                      </div>
+
+                      {/* A+ (15%) */}
+                      <div
+                        id="preset-risk-tier-aplus"
+                        onClick={() => {
+                          const val = riskAmounts.A_PLUS;
+                          setSelectedQuality('A_PLUS');
+                          setCustomRiskInput(String(val));
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setLossAmountInput(String(val));
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
+                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
+                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>A+ Setup</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = Math.max(15, riskAmounts.A_PLUS - 50);
+                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Decrease A+ tier risk by $50"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextVal = riskAmounts.A_PLUS + 50;
+                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
+                                setSelectedQuality('A_PLUS');
+                                setCustomRiskInput(String(nextVal));
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(String(nextVal));
+                              }}
+                              className="px-1 hover:text-white"
+                              title="Increase A+ tier risk by $50"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs font-black text-white mt-0.5">15%</div>
+                        <div className="text-[11px] font-bold text-emerald-400">
+                          ${riskAmounts.A_PLUS}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Active Sizing Status Callout */}
+                    <div className="p-2.5 bg-[#061217] border border-[#142833] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-teal-400 shrink-0" />
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1.5">Trade Sizing:</span>
+                          {explicitRiskAmount ? (
+                            <span className="text-emerald-400 font-extrabold font-mono text-xs">
+                              ${explicitRiskAmount}{' '}
+                              <span className="text-slate-400 font-normal">
+                                ({selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality} Setup &bull;{' '}
+                                {((explicitRiskAmount / (parseFloat(maxDrawdownInput) || 2000)) * 100).toFixed(1)}% of DD)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-semibold text-xs">
+                              Select a preset risk box above or click a quick-fill button below
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {explicitRiskAmount ? (
+                        <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                          Sized for Execution
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Sizing & Target Inputs (Custom Risk + Optional Take Profit) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {/* Custom Risk Input & Quick-Fill Presets */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400">Risk Amount ($):</span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            Active: {explicitRiskAmount ? `$${explicitRiskAmount}` : 'Not set'}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                          <input
+                            id="calculator-custom-risk-input"
+                            type="number"
+                            value={customRiskInput}
+                            onChange={(e) => {
+                              setCustomRiskInput(e.target.value);
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val > 0) {
+                                setQ4Risk(true);
+                                setOverriddenRules((p) => ({ ...p, q4: false }));
+                                setLossAmountInput(e.target.value);
+                              }
+                            }}
+                            placeholder="Input risk $"
+                            className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+
+                        {/* Quick-Fill Preset Risk Buttons */}
+                        <div className="space-y-1 pt-0.5">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                            <span>Quick-Fill Presets:</span>
+                            <span className="text-slate-500 font-normal">Click to auto-input</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {[
+                              { label: 'B ($' + riskAmounts.B + ')', val: riskAmounts.B, tier: 'B' as const },
+                              { label: 'A ($' + riskAmounts.A + ')', val: riskAmounts.A, tier: 'A' as const },
+                              { label: 'A+ ($' + riskAmounts.A_PLUS + ')', val: riskAmounts.A_PLUS, tier: 'A_PLUS' as const },
+                              { label: '$50', val: 50 },
+                              { label: '$100', val: 100 },
+                              { label: '$150', val: 150 },
+                              { label: '$200', val: 200 },
+                              { label: '$250', val: 250 },
+                              { label: '$300', val: 300 },
+                              { label: '$500', val: 500 },
+                            ].map((preset, pIdx) => {
+                              const isSelected = customRiskInput === String(preset.val);
+                              return (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomRiskInput(String(preset.val));
+                                    if (preset.tier) {
+                                      setSelectedQuality(preset.tier);
+                                    } else {
+                                      if (preset.val === riskAmounts.B) setSelectedQuality('B');
+                                      else if (preset.val === riskAmounts.A) setSelectedQuality('A');
+                                      else if (preset.val === riskAmounts.A_PLUS) setSelectedQuality('A_PLUS');
+                                    }
+                                    setQ4Risk(true);
+                                    setOverriddenRules((p) => ({ ...p, q4: false }));
+                                    setLossAmountInput(String(preset.val));
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
+                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Optional Take Profit Target */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400">Take Profit Target:</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[#08151c] px-1.5 py-0.2 rounded border border-[#163342]">
+                            Optional
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                          <input
+                            id="calculator-take-profit-input"
+                            type="number"
+                            value={optionalTakeProfitInput}
+                            onChange={(e) => setOptionalTakeProfitInput(e.target.value)}
+                            placeholder="e.g. 400 (Optional)"
+                            className="w-full pl-6 pr-20 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
+                          />
+                          {(() => {
+                            const tp = parseFloat(optionalTakeProfitInput);
+                            if (!isNaN(tp) && tp > 0 && acceptedRisk > 0) {
+                              const projectedR = (tp / acceptedRisk).toFixed(1);
+                              return (
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                  {projectedR}R Target
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Confirmation Bar */}
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#132833]">
+                      <button
+                        type="button"
+                        id="confirm-risk-sized-btn"
+                        onClick={() => {
+                          if (!explicitRiskAmount) {
+                            setCustomRiskInput(String(riskAmounts[selectedQuality] ?? 200));
+                          }
+                          setQ4Risk(true);
+                          setOverriddenRules((p) => ({ ...p, q4: false }));
+                          setActiveRuleFocus('q5');
+                        }}
+                        className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Confirm Risk ({explicitRiskAmount ? `$${explicitRiskAmount}` : `$${riskAmounts[selectedQuality] ?? 200}`}) &rarr;</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQ4Risk(false);
+                          setOverriddenRules((p) => ({ ...p, q4: true }));
+                          setActiveRuleFocus('q5');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Override
+                      </button>
+                    </div>
+                  </div>
+              </>
+              )}
+
+              {/* Notes + Tags stay hidden until Q5 is answered (progressive disclosure) */}
+              {q5NotFomo !== null && (
+              <>
+              {/* Optional Trade Notes Input */}
+              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-200">
+                    <PenLine className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Trade Notes / Type of Trade (Optional)</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {consolidatedNote ? `${consolidatedNote.length} chars` : 'Optional'}
+                  </span>
+                </div>
+
+                <input
+                  type="text"
+                  id="control-box-trade-note-input"
+                  value={consolidatedNote}
+                  onChange={(e) => setConsolidatedNote(e.target.value)}
+                  placeholder="Type trade type or context (e.g., IB sweep long, 5m FVG bounce, scalp)..."
+                  className="w-full bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
+                />
+
+                </div>
+              </>
+              )}
+
+              {/* Tag Control Box — always visible per Travis's request */}
+                <div
+                  id="centralized-tag-control-box"
+                  className="p-3 bg-[#071318] border border-[#163342] rounded-xl space-y-2.5"
+                >
+                  {/* Header with Title and Strict Max 10 Counter */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">
+                        Tag Control Box
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                          currentSystemTags.length >= 10
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        }`}
+                      >
+                        {currentSystemTags.length}/10 TAGS {currentSystemTags.length >= 10 ? '(LIMIT REACHED)' : ''}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tag Creation Form (strictly enforces max 10) */}
+                  {currentSystemTags.length < 10 ? (
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">#</span>
+                        <input
+                          type="text"
+                          id="create-system-tag-input"
+                          value={newSystemTagInput}
+                          onChange={(e) => setNewSystemTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddSystemTag();
+                            }
+                          }}
+                          placeholder="Create new tag (e.g. Scalp, Trend, FVG)..."
+                          maxLength={24}
+                          className="w-full pl-6 pr-2.5 py-1.5 text-xs font-medium bg-[#09181f] border border-[#1a3848] text-white rounded-lg focus:outline-none focus:border-emerald-400 placeholder:text-slate-500 transition-colors"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        id="add-system-tag-btn"
+                        onClick={handleAddSystemTag}
+                        disabled={!newSystemTagInput.trim()}
+                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:pointer-events-none text-black font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
+                        title="Add Tag (Max 10 total)"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-amber-950/40 border border-amber-500/30 rounded-lg flex items-center gap-2 text-[11px] text-amber-300">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span className="font-semibold">Maximum limit of 10 tags reached. Delete a tag to add a new one.</span>
+                    </div>
+                  )}
+
+                  {/* Feedback on validation error */}
+                  {tagErrorFeedback && (
+                    <div className="text-[10px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded">
+                      {tagErrorFeedback}
+                    </div>
+                  )}
+
+                  {/* System Tags Chips (Click to apply, inline edit, delete) */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {currentSystemTags.map((tag, tIdx) => {
+                      const isEditingThis = editingSystemTagIndex === tIdx;
+
+                      if (isEditingThis) {
+                        return (
+                          <div
+                            key={tIdx}
+                            className="flex items-center gap-1 bg-[#0b1f29] border border-emerald-400 rounded-lg px-2 py-0.5 shadow-sm"
+                          >
+                            <span className="text-emerald-400 font-bold text-xs">#</span>
+                            <input
+                              type="text"
+                              value={editingSystemTagText}
+                              onChange={(e) => setEditingSystemTagText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveSystemTag(tIdx);
+                                if (e.key === 'Escape') {
+                                  setEditingSystemTagIndex(null);
+                                  setEditingSystemTagText('');
+                                }
+                              }}
+                              autoFocus
+                              maxLength={24}
+                              className="w-24 text-xs font-bold text-white bg-transparent focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveSystemTag(tIdx)}
+                              className="p-0.5 text-emerald-400 hover:text-emerald-200 cursor-pointer"
+                              title="Save tag"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSystemTagIndex(null);
+                                setEditingSystemTagText('');
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-white cursor-pointer"
+                              title="Cancel"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={tIdx}
+                          className="group/systag inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0b1c24] hover:bg-[#112937] border border-[#163546] hover:border-emerald-500/50 text-[11px] font-bold text-slate-200 transition-all shadow-2xs"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleApplyTagToNote(tag)}
+                            className="cursor-pointer text-emerald-300 hover:text-emerald-200 hover:underline"
+                            title={`Click to add #${tag} to Trade Notes`}
+                          >
+                            #{tag}
+                          </button>
+
+                          <div className="flex items-center gap-0.5 opacity-60 group-hover/systag:opacity-100 transition-opacity border-l border-[#193a4c] pl-1 ml-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSystemTagIndex(tIdx);
+                                setEditingSystemTagText(tag);
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                              title={`Edit tag "${tag}"`}
+                            >
+                              <Edit3 className="w-2.5 h-2.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSystemTag(tIdx)}
+                              className="p-0.5 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                              title={`Delete tag "${tag}"`}
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {currentSystemTags.length === 0 && (
+                      <div className="text-[11px] text-slate-500 italic py-1">
+                        No tags yet. Type a tag name above to create one (up to 10 total).
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-[#122834]">
+                    <span>Click tag to insert into Trade Notes</span>
+                    {consolidatedNote && (
+                      <button
+                        type="button"
+                        onClick={() => setConsolidatedNote('')}
+                        className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                      >
+                        Clear notes
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+
+              {/* All criteria completed indicator */}
+              {checklistQuestions.every((q) => getCurrentStatus(q.id) !== null) && (
+                <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="font-bold text-[11px] truncate">
+                      All {totalQuestions} criteria reviewed. Ready to size and execute.
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSkipTradeFeedback(false)}
-                    className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    onClick={() => {
+                      const calcEl = document.getElementById('account-sizing-tier-cards');
+                      if (calcEl) calcEl.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-2.5 py-1 rounded bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider hover:bg-emerald-400 transition-colors cursor-pointer shrink-0"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    Sizing &rarr;
                   </button>
                 </div>
               )}
@@ -1964,7 +2866,6 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 <span>SKIPPED THE TRADE</span>
               </button>
             </div>
-
             {/* Skipped Trade Banner Confirmation (Bottom) */}
             {skipTradeFeedback && (
               <div
@@ -2448,942 +3349,6 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 Reset filter answers
               </button>
             </div>
-          </div>
-
-          {/* RIGHT: Standalone Filter Control Box (lg:col-span-5 xl:col-span-5 space-y-3.5 lg:sticky lg:top-4) */}
-          <div className="lg:col-span-5 xl:col-span-5 space-y-3.5 lg:sticky lg:top-4">
-            {/* Repositioned Trade Filter Description Message - Sits directly above Filter Control Box */}
-            <div
-              id="trade-filter-description-box"
-              className="p-3.5 bg-[#081624] border border-[#183a54] rounded-xl text-xs text-slate-300 shadow-xs"
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1 flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5" />
-                <span>FILTER CONTROL BOX</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                Before you click Buy, it has to go through the filter. 3 of 3 on your rules. Risk in Q4. Revenge/FOMO on Q5.
-              </p>
-            </div>
-
-            {/* Standalone Filter Control Box */}
-            <div
-              id="consolidated-interactive-control-box"
-              className="bg-[#0a1a29] border-2 border-sky-400/50 rounded-xl p-4 space-y-4 shadow-xl"
-            >
-              {/* Header with Step Tracker and Navigation */}
-              <div className="flex items-center justify-between border-b border-[#16364d] pb-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shadow-xs">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
-                      FILTER CONTROL BOX
-                    </span>
-                    <div className="text-[10px] text-sky-400 font-bold">
-                      Rule {currentQuestionIndex + 1} of {totalQuestions}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step Navigation Arrows */}
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentQuestionIndex > 0) {
-                        setOverridePromptFor(null);
-                        setActiveRuleFocus(checklistQuestions[currentQuestionIndex - 1].id);
-                      }
-                    }}
-                    disabled={currentQuestionIndex === 0}
-                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
-                    title="Previous Question"
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span className="hidden sm:inline">Prev</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentQuestionIndex < totalQuestions - 1) {
-                        const nextQ = checklistQuestions[currentQuestionIndex + 1];
-                        handleSelectStep(nextQ.id);
-                      }
-                    }}
-                    disabled={currentQuestionIndex === totalQuestions - 1}
-                    className="p-1.5 rounded-md bg-[#0d2338] border border-[#1c4464] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-[10px] flex items-center gap-1 font-bold"
-                    title="Next Question"
-                  >
-                    <span className="hidden sm:inline">Next</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Step indicator pips */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {checklistQuestions.map((q, idx) => {
-                  const status = getCurrentStatus(q.id);
-                  const isCurrent = activeRuleFocus === q.id;
-                  const isOverridden = overriddenRules[q.id];
-                  const isUnlocked = isStepUnlocked(q.id);
-
-                  return (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => handleSelectStep(q.id)}
-                      className={`py-1 px-1 rounded-md text-[10px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
-                        !isUnlocked
-                          ? 'bg-[#06121b] border border-[#112433] text-slate-500 opacity-60'
-                          : isCurrent
-                          ? 'bg-sky-400 text-black font-black ring-1 ring-sky-200'
-                          : status === true
-                          ? 'bg-sky-950/80 border border-sky-600/60 text-sky-200'
-                          : status === false && isOverridden
-                          ? 'bg-amber-950/70 border border-amber-700/60 text-amber-300'
-                          : status === false
-                          ? 'bg-rose-950/70 border border-rose-700/60 text-rose-300'
-                          : 'bg-[#0d2338] border border-[#173752] text-slate-400 hover:text-slate-200'
-                      }`}
-                      title={!isUnlocked ? `Step ${idx + 1} locked - complete previous steps first` : q.title}
-                    >
-                      {!isUnlocked && <Lock className="w-2.5 h-2.5 text-slate-500 shrink-0" />}
-                      <span>{q.shortTitle}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Active Question Spotlight */}
-              <div className="p-3.5 rounded-xl bg-[#0c2236] border border-[#1c4668] space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-slate-400 uppercase tracking-wider">
-                    {currentQuestion.title}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      getCurrentStatus(currentQuestion.id) === true
-                        ? 'bg-sky-950 text-sky-200 border border-sky-700'
-                        : getCurrentStatus(currentQuestion.id) === false && overriddenRules[currentQuestion.id]
-                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                        : getCurrentStatus(currentQuestion.id) === false
-                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                        : 'bg-[#081622] text-slate-400 border border-[#16364d]'
-                    }`}
-                  >
-                    {getCurrentStatus(currentQuestion.id) === true
-                      ? 'Status: Verified YES ✓'
-                      : getCurrentStatus(currentQuestion.id) === false && overriddenRules[currentQuestion.id]
-                      ? 'Status: Overridden ⚠️'
-                      : getCurrentStatus(currentQuestion.id) === false
-                      ? 'Status: Flagged NO ✗'
-                      : 'Status: Pending Verification'}
-                  </span>
-                </div>
-
-                <div className="text-sm font-black text-white leading-snug">
-                  &ldquo;{currentQuestion.text}&rdquo;
-                </div>
-              </div>
-
-              {/* Action Area: Yes/No Buttons or "Take It Anyway?" Override Prompt */}
-              {overridePromptFor === currentQuestion.id ? (
-                /* Inline Override Question: "Not all criteria met. Take it anyway?" */
-                <div
-                  id="inline-override-prompt"
-                  className="p-3.5 rounded-xl bg-[#1d170b] border-2 border-amber-500/80 space-y-3 shadow-lg"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs font-black text-amber-300 tracking-wide">
-                        Not all criteria met. Take it anyway?
-                      </div>
-                      <p className="text-[11px] text-amber-100/90 leading-relaxed">
-                        Criteria is not met for &ldquo;{currentQuestion.text}&rdquo;. Trades can still be taken even if every rule isn&apos;t checked. Do you wish to confirm and proceed with this trade setup?
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      type="button"
-                      id="override-take-anyway-btn"
-                      onClick={handleConfirmOverride}
-                      className="py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 text-center"
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Yes, Take It Anyway</span>
-                    </button>
-                    <button
-                      type="button"
-                      id="override-cancel-btn"
-                      onClick={handleCancelOverride}
-                      className="py-2.5 px-3 rounded-lg bg-[#0e2233] hover:bg-[#16364d] text-slate-300 border border-[#204a69] font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>No, Stay Flat</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* Primary Interactive Control: YES / NO */
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      id="control-box-yes-btn"
-                      onClick={() => handleControlAnswer(true)}
-                      className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                        getCurrentStatus(currentQuestion.id) === true
-                          ? 'bg-sky-400 text-black ring-2 ring-sky-300 shadow-sky-950/50'
-                          : 'bg-sky-500 hover:bg-sky-400 text-black'
-                      }`}
-                    >
-                      <Check className="w-4 h-4 stroke-[3]" />
-                      <span>YES (Criteria Met)</span>
-                    </button>
-                    <button
-                      type="button"
-                      id="control-box-no-btn"
-                      onClick={() => handleControlAnswer(false)}
-                      className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                        getCurrentStatus(currentQuestion.id) === false
-                          ? 'bg-rose-600 text-white ring-2 ring-rose-400 shadow-rose-950/50'
-                          : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/50'
-                      }`}
-                    >
-                      <X className="w-4 h-4 stroke-[3]" />
-                      <span>NO (Not Met)</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
-                    <span>Answers advance to the next rule in sequence</span>
-                    {currentQuestionIndex < totalQuestions - 1 ? (
-                      <span className="text-sky-400 font-bold flex items-center gap-0.5">
-                        <span>Next: {checklistQuestions[currentQuestionIndex + 1].shortTitle}</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    ) : (
-                      <span className="text-sky-400 font-bold">Step 5 of 5 reached</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Direction/Entry/Exit + Risk Calculator only reveal once rules 1-N are resolved (progressive disclosure) */}
-              {isStepUnlocked('q4') && (
-              <>
-              {/* Optional Trade Details: Direction / Entry / Exit */}
-              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
-                <div className="flex items-center gap-1.5 font-bold text-slate-200 text-[11px]">
-                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Direction / Entry / Exit (Optional)</span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center rounded-lg border border-[#142c38] overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setTradeDirection(tradeDirection === 'LONG' ? '' : 'LONG')}
-                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
-                        tradeDirection === 'LONG'
-                          ? 'bg-emerald-500/20 text-emerald-300'
-                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      LONG
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTradeDirection(tradeDirection === 'SHORT' ? '' : 'SHORT')}
-                      className={`px-3 py-2 text-xs font-bold transition-colors cursor-pointer border-l border-[#142c38] ${
-                        tradeDirection === 'SHORT'
-                          ? 'bg-rose-500/20 text-rose-300'
-                          : 'bg-[#071115] text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      SHORT
-                    </button>
-                  </div>
-                  <input
-                    type="number"
-                    value={entryPriceInput}
-                    onChange={(e) => setEntryPriceInput(e.target.value)}
-                    placeholder="Entry Price"
-                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
-                  />
-                  <input
-                    type="number"
-                    value={exitPriceInput}
-                    onChange={(e) => setExitPriceInput(e.target.value)}
-                    placeholder="Exit Price"
-                    className="flex-1 min-w-[110px] bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Risk Calculator: B / A / A+ sizing, Max DD, risk $ */}
-                  <div id="account-sizing-tier-cards" className="space-y-2.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Dynamic Account Connection & Max Drawdown Row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#081318] p-2 rounded-lg border border-[#142934]">
-                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Account:</span>
-                        <select
-                          id="calculator-account-selector"
-                          value={state.activeAccountId || ''}
-                          onChange={(e) => {
-                            const accId = e.target.value;
-                            onUpdateState((prev) => ({ ...prev, activeAccountId: accId }));
-                            if (accId) {
-                              const acc = state.accounts.find((a) => a.id === accId);
-                              if (acc && acc.maxDrawdown) {
-                                const dd = acc.maxDrawdown;
-                                setMaxDrawdownInput(dd.toString());
-                                setRiskAmounts({
-                                  B: Math.max(5, Math.round(dd * 0.05)),
-                                  A: Math.max(10, Math.round(dd * 0.10)),
-                                  A_PLUS: Math.max(15, Math.round(dd * 0.15)),
-                                });
-                              }
-                            }
-                          }}
-                          className="bg-[#0f2027] border border-[#1c3644] text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none flex-1 truncate cursor-pointer"
-                        >
-                          <option value="">Manual Entry (No Account Linked)</option>
-                          {state.accounts.map((acc) => (
-                            <option key={acc.id} value={acc.id}>
-                              {acc.name} (${acc.maxDrawdown?.toLocaleString()} Max DD &bull; {acc.accountType?.toUpperCase()})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Max DD:</span>
-                        <div className="relative flex items-center">
-                          <span className="absolute left-2 text-[11px] text-slate-400 font-bold">$</span>
-                          <input
-                            id="calculator-max-drawdown-input"
-                            type="number"
-                            value={maxDrawdownInput}
-                            onChange={(e) => handleMaxDrawdownChange(e.target.value)}
-                            placeholder="2000"
-                            className="w-24 pl-5 pr-2 py-1 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
-                          />
-                        </div>
-                        {activeAccount && (
-                          <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                            Linked
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 3 Quality Sizing Buttons: B (5%), A (10%), A+ (15%) */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* B (5%) */}
-                      <div
-                        id="preset-risk-tier-b"
-                        onClick={() => {
-                          const val = riskAmounts.B;
-                          setSelectedQuality('B');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'B' || customRiskInput === String(riskAmounts.B)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>B Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(5, riskAmounts.B - 25);
-                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                setSelectedQuality('B');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease B tier risk by $25"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.B + 25;
-                                setRiskAmounts((prev) => ({ ...prev, B: nextVal }));
-                                setSelectedQuality('B');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase B tier risk by $25"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">5%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.B}
-                        </div>
-                      </div>
-
-                      {/* A (10%) */}
-                      <div
-                        id="preset-risk-tier-a"
-                        onClick={() => {
-                          const val = riskAmounts.A;
-                          setSelectedQuality('A');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A' || customRiskInput === String(riskAmounts.A)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>A Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(10, riskAmounts.A - 50);
-                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                setSelectedQuality('A');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease A tier risk by $50"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.A + 50;
-                                setRiskAmounts((prev) => ({ ...prev, A: nextVal }));
-                                setSelectedQuality('A');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase A tier risk by $50"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">10%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.A}
-                        </div>
-                      </div>
-
-                      {/* A+ (15%) */}
-                      <div
-                        id="preset-risk-tier-aplus"
-                        onClick={() => {
-                          const val = riskAmounts.A_PLUS;
-                          setSelectedQuality('A_PLUS');
-                          setCustomRiskInput(String(val));
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setLossAmountInput(String(val));
-                        }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedQuality === 'A_PLUS' || customRiskInput === String(riskAmounts.A_PLUS)
-                            ? 'bg-[#102c2e] border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/40'
-                            : 'bg-[#081418] border-[#152a35] hover:border-[#1d3d4e]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                          <span>A+ Setup</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = Math.max(15, riskAmounts.A_PLUS - 50);
-                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                setSelectedQuality('A_PLUS');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Decrease A+ tier risk by $50"
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextVal = riskAmounts.A_PLUS + 50;
-                                setRiskAmounts((prev) => ({ ...prev, A_PLUS: nextVal }));
-                                setSelectedQuality('A_PLUS');
-                                setCustomRiskInput(String(nextVal));
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(String(nextVal));
-                              }}
-                              className="px-1 hover:text-white"
-                              title="Increase A+ tier risk by $50"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs font-black text-white mt-0.5">15%</div>
-                        <div className="text-[11px] font-bold text-emerald-400">
-                          ${riskAmounts.A_PLUS}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Active Sizing Status Callout */}
-                    <div className="p-2.5 bg-[#061217] border border-[#142833] rounded-xl flex items-center justify-between gap-2 flex-wrap text-xs">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="w-4 h-4 text-teal-400 shrink-0" />
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1.5">Trade Sizing:</span>
-                          {explicitRiskAmount ? (
-                            <span className="text-emerald-400 font-extrabold font-mono text-xs">
-                              ${explicitRiskAmount}{' '}
-                              <span className="text-slate-400 font-normal">
-                                ({selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality} Setup &bull;{' '}
-                                {((explicitRiskAmount / (parseFloat(maxDrawdownInput) || 2000)) * 100).toFixed(1)}% of DD)
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="text-amber-400 font-semibold text-xs">
-                              Select a preset risk box above or click a quick-fill button below
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {explicitRiskAmount ? (
-                        <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                          Sized for Execution
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {/* Sizing & Target Inputs (Custom Risk + Optional Take Profit) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {/* Custom Risk Input & Quick-Fill Presets */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400">Risk Amount ($):</span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Active: {explicitRiskAmount ? `$${explicitRiskAmount}` : 'Not set'}
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                          <input
-                            id="calculator-custom-risk-input"
-                            type="number"
-                            value={customRiskInput}
-                            onChange={(e) => {
-                              setCustomRiskInput(e.target.value);
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val) && val > 0) {
-                                setQ4Risk(true);
-                                setOverriddenRules((p) => ({ ...p, q4: false }));
-                                setLossAmountInput(e.target.value);
-                              }
-                            }}
-                            placeholder="Input risk $"
-                            className="w-full pl-6 pr-2 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60"
-                          />
-                        </div>
-
-                        {/* Quick-Fill Preset Risk Buttons */}
-                        <div className="space-y-1 pt-0.5">
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                            <span>Quick-Fill Presets:</span>
-                            <span className="text-slate-500 font-normal">Click to auto-input</span>
-                          </div>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {[
-                              { label: 'B ($' + riskAmounts.B + ')', val: riskAmounts.B, tier: 'B' as const },
-                              { label: 'A ($' + riskAmounts.A + ')', val: riskAmounts.A, tier: 'A' as const },
-                              { label: 'A+ ($' + riskAmounts.A_PLUS + ')', val: riskAmounts.A_PLUS, tier: 'A_PLUS' as const },
-                              { label: '$50', val: 50 },
-                              { label: '$100', val: 100 },
-                              { label: '$150', val: 150 },
-                              { label: '$200', val: 200 },
-                              { label: '$250', val: 250 },
-                              { label: '$300', val: 300 },
-                              { label: '$500', val: 500 },
-                            ].map((preset, pIdx) => {
-                              const isSelected = customRiskInput === String(preset.val);
-                              return (
-                                <button
-                                  key={pIdx}
-                                  type="button"
-                                  onClick={() => {
-                                    setCustomRiskInput(String(preset.val));
-                                    if (preset.tier) {
-                                      setSelectedQuality(preset.tier);
-                                    } else {
-                                      if (preset.val === riskAmounts.B) setSelectedQuality('B');
-                                      else if (preset.val === riskAmounts.A) setSelectedQuality('A');
-                                      else if (preset.val === riskAmounts.A_PLUS) setSelectedQuality('A_PLUS');
-                                    }
-                                    setQ4Risk(true);
-                                    setOverriddenRules((p) => ({ ...p, q4: false }));
-                                    setLossAmountInput(String(preset.val));
-                                  }}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                                    isSelected
-                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 ring-1 ring-emerald-500/40'
-                                      : 'bg-[#0b171c] hover:bg-[#12252e] border-[#18313d] text-slate-300 hover:text-white'
-                                  }`}
-                                >
-                                  {preset.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Optional Take Profit Target */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400">Take Profit Target:</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-[#08151c] px-1.5 py-0.2 rounded border border-[#163342]">
-                            Optional
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
-                          <input
-                            id="calculator-take-profit-input"
-                            type="number"
-                            value={optionalTakeProfitInput}
-                            onChange={(e) => setOptionalTakeProfitInput(e.target.value)}
-                            placeholder="e.g. 400 (Optional)"
-                            className="w-full pl-6 pr-20 py-1.5 bg-[#0f2027] border border-[#1c3644] text-white text-xs font-bold rounded-lg focus:outline-none focus:border-emerald-500/60 placeholder:text-slate-600"
-                          />
-                          {(() => {
-                            const tp = parseFloat(optionalTakeProfitInput);
-                            if (!isNaN(tp) && tp > 0 && acceptedRisk > 0) {
-                              const projectedR = (tp / acceptedRisk).toFixed(1);
-                              return (
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
-                                  {projectedR}R Target
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Confirmation Bar */}
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#132833]">
-                      <button
-                        type="button"
-                        id="confirm-risk-sized-btn"
-                        onClick={() => {
-                          if (!explicitRiskAmount) {
-                            setCustomRiskInput(String(riskAmounts[selectedQuality] ?? 200));
-                          }
-                          setQ4Risk(true);
-                          setOverriddenRules((p) => ({ ...p, q4: false }));
-                          setActiveRuleFocus('q5');
-                        }}
-                        className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>Confirm Risk ({explicitRiskAmount ? `$${explicitRiskAmount}` : `$${riskAmounts[selectedQuality] ?? 200}`}) &rarr;</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQ4Risk(false);
-                          setOverriddenRules((p) => ({ ...p, q4: true }));
-                          setActiveRuleFocus('q5');
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        Override
-                      </button>
-                    </div>
-                  </div>
-              </>
-              )}
-
-              {/* Notes + Tags stay hidden until Q5 is answered (progressive disclosure) */}
-              {q5NotFomo !== null && (
-              <>
-              {/* Optional Trade Notes Input */}
-              <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
-                <div className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-200">
-                    <PenLine className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Trade Notes / Type of Trade (Optional)</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {consolidatedNote ? `${consolidatedNote.length} chars` : 'Optional'}
-                  </span>
-                </div>
-
-                <input
-                  type="text"
-                  id="control-box-trade-note-input"
-                  value={consolidatedNote}
-                  onChange={(e) => setConsolidatedNote(e.target.value)}
-                  placeholder="Type trade type or context (e.g., IB sweep long, 5m FVG bounce, scalp)..."
-                  className="w-full bg-[#071115] border border-[#142c38] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2.5 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
-                />
-
-                {/* Centralized Tag Control Box (Max 10 Total Limit Across System) */}
-                <div
-                  id="centralized-tag-control-box"
-                  className="p-3 bg-[#071318] border border-[#163342] rounded-xl space-y-2.5"
-                >
-                  {/* Header with Title and Strict Max 10 Counter */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">
-                        Tag Control Box
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                          currentSystemTags.length >= 10
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        }`}
-                      >
-                        {currentSystemTags.length}/10 TAGS {currentSystemTags.length >= 10 ? '(LIMIT REACHED)' : ''}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tag Creation Form (strictly enforces max 10) */}
-                  {currentSystemTags.length < 10 ? (
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative flex-1">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">#</span>
-                        <input
-                          type="text"
-                          id="create-system-tag-input"
-                          value={newSystemTagInput}
-                          onChange={(e) => setNewSystemTagInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddSystemTag();
-                            }
-                          }}
-                          placeholder="Create new tag (e.g. Scalp, Trend, FVG)..."
-                          maxLength={24}
-                          className="w-full pl-6 pr-2.5 py-1.5 text-xs font-medium bg-[#09181f] border border-[#1a3848] text-white rounded-lg focus:outline-none focus:border-emerald-400 placeholder:text-slate-500 transition-colors"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        id="add-system-tag-btn"
-                        onClick={handleAddSystemTag}
-                        disabled={!newSystemTagInput.trim()}
-                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:pointer-events-none text-black font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
-                        title="Add Tag (Max 10 total)"
-                      >
-                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Add</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-2 bg-amber-950/40 border border-amber-500/30 rounded-lg flex items-center gap-2 text-[11px] text-amber-300">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                      <span className="font-semibold">Maximum limit of 10 tags reached. Delete a tag to add a new one.</span>
-                    </div>
-                  )}
-
-                  {/* Feedback on validation error */}
-                  {tagErrorFeedback && (
-                    <div className="text-[10px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded">
-                      {tagErrorFeedback}
-                    </div>
-                  )}
-
-                  {/* System Tags Chips (Click to apply, inline edit, delete) */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    {currentSystemTags.map((tag, tIdx) => {
-                      const isEditingThis = editingSystemTagIndex === tIdx;
-
-                      if (isEditingThis) {
-                        return (
-                          <div
-                            key={tIdx}
-                            className="flex items-center gap-1 bg-[#0b1f29] border border-emerald-400 rounded-lg px-2 py-0.5 shadow-sm"
-                          >
-                            <span className="text-emerald-400 font-bold text-xs">#</span>
-                            <input
-                              type="text"
-                              value={editingSystemTagText}
-                              onChange={(e) => setEditingSystemTagText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveSystemTag(tIdx);
-                                if (e.key === 'Escape') {
-                                  setEditingSystemTagIndex(null);
-                                  setEditingSystemTagText('');
-                                }
-                              }}
-                              autoFocus
-                              maxLength={24}
-                              className="w-24 text-xs font-bold text-white bg-transparent focus:outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveSystemTag(tIdx)}
-                              className="p-0.5 text-emerald-400 hover:text-emerald-200 cursor-pointer"
-                              title="Save tag"
-                            >
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingSystemTagIndex(null);
-                                setEditingSystemTagText('');
-                              }}
-                              className="p-0.5 text-slate-400 hover:text-white cursor-pointer"
-                              title="Cancel"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div
-                          key={tIdx}
-                          className="group/systag inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0b1c24] hover:bg-[#112937] border border-[#163546] hover:border-emerald-500/50 text-[11px] font-bold text-slate-200 transition-all shadow-2xs"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => handleApplyTagToNote(tag)}
-                            className="cursor-pointer text-emerald-300 hover:text-emerald-200 hover:underline"
-                            title={`Click to add #${tag} to Trade Notes`}
-                          >
-                            #{tag}
-                          </button>
-
-                          <div className="flex items-center gap-0.5 opacity-60 group-hover/systag:opacity-100 transition-opacity border-l border-[#193a4c] pl-1 ml-0.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingSystemTagIndex(tIdx);
-                                setEditingSystemTagText(tag);
-                              }}
-                              className="p-0.5 text-slate-400 hover:text-emerald-300 transition-colors cursor-pointer"
-                              title={`Edit tag "${tag}"`}
-                            >
-                              <Edit3 className="w-2.5 h-2.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSystemTag(tIdx)}
-                              className="p-0.5 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                              title={`Delete tag "${tag}"`}
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {currentSystemTags.length === 0 && (
-                      <div className="text-[11px] text-slate-500 italic py-1">
-                        No tags yet. Type a tag name above to create one (up to 10 total).
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-[#122834]">
-                    <span>Click tag to insert into Trade Notes</span>
-                    {consolidatedNote && (
-                      <button
-                        type="button"
-                        onClick={() => setConsolidatedNote('')}
-                        className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                      >
-                        Clear notes
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              </>
-              )}
-
-              {/* All criteria completed indicator */}
-              {checklistQuestions.every((q) => getCurrentStatus(q.id) !== null) && (
-                <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="font-bold text-[11px] truncate">
-                      All {totalQuestions} criteria reviewed. Ready to size and execute.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const calcEl = document.getElementById('account-sizing-tier-cards');
-                      if (calcEl) calcEl.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="px-2.5 py-1 rounded bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider hover:bg-emerald-400 transition-colors cursor-pointer shrink-0"
-                  >
-                    Sizing &rarr;
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
