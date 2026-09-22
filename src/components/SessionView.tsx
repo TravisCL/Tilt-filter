@@ -1779,61 +1779,15 @@ export const SessionView: React.FC<SessionViewProps> = ({
               id="top-take-trade-action-area"
               className="p-3 sm:p-3.5 bg-[#081318] border border-[#162b37] rounded-xl space-y-2.5 shadow-md"
             >
-              {/* Top Row: Active Account Name Clearly Retained & Status Indicator */}
-              <div className="flex items-center justify-between gap-2.5 flex-wrap border-b border-[#12242f] pb-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Active Account Name clearly displayed */}
-                  <div
-                    id="top-area-account-display"
-                    className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0b1c24] border border-[#1a3848] text-xs font-bold text-slate-200 shadow-xs"
-                  >
-                    <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Account:</span>
-                    <span className="text-emerald-300 font-black">
-                      {activeAccount ? activeAccount.name : 'No Account Selected'}
-                    </span>
-                    {activeAccount?.maxDrawdown ? (
-                      <span className="text-[10px] font-mono text-slate-400 font-normal border-l border-[#1f4253] pl-1.5 ml-0.5">
-                        ${activeAccount.maxDrawdown.toLocaleString()} Max DD
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {/* Sizing Status Pill - Delegated to Sizing Calculator */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveRuleFocus('q4');
-                      const calcEl = document.getElementById('account-sizing-tier-cards');
-                      if (calcEl) {
-                        calcEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }
-                    }}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
-                      explicitRiskAmount
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                        : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                    }`}
-                    title="All risk sizing is handled in the Max Drawdown & Sizing Calculator"
-                  >
-                    <Calculator className="w-3 h-3 shrink-0" />
-                    <span>
-                      {explicitRiskAmount
-                        ? `Risk: $${explicitRiskAmount} (${selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality})`
-                        : 'Risk: Set in Calculator Below'}
-                    </span>
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-[11px] font-bold">
-                  <span
-                    className={`px-2 py-0.5 rounded-md ${
-                      isAllRulesMet
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-[#0b1820] text-slate-400 border border-[#162a34]'
-                    }`}
-                  >
-                    {isAllRulesMet ? 'All Rules Cleared' : 'Filter Pending'}
+              {/* Top Row: Active Account Name only — stripped of extra pills/badges */}
+              <div className="flex items-center gap-2.5 flex-wrap border-b border-[#12242f] pb-2">
+                <div
+                  id="top-area-account-display"
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0b1c24] border border-[#1a3848] text-xs font-bold text-slate-200 shadow-xs"
+                >
+                  <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-emerald-300 font-black">
+                    {activeAccount ? activeAccount.name : 'No Account Selected'}
                   </span>
                 </div>
               </div>
@@ -2172,8 +2126,15 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               )}
 
-              {/* IDLE STATE: Always render the outcome buttons, grayed out/disabled until trade is executed */}
-              {outcomeMode === 'idle' && (
+              {/* Collapsed hint: shown only while no trade is open, keeps the tracker out of the way */}
+              {outcomeMode === 'idle' && !tradeInPosition && isCheckInCompletedToday && (
+                <p className="text-[11px] text-slate-500 italic">
+                  Take a trade to log its outcome here.
+                </p>
+              )}
+
+              {/* IDLE STATE: outcome buttons, only rendered once a trade is actually open */}
+              {outcomeMode === 'idle' && tradeInPosition && (
                 <div className="space-y-2.5">
                   {/* Quick-action button matching the exact risk you accepted before taking the trade */}
                   <button
@@ -2716,6 +2677,9 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               )}
 
+              {/* Direction/Entry/Exit + Risk Calculator only reveal once rules 1-N are resolved (progressive disclosure) */}
+              {isStepUnlocked('q4') && (
+              <>
               {/* Optional Trade Details: Direction / Entry / Exit */}
               <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
                 <div className="flex items-center gap-1.5 font-bold text-slate-200 text-[11px]">
@@ -3184,7 +3148,12 @@ export const SessionView: React.FC<SessionViewProps> = ({
                       </button>
                     </div>
                   </div>
+              </>
+              )}
 
+              {/* Notes + Tags stay hidden until Q5 is answered (progressive disclosure) */}
+              {q5NotFomo !== null && (
+              <>
               {/* Optional Trade Notes Input */}
               <div className="space-y-2 pt-2.5 border-t border-[#162f3c]">
                 <div className="flex items-center justify-between text-[11px]">
@@ -3389,6 +3358,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </div>
                 </div>
               </div>
+              </>
+              )}
 
               {/* All criteria completed indicator */}
               {checklistQuestions.every((q) => getCurrentStatus(q.id) !== null) && (
