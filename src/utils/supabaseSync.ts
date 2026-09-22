@@ -227,6 +227,8 @@ function appMetaToRow(s: AppState) {
     selected_sizing_tier: s.selectedSizingTier,
     discord_webhook_enabled: s.discordWebhookEnabled ?? false,
     discord_webhook_url: s.discordWebhookUrl ?? null,
+    aoi_webhook_enabled: s.aoiWebhookEnabled ?? false,
+    aoi_webhook_url: s.aoiWebhookUrl ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -256,6 +258,8 @@ export interface PulledState {
     selectedSizingTier?: AppState['selectedSizingTier'];
     discordWebhookEnabled?: boolean;
     discordWebhookUrl?: string;
+    aoiWebhookEnabled?: boolean;
+    aoiWebhookUrl?: string;
   } | null;
   isEmpty: boolean;
 }
@@ -308,6 +312,8 @@ export async function pullStateFromSupabase(): Promise<PulledState | null> {
             selectedSizingTier: metaRow.selected_sizing_tier ?? undefined,
             discordWebhookEnabled: metaRow.discord_webhook_enabled ?? undefined,
             discordWebhookUrl: metaRow.discord_webhook_url ?? undefined,
+            aoiWebhookEnabled: metaRow.aoi_webhook_enabled ?? undefined,
+            aoiWebhookUrl: metaRow.aoi_webhook_url ?? undefined,
           }
         : null,
       isEmpty,
@@ -343,6 +349,8 @@ export function mergePulledIntoState(pulled: PulledState, prev: AppState): AppSt
           selectedSizingTier: pulled.meta.selectedSizingTier || prev.selectedSizingTier,
           discordWebhookEnabled: pulled.meta.discordWebhookEnabled ?? prev.discordWebhookEnabled,
           discordWebhookUrl: pulled.meta.discordWebhookUrl ?? prev.discordWebhookUrl,
+          aoiWebhookEnabled: pulled.meta.aoiWebhookEnabled ?? prev.aoiWebhookEnabled,
+          aoiWebhookUrl: pulled.meta.aoiWebhookUrl ?? prev.aoiWebhookUrl,
         }
       : {}),
   };

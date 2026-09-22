@@ -63,3 +63,46 @@ export async function postTradeToDiscord(
     console.warn('[Discord webhook] post failed (trade was already saved, unaffected):', e);
   }
 }
+
+export interface AoiPost {
+  symbol?: string;
+  direction: 'LONG' | 'SHORT' | '';
+  entryPrice?: number;
+  exitPrice?: number;
+  accountName?: string;
+  note?: string;
+}
+
+/**
+ * Posts a "Trade Idea" / AOI (area of interest) to the creator's private VIP
+ * webhook — completely separate from postTradeToDiscord above. This never
+ * logs a trade, never touches P&L/sizing/tilt tracking; it's just a manual
+ * "here's what I'm looking at" share. Fire-and-forget, never throws.
+ */
+export async function postAoiToDiscord(webhookUrl: string, aoi: AoiPost): Promise<void> {
+  try {
+    const fields: Record<string, unknown>[] = [];
+    if (aoi.direction) fields.push({ name: 'Direction', value: aoi.direction, inline: true });
+    if (aoi.entryPrice != null) fields.push({ name: 'Entry', value: String(aoi.entryPrice), inline: true });
+    if (aoi.exitPrice != null) fields.push({ name: 'Exit', value: String(aoi.exitPrice), inline: true });
+    if (aoi.accountName) fields.push({ name: 'Account', value: aoi.accountName, inline: true });
+
+    const embed: Record<string, unknown> = {
+      title: `💭 AOI — ${aoi.symbol || 'Trade Idea'}`,
+      color: aoi.direction === 'SHORT' ? 0xf43f5e : 0x10b981,
+      fields,
+      timestamp: new Date().toISOString(),
+    };
+    if (aoi.note) {
+      embed.description = aoi.note;
+    }
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (e) {
+    console.warn('[Discord webhook] AOI post failed:', e);
+  }
+}

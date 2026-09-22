@@ -235,6 +235,11 @@ export interface AppState {
   tiltEvents?: TiltEvent[];
   discordWebhookEnabled?: boolean;
   discordWebhookUrl?: string;
+  /** Private, creator-only "Send AOI" webhook — separate from the community
+   * trade-execution webhook above. Off by default; the Send AOI button only
+   * appears once this is explicitly enabled with its own URL in Profile. */
+  aoiWebhookEnabled?: boolean;
+  aoiWebhookUrl?: string;
 }
 
 // Backward compatibility types

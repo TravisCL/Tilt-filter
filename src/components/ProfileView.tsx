@@ -15,6 +15,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [webhookUrlDraft, setWebhookUrlDraft] = useState(state.discordWebhookUrl || '');
+  const [aoiWebhookUrlDraft, setAoiWebhookUrlDraft] = useState(state.aoiWebhookUrl || '');
 
   const handleExecuteReset = () => {
     onCleanSlate();
@@ -168,6 +169,62 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
               onChange={(e) => setWebhookUrlDraft(e.target.value)}
               onBlur={() =>
                 onUpdateState((prev) => ({ ...prev, discordWebhookUrl: webhookUrlDraft.trim() }))
+              }
+              placeholder="https://discord.com/api/webhooks/..."
+              className="w-full px-3 py-2 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-xs font-mono text-slate-200 placeholder:text-slate-600"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* CREATOR AOI WEBHOOK (PRIVATE) — off by default, invisible to anyone who hasn't turned it on */}
+      <div className="p-6 bg-[var(--c-0c1318)] border border-[var(--c-1a2e38)] rounded-2xl space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <Webhook className="w-4 h-4 text-amber-400" />
+            <span>Creator AOI Webhook (Private)</span>
+          </h3>
+          <p className="text-xs text-slate-400">
+            Adds a "Send AOI" button to the Direction/Entry/Exit section for manually sharing a
+            setup — direction, entry, exit, and an optional note — to your own VIP webhook. Never
+            logs a trade or touches sizing/P&L. Off by default; nobody sees this button until you
+            enable it here.
+          </p>
+        </div>
+
+        <div className="p-4 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-300">Enable Send AOI button</span>
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateState((prev) => ({
+                  ...prev,
+                  aoiWebhookEnabled: !prev.aoiWebhookEnabled,
+                }))
+              }
+              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                state.aoiWebhookEnabled ? 'bg-amber-500' : 'bg-[var(--c-1e3646)]'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  state.aoiWebhookEnabled ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              VIP Webhook URL
+            </label>
+            <input
+              type="text"
+              value={aoiWebhookUrlDraft}
+              onChange={(e) => setAoiWebhookUrlDraft(e.target.value)}
+              onBlur={() =>
+                onUpdateState((prev) => ({ ...prev, aoiWebhookUrl: aoiWebhookUrlDraft.trim() }))
               }
               placeholder="https://discord.com/api/webhooks/..."
               className="w-full px-3 py-2 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-xs font-mono text-slate-200 placeholder:text-slate-600"

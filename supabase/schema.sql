@@ -140,6 +140,8 @@ create table if not exists app_meta (
   selected_sizing_tier text,
   discord_webhook_enabled boolean default false,
   discord_webhook_url text,
+  aoi_webhook_enabled boolean default false,
+  aoi_webhook_url text,
   updated_at timestamptz not null default now()
 );
 

@@ -55,6 +55,7 @@ import { FEEL_SCALE, SLEEP_SCALE, DEFAULT_SCOREBOARD_TALLY, DEFAULT_SYSTEM_TAGS,
 import { broadcastTradeUpdated, broadcastStateChange } from '../utils/syncService';
 import { getESTDate } from '../utils/dailyRollover';
 import { getNoTiltStats } from '../utils/tierProgression';
+import { postAoiToDiscord } from '../utils/discordWebhook';
 
 interface SessionViewProps {
   state: AppState;
@@ -406,6 +407,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [tradeDirection, setTradeDirection] = useState<'LONG' | 'SHORT' | ''>('');
   const [entryPriceInput, setEntryPriceInput] = useState('');
   const [exitPriceInput, setExitPriceInput] = useState('');
+  const [aoiNote, setAoiNote] = useState('');
+  const [aoiSentFeedback, setAoiSentFeedback] = useState(false);
   const [ruleNotes, setRuleNotes] = useState<Record<string, string>>({});
   const [q4Risk, setQ4Risk] = useState<boolean | null>(null);
   const [q5NotFomo, setQ5NotFomo] = useState<boolean | null>(null);
@@ -799,6 +802,23 @@ export const SessionView: React.FC<SessionViewProps> = ({
         }
       }
     }
+  };
+
+  // Creator-only: manually send the current Direction/Entry/Exit as a "Trade
+  // Idea" to the private VIP webhook. Never logs a trade, never touches
+  // sizing/P&L/tilt tracking — a completely separate action from Take the Trade.
+  const handleSendAoi = async () => {
+    if (!state.aoiWebhookUrl) return;
+    await postAoiToDiscord(state.aoiWebhookUrl, {
+      symbol: 'MNQ',
+      direction: tradeDirection,
+      entryPrice: entryPriceInput ? parseFloat(entryPriceInput) : undefined,
+      exitPrice: exitPriceInput ? parseFloat(exitPriceInput) : undefined,
+      accountName: activeAccount?.name,
+      note: aoiNote.trim() || undefined,
+    });
+    setAoiSentFeedback(true);
+    setTimeout(() => setAoiSentFeedback(false), 3000);
   };
 
   // Handle "TAKE THE TRADE" - strictly enforces verifying checklist rules sequentially (Rule 1 through Rule 5)
@@ -2139,6 +2159,41 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     className="flex-1 min-w-[110px] bg-[var(--c-071115)] border border-[var(--c-142c38)] focus:border-emerald-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors font-mono"
                   />
                 </div>
+
+                {/* Creator-only: Send AOI — invisible unless enabled with a VIP webhook URL in Profile */}
+                {state.aoiWebhookEnabled && state.aoiWebhookUrl && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    <input
+                      type="text"
+                      value={aoiNote}
+                      onChange={(e) => setAoiNote(e.target.value)}
+                      placeholder="Optional note..."
+                      className="flex-1 min-w-[140px] bg-[var(--c-071115)] border border-[var(--c-142c38)] focus:border-amber-500/80 text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none placeholder:text-slate-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendAoi}
+                      disabled={!tradeDirection}
+                      className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                        !tradeDirection
+                          ? 'bg-[var(--c-081318)] text-slate-500 cursor-not-allowed'
+                          : aoiSentFeedback
+                          ? 'bg-emerald-500 text-black'
+                          : 'bg-amber-500 hover:bg-amber-400 text-black'
+                      }`}
+                      title={!tradeDirection ? 'Pick LONG or SHORT first' : 'Send this setup to your private VIP webhook'}
+                    >
+                      {aoiSentFeedback ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <span>Sent!</span>
+                        </>
+                      ) : (
+                        <span>Send AOI</span>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Risk Calculator: B / A / A+ sizing, Max DD, risk $ */}
