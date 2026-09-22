@@ -26,6 +26,7 @@ import {
   Terminal,
   ChevronDown,
   Download,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { AppState, TradingAccount, AccountDrawdownType, AccountCategory, CompletedTrade } from '../types';
 import { broadcastTradeUpdated } from '../utils/syncService';
@@ -131,6 +132,15 @@ export function computePnlRollups(
   });
 
   return { todayPnl: dayTotal, weekPnl: weekTotal, monthPnl: monthTotal };
+}
+
+/** Moves one account between the Live and Eval categories, leaving every other account untouched. */
+export function moveAccountCategory(
+  accounts: TradingAccount[],
+  id: string,
+  newType: AccountCategory
+): TradingAccount[] {
+  return accounts.map((acc) => (acc.id === id ? { ...acc, accountType: newType } : acc));
 }
 
 // Helper to filter trades that belong strictly and exclusively to a specific account
@@ -353,6 +363,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     onUpdateState((prev) => ({
       ...prev,
       activeAccountId: id,
+    }));
+  };
+
+  // Move an account between the Live and Eval categories
+  const handleMoveAccountCategory = (id: string, newType: AccountCategory) => {
+    onUpdateState((prev) => ({
+      ...prev,
+      accounts: moveAccountCategory(prev.accounts, id, newType),
     }));
   };
 
@@ -785,8 +803,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     }`}
                   >
                     {/* Top Row: Tag, Name, Active Toggle & Delete */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="space-y-1 flex-1 min-w-[140px]">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
                             LIVE
@@ -827,6 +845,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                             Set Active
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleMoveAccountCategory(acc.id, 'eval')}
+                          className="px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-500/30 hover:border-cyan-500/60 text-cyan-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Move this account to Eval"
+                        >
+                          <ArrowLeftRight className="w-3 h-3 text-cyan-400" />
+                          <span>Move to Eval</span>
+                        </button>
 
                         <button
                           type="button"
@@ -1028,8 +1056,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     }`}
                   >
                     {/* Top Row: Tag, Name, Active Toggle & Delete */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="space-y-1 flex-1 min-w-[140px]">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider">
                             EVAL
@@ -1070,6 +1098,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                             Set Active
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleMoveAccountCategory(acc.id, 'live')}
+                          className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Move this account to Live"
+                        >
+                          <ArrowLeftRight className="w-3 h-3 text-emerald-400" />
+                          <span>Move to Live</span>
+                        </button>
 
                         <button
                           type="button"
