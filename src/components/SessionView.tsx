@@ -606,6 +606,12 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [restoreTradeDiscipline, setRestoreTradeDiscipline] = useState<'managed_well' | 'exited_emotionally'>('managed_well');
   const [restoreTradePlanned, setRestoreTradePlanned] = useState<'planned' | 'unplanned'>('planned');
   const [restoreTradeAccountId, setRestoreTradeAccountId] = useState(activeAccount?.id || '');
+  // useState's initializer only runs once at mount — without this, switching
+  // the active account after mount would leave this modal's default account
+  // silently pointing at whichever account was active on first page load.
+  useEffect(() => {
+    setRestoreTradeAccountId(activeAccount?.id || '');
+  }, [activeAccount?.id]);
   const [restoreTradeNotes, setRestoreTradeNotes] = useState('');
   const [restoreTradeFeeling, setRestoreTradeFeeling] = useState<LossFeeling>('fine');
 

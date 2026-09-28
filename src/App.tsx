@@ -27,7 +27,14 @@ import {
   subscribeToSupabaseRealtime,
   waitForPendingPush,
 } from './utils/supabaseSync';
-import { isSupabaseConfigured } from './utils/supabaseClient';
+import { isSupabaseConfigured, supabase } from './utils/supabaseClient';
+import { AuthView } from './components/AuthView';
+import type { User } from '@supabase/supabase-js';
+
+// Tracks which signed-in user this browser's localStorage data actually
+// belongs to, so a different account signing in on the same browser never
+// gets seeded with someone else's cached local data. See bootstrap effect.
+const LOCAL_DATA_OWNER_KEY = 'tilt_filter_local_data_owner';
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
@@ -41,6 +48,39 @@ export default function App() {
   const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
   const supabaseBootstrappedRef = useRef<boolean>(false);
 
+  // Auth: every table is RLS-locked to auth.uid() now, so nothing here
+  // should run against Supabase until a user is actually signed in.
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthLoading(false);
+      return;
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthUser(data.session?.user ?? null);
+      setAuthLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    // Clear local cache + ownership marker so the next person to sign in on
+    // this browser never sees (or accidentally seeds the cloud with) this
+    // account's data.
+    const fresh = resetToCleanSlate();
+    saveAppState(fresh);
+    setState(fresh);
+    localStorage.removeItem(LOCAL_DATA_OWNER_KEY);
+    supabaseBootstrappedRef.current = false;
+  };
+
   // Apply the light/dark theme to the document root and persist the choice.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -53,38 +93,52 @@ export default function App() {
 
   // One-time Supabase bootstrap on app load: adopt cloud data if it exists
   // (so data survives redeploys/code changes), or seed the cloud from
-  // whatever's currently in localStorage if this is the very first sync.
+  // whatever's currently in localStorage — but ONLY if that local data was
+  // actually saved under this exact signed-in user. Multi-user + local-first
+  // means this browser's localStorage can hold a previous user's data (they
+  // signed out, someone else signed up here); without this check that stale
+  // data would get auto-pushed into a brand-new account on first sign-in.
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !authUser) return;
 
     (async () => {
       const pulled = await pullStateFromSupabase();
       if (!pulled) return; // network/config issue — stay on local data
 
+      const localOwnerId = localStorage.getItem(LOCAL_DATA_OWNER_KEY);
+      const localBelongsToThisUser = localOwnerId === authUser.id;
       const localHasData =
         state.accounts.length > 0 || state.trades.length > 0 || (state.dailyScoreboard || []).length > 0;
 
       if (pulled.isEmpty) {
-        if (localHasData) {
+        if (localHasData && localBelongsToThisUser) {
           // First time connecting this device/browser to a fresh Supabase project:
           // push what we already have up, rather than wiping it with empty cloud data.
           await pushStateToSupabase(state).catch((e) => console.warn('[Supabase] initial seed failed:', e));
+        } else if (localHasData) {
+          // Local data belongs to a different (or unknown) user — never seed the
+          // cloud with someone else's cached data. Start this account fresh.
+          const fresh = resetToCleanSlate();
+          saveAppState(fresh);
+          setState(fresh);
         }
+        localStorage.setItem(LOCAL_DATA_OWNER_KEY, authUser.id);
         supabaseBootstrappedRef.current = true;
         return;
       }
 
       setState((prev) => mergePulledIntoState(pulled, prev));
+      localStorage.setItem(LOCAL_DATA_OWNER_KEY, authUser.id);
       supabaseBootstrappedRef.current = true;
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authUser]);
 
   // Live cross-device sync: whenever ANY device changes data in Supabase,
   // pull the fresh state and adopt it here within ~1s — no refresh needed.
   // isRemoteUpdateRef prevents this from immediately re-pushing what we just pulled.
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !authUser) return;
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleRemoteChange = () => {
@@ -106,7 +160,7 @@ export default function App() {
       if (debounceTimer) clearTimeout(debounceTimer);
       unsubscribe();
     };
-  }, []);
+  }, [authUser]);
 
   // Ensure responsive layouts recalculate and request freshest state on initial popup mount
   useEffect(() => {
@@ -450,6 +504,21 @@ export default function App() {
 
   const noTiltStats = getNoTiltStats(state);
 
+  // Every table is RLS-locked to auth.uid() — show the login gate instead
+  // of the app until someone's actually signed in (Supabase-configured
+  // deployments only; a local-only build with no Supabase still works
+  // exactly as before, no login required).
+  if (isSupabaseConfigured && authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)]">
+        <div className="w-6 h-6 border-2 border-sky-500/40 border-t-sky-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (isSupabaseConfigured && !authUser) {
+    return <AuthView />;
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[var(--c-060f17)] text-slate-100 font-sans antialiased selection:bg-sky-400 selection:text-black">
       {/* Mobile Top Header */}
@@ -503,6 +572,7 @@ export default function App() {
               isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
               theme={theme}
               onToggleTheme={handleToggleTheme}
+              onSignOut={authUser ? handleSignOut : undefined}
             />
           </div>
         </div>
@@ -519,6 +589,7 @@ export default function App() {
           isCheckInCompletedToday={isMorningCheckInCompleted(state.emotionalTracker)}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          onSignOut={authUser ? handleSignOut : undefined}
         />
       </div>
 
@@ -558,7 +629,7 @@ export default function App() {
         )}
 
         {state.currentView === 'profile' && (
-          <ProfileView state={state} onUpdateState={setState} onCleanSlate={handleCleanSlate} />
+          <ProfileView state={state} onUpdateState={setState} onCleanSlate={handleCleanSlate} userEmail={authUser?.email} />
         )}
 
         {state.currentView === 'invites' && <InvitesView />}

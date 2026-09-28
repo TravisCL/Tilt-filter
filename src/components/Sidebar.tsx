@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Sun,
   Moon,
+  LogOut,
 } from 'lucide-react';
 import { AppState, TierLevel } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
@@ -33,6 +34,7 @@ interface SidebarProps {
   state?: AppState;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
+  onSignOut?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -44,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   state,
   theme = 'dark',
   onToggleTheme,
+  onSignOut,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const stats = state ? getNoTiltStats(state) : null;
@@ -279,6 +282,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <RotateCcw className="w-3 h-3 text-slate-500" />
             <span>Refresh Everything (Clean Slate)</span>
+          </button>
+        )}
+
+        {onSignOut && (
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-lg bg-[var(--c-0c1f30)] hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-[var(--c-183a54)] hover:border-rose-500/40 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
           </button>
         )}
       </div>

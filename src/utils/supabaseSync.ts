@@ -12,9 +12,10 @@ import {
 // Row <-> app-model mappers (camelCase app fields <-> snake_case DB columns)
 // ============================================================
 
-function accountToRow(a: TradingAccount) {
+function accountToRow(a: TradingAccount, userId: string) {
   return {
     id: a.id,
+    user_id: userId,
     name: a.name,
     size: a.size,
     drawdown_type: a.drawdownType,
@@ -48,9 +49,10 @@ function rowToAccount(r: any): TradingAccount {
   };
 }
 
-function tradeToRow(t: CompletedTrade) {
+function tradeToRow(t: CompletedTrade, userId: string) {
   return {
     id: t.id,
+    user_id: userId,
     order_number: t.orderNumber,
     timestamp: t.timestamp,
     date: t.date ?? null,
@@ -118,9 +120,10 @@ function rowToTrade(r: any): CompletedTrade {
   };
 }
 
-function scoreboardToRow(s: DailyScoreRecord) {
+function scoreboardToRow(s: DailyScoreRecord, userId: string) {
   return {
     id: s.id,
+    user_id: userId,
     date: s.date,
     day_label: s.dayLabel,
     feel_level: s.feelLevel,
@@ -174,9 +177,10 @@ function rowToScoreboard(r: any): DailyScoreRecord {
   };
 }
 
-function tiltEventToRow(e: TiltEvent) {
+function tiltEventToRow(e: TiltEvent, userId: string) {
   return {
     id: e.id,
+    user_id: userId,
     trade_id: e.tradeId ?? null,
     trade_order_number: e.tradeOrderNumber ?? null,
     trade_name: e.tradeName ?? null,
@@ -202,17 +206,18 @@ function rowToTiltEvent(r: any): TiltEvent {
   };
 }
 
-function messageToRow(m: DeskMessage) {
-  return { id: m.id, sender: m.sender, time: m.time, text: m.text };
+function messageToRow(m: DeskMessage, userId: string) {
+  return { id: m.id, user_id: userId, sender: m.sender, time: m.time, text: m.text };
 }
 
 function rowToMessage(r: any): DeskMessage {
   return { id: r.id, sender: r.sender, time: r.time, text: r.text };
 }
 
-function appMetaToRow(s: AppState) {
+function appMetaToRow(s: AppState, userId: string) {
   return {
-    id: 'singleton',
+    id: `meta-${userId}`,
+    user_id: userId,
     current_view: s.currentView,
     active_account_id: s.activeAccountId,
     rules: s.rules,
@@ -274,7 +279,7 @@ export async function pullStateFromSupabase(): Promise<PulledState | null> {
       supabase.from('daily_scoreboard').select('*'),
       supabase.from('tilt_events').select('*'),
       supabase.from('desk_messages').select('*'),
-      supabase.from('app_meta').select('*').eq('id', 'singleton').maybeSingle(),
+      supabase.from('app_meta').select('*').maybeSingle(),
     ]);
 
     for (const res of [accountsRes, tradesRes, scoreboardRes, tiltRes, messagesRes, metaRes]) {
@@ -360,9 +365,17 @@ export function mergePulledIntoState(pulled: PulledState, prev: AppState): AppSt
 // Push: write everything to Supabase (debounced)
 // ============================================================
 
-async function syncTable(table: string, rows: { id: string }[]) {
+/** Current signed-in user's id, or null if nobody's logged in (or Supabase isn't configured). */
+export async function getCurrentUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+async function syncTable(table: string, rows: { id: string }[], conflictTarget: string = 'id') {
   if (!supabase) return;
 
+  // RLS scopes this select to only the current user's own rows already.
   const { data: existing, error: selErr } = await supabase.from(table).select('id');
   if (selErr) {
     console.error(`[Supabase] ${table} select failed:`, selErr);
@@ -381,7 +394,7 @@ async function syncTable(table: string, rows: { id: string }[]) {
   }
 
   if (rows.length > 0) {
-    const { error: upErr } = await supabase.from(table).upsert(rows, { onConflict: 'id' });
+    const { error: upErr } = await supabase.from(table).upsert(rows, { onConflict: conflictTarget });
     if (upErr) {
       console.error(`[Supabase] ${table} upsert failed:`, upErr);
       throw upErr;
@@ -391,14 +404,23 @@ async function syncTable(table: string, rows: { id: string }[]) {
 
 export async function pushStateToSupabase(state: AppState): Promise<void> {
   if (!supabase) return;
+  const userId = await getCurrentUserId();
+  if (!userId) return; // not signed in — nothing to scope this push to
 
   await Promise.all([
-    syncTable('accounts', (state.accounts || []).map(accountToRow)),
-    syncTable('trades', (state.trades || []).map(tradeToRow)),
-    syncTable('daily_scoreboard', (state.dailyScoreboard || []).map(scoreboardToRow)),
-    syncTable('tilt_events', (state.tiltEvents || []).map(tiltEventToRow)),
-    syncTable('desk_messages', (state.deskMessages || []).map(messageToRow)),
-    supabase.from('app_meta').upsert(appMetaToRow(state), { onConflict: 'id' }),
+    syncTable('accounts', (state.accounts || []).map((a) => accountToRow(a, userId))),
+    syncTable('trades', (state.trades || []).map((t) => tradeToRow(t, userId))),
+    // Two different users can each have a row for the same date, and the
+    // app's own id generation for this table isn't guaranteed unique across
+    // users (see add_multiuser_columns.sql) — (user_id, date) is the real key.
+    syncTable(
+      'daily_scoreboard',
+      (state.dailyScoreboard || []).map((s) => scoreboardToRow(s, userId)),
+      'user_id,date'
+    ),
+    syncTable('tilt_events', (state.tiltEvents || []).map((e) => tiltEventToRow(e, userId))),
+    syncTable('desk_messages', (state.deskMessages || []).map((m) => messageToRow(m, userId))),
+    supabase.from('app_meta').upsert(appMetaToRow(state, userId), { onConflict: 'user_id' }),
   ]);
 }
 

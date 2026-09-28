@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Shield, RotateCcw, AlertTriangle, CheckCircle2, RefreshCw, Webhook } from 'lucide-react';
 import { AppState } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
@@ -7,15 +7,28 @@ interface ProfileViewProps {
   state: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
   onCleanSlate: () => void;
+  userEmail?: string | null;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, onCleanSlate }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, onCleanSlate, userEmail }) => {
+  const displayName = userEmail ? userEmail.split('@')[0] : 'Trader';
   const stats = getNoTiltStats(state);
   const { currentTier, tierInfo, noTiltDays } = stats;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [webhookUrlDraft, setWebhookUrlDraft] = useState(state.discordWebhookUrl || '');
   const [aoiWebhookUrlDraft, setAoiWebhookUrlDraft] = useState(state.aoiWebhookUrl || '');
+
+  // These drafts only need to re-sync from state when it changes out from
+  // under us externally (Clean Slate, cloud sync/pull, account switch) —
+  // useState's initializer alone only runs once at mount, so without this
+  // the inputs would keep showing stale text forever after any such change.
+  useEffect(() => {
+    setWebhookUrlDraft(state.discordWebhookUrl || '');
+  }, [state.discordWebhookUrl]);
+  useEffect(() => {
+    setAoiWebhookUrlDraft(state.aoiWebhookUrl || '');
+  }, [state.aoiWebhookUrl]);
 
   const handleExecuteReset = () => {
     onCleanSlate();
@@ -61,16 +74,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
 
       <div className="p-6 bg-[var(--c-0b161b)] border border-[var(--c-162b34)] rounded-2xl space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-500/50">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
-              alt="Travis"
-              className="w-full h-full object-cover"
-            />
+          <div className="w-16 h-16 rounded-full border-2 border-emerald-500/50 bg-[var(--c-11252e)] flex items-center justify-center shrink-0">
+            <User className="w-7 h-7 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-white">Travis</h2>
-            <p className="text-xs text-slate-400">Trading with Travis &bull; Desk Operator</p>
+            <h2 className="text-lg font-black text-white capitalize">{displayName}</h2>
+            <p className="text-xs text-slate-400">{userEmail || 'Trading Journal'} &bull; Desk Operator</p>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-md bg-[var(--c-11252e)] border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
               <Shield className="w-3 h-3" />
               <span>{tierInfo.badgeLabel} ({noTiltDays} {noTiltDays === 1 ? 'clean day' : 'clean days'})</span>

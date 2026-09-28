@@ -666,37 +666,39 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         ))}
       </div>
 
-      {/* CSV Export */}
-      <div className="p-3.5 rounded-2xl bg-[var(--c-09151b)] border border-[var(--c-142831)] flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
-          <Download className="w-4 h-4 text-sky-400" />
-          <span>Export Trades</span>
+      {/* CSV Export — nothing to export before any trades exist */}
+      {(state.trades || []).length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-[var(--c-09151b)] border border-[var(--c-142831)] flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
+            <Download className="w-4 h-4 text-sky-400" />
+            <span>Export Trades</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            <input
+              type="date"
+              value={exportFrom}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+            />
+            <span className="text-slate-500 text-xs">to</span>
+            <input
+              type="date"
+              value={exportTo}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
+            />
+            <span className="text-[10px] text-slate-500">Leave blank for all-time</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download CSV</span>
+          </button>
         </div>
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          <input
-            type="date"
-            value={exportFrom}
-            onChange={(e) => setExportFrom(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
-          />
-          <span className="text-slate-500 text-xs">to</span>
-          <input
-            type="date"
-            value={exportTo}
-            onChange={(e) => setExportTo(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[var(--c-0b161b)] border border-[var(--c-1e3a4a)] text-[11px] font-bold text-slate-200 [&::-webkit-calendar-picker-indicator]:invert"
-          />
-          <span className="text-[10px] text-slate-500">Leave blank for all-time</span>
-        </div>
-        <button
-          type="button"
-          onClick={handleExportCSV}
-          className="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Download CSV</span>
-        </button>
-      </div>
+      )}
 
       {/* Drawdown Disclaimer Notice */}
       <div
