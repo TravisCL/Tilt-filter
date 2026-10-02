@@ -47,6 +47,11 @@ create unique index if not exists daily_scoreboard_user_date_idx on daily_scoreb
 -- ============================================================
 alter table app_meta drop constraint if exists app_meta_pkey;
 alter table app_meta add constraint app_meta_user_id_key unique (user_id);
+-- Dropping the primary key removes Postgres's default "replica identity",
+-- which Realtime needs to process DELETEs on this table (it's in the
+-- realtime publication — see enable_realtime.sql). Without this, deleting
+-- any app_meta row fails with "cannot delete ... no replica identity".
+alter table app_meta replica identity full;
 
 -- ============================================================
 -- 4. Row Level Security — replace the open "public full access" policies
