@@ -504,31 +504,6 @@ export default function App() {
 
   const noTiltStats = getNoTiltStats(state);
 
-  // TEMPORARY debug banner — remove once the env var issue is resolved.
-  // Always renders regardless of which path below fires, so it's visible
-  // even if isSupabaseConfigured is false and the app skips straight to
-  // the main view instead of the auth gate.
-  const debugBanner = (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        background: '#000',
-        color: '#0f0',
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        padding: '6px 10px',
-        wordBreak: 'break-all',
-      }}
-    >
-      DEBUG — configured: {String(isSupabaseConfigured)} | URL: {String(import.meta.env.VITE_SUPABASE_URL)} | KEY:{' '}
-      {String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)}
-    </div>
-  );
-
   // Every table is RLS-locked to auth.uid() — show the login gate instead
   // of the app until someone's actually signed in (Supabase-configured
   // deployments only; a local-only build with no Supabase still works
@@ -537,17 +512,11 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)]">
         <div className="w-6 h-6 border-2 border-sky-500/40 border-t-sky-400 rounded-full animate-spin" />
-        {debugBanner}
       </div>
     );
   }
   if (isSupabaseConfigured && !authUser) {
-    return (
-      <>
-        <AuthView />
-        {debugBanner}
-      </>
-    );
+    return <AuthView />;
   }
 
   return (
@@ -665,7 +634,6 @@ export default function App() {
 
         {state.currentView === 'invites' && <InvitesView />}
       </main>
-      {debugBanner}
     </div>
   );
 }
