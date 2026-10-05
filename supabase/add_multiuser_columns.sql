@@ -40,6 +40,11 @@ create index if not exists app_meta_user_id_idx on app_meta(user_id);
 alter table daily_scoreboard drop constraint if exists daily_scoreboard_date_key;
 alter table daily_scoreboard drop constraint if exists daily_scoreboard_pkey;
 create unique index if not exists daily_scoreboard_user_date_idx on daily_scoreboard(user_id, date);
+-- Dropping the primary key removes Postgres's default "replica identity",
+-- which Realtime needs to process UPDATEs/DELETEs on this table (it's in
+-- the realtime publication — see enable_realtime.sql). Without this,
+-- updating/deleting any row fails with "no replica identity".
+alter table daily_scoreboard replica identity full;
 
 -- ============================================================
 -- 3. app_meta stops being a single shared "singleton" row — becomes one
