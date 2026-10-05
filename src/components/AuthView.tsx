@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 /**
@@ -69,9 +69,11 @@ export const AuthView: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)] px-4">
       <div className="w-full max-w-sm space-y-5">
         <div className="text-center space-y-1.5">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-sky-500/15 border border-sky-500/40 flex items-center justify-center text-sky-400">
-            <Shield className="w-6 h-6" />
-          </div>
+          <img
+            src="/icons/pwa-192x192.png"
+            alt="Tilt Filter"
+            className="w-14 h-14 mx-auto rounded-xl"
+          />
           <h1 className="text-white font-black text-xl tracking-tight">Tilt Filter</h1>
           <p className="text-xs text-slate-400">{mode === 'signin' ? 'Sign in to your account' : 'Create your account'}</p>
         </div>
