@@ -52,6 +52,11 @@ export default function App() {
   // should run against Supabase until a user is actually signed in.
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // Discord-role gating: only set while a fresh Discord sign-in's role check
+  // is in flight or has just failed. Existing email/password accounts (e.g.
+  // Travis's own, created before this gate existed) are grandfathered in —
+  // this only blocks a NEW sign-in that comes back with no premium role.
+  const [discordGate, setDiscordGate] = useState<'checking' | 'denied' | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -62,8 +67,27 @@ export default function App() {
       setAuthUser(data.session?.user ?? null);
       setAuthLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUser(session?.user ?? null);
+
+      // Only a fresh Discord OAuth completion carries a provider_token —
+      // this never fires for plain email/password sign-ins or session
+      // refreshes, matching the "re-verified on each fresh sign-in" design.
+      if (event === 'SIGNED_IN' && session?.provider_token && session.user.app_metadata?.provider === 'discord') {
+        setDiscordGate('checking');
+        supabase
+          .functions.invoke('check-discord-role', {
+            body: { discordAccessToken: session.provider_token },
+          })
+          .then(({ data, error }) => {
+            if (error || !data?.access) {
+              setDiscordGate('denied');
+            } else {
+              setDiscordGate(null);
+            }
+          })
+          .catch(() => setDiscordGate('denied'));
+      }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -79,6 +103,7 @@ export default function App() {
     setState(fresh);
     localStorage.removeItem(LOCAL_DATA_OWNER_KEY);
     supabaseBootstrappedRef.current = false;
+    setDiscordGate(null);
   };
 
   // Apply the light/dark theme to the document root and persist the choice.
@@ -517,6 +542,37 @@ export default function App() {
   }
   if (isSupabaseConfigured && !authUser) {
     return <AuthView />;
+  }
+  if (isSupabaseConfigured && discordGate === 'checking') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[var(--c-060f17)]">
+        <div className="w-6 h-6 border-2 border-sky-500/40 border-t-sky-400 rounded-full animate-spin" />
+        <p className="text-xs text-slate-400">Checking Discord membership...</p>
+      </div>
+    );
+  }
+  if (isSupabaseConfigured && discordGate === 'denied') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)] px-4">
+        <div className="w-full max-w-sm p-6 bg-[var(--c-081522)] border border-[var(--c-173752)] rounded-2xl text-center space-y-3">
+          <h2 className="text-white font-black text-lg">Premium Discord role required</h2>
+          <p className="text-xs text-slate-400">
+            We couldn't find an active premium role on your Discord account. Make sure you've joined the server and
+            your membership is active, then try again.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              setDiscordGate(null);
+              await supabase?.auth.signOut();
+            }}
+            className="text-xs font-bold text-sky-400 hover:text-sky-300 cursor-pointer"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

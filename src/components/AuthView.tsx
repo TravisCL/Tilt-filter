@@ -3,18 +3,37 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 /**
- * Email/password login + signup gate. Rendered instead of the main app
- * whenever Supabase is configured and nobody's signed in — every table is
- * now RLS-locked to auth.uid(), so there's no meaningful "logged out" view
- * of the app to show.
+ * Sign-in gate. Rendered instead of the main app whenever Supabase is
+ * configured and nobody's signed in — every table is now RLS-locked to
+ * auth.uid(), so there's no meaningful "logged out" view of the app to show.
+ *
+ * New accounts only come through Discord (role-gated, see App.tsx's
+ * discordGate logic) — email/password sign-IN stays for accounts that
+ * already existed before that gate, but there's no email sign-UP anymore,
+ * so nobody can skip the Discord check by just registering with an email.
  */
 export const AuthView: React.FC = () => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  const [discordLoading, setDiscordLoading] = useState(false);
+
+  const handleDiscordSignIn = async () => {
+    if (!supabase) return;
+    setDiscordLoading(true);
+    setError(null);
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: { scopes: 'identify email guilds guilds.members.read' },
+    });
+    if (oauthError) {
+      setError(oauthError.message || 'Could not start Discord sign-in. Try again.');
+      setDiscordLoading(false);
+    }
+    // On success the browser redirects to Discord — nothing else to do here.
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,47 +42,14 @@ export const AuthView: React.FC = () => {
     setLoading(true);
 
     try {
-      if (mode === 'signin') {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
-      } else {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
-        if (signUpError) throw signUpError;
-        setSignupSuccess(true);
-      }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
     } catch (err: any) {
       setError(err?.message || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (signupSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)] px-4">
-        <div className="w-full max-w-sm p-6 bg-[var(--c-081522)] border border-[var(--c-173752)] rounded-2xl text-center space-y-3">
-          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-            <Mail className="w-6 h-6" />
-          </div>
-          <h2 className="text-white font-black text-lg">Check your email</h2>
-          <p className="text-xs text-slate-400">
-            We sent a confirmation link to <span className="text-slate-200 font-bold">{email}</span>. Click it, then
-            come back and sign in.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSignupSuccess(false);
-              setMode('signin');
-            }}
-            className="text-xs font-bold text-sky-400 hover:text-sky-300 cursor-pointer"
-          >
-            Back to sign in
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)] px-4">
@@ -75,7 +61,22 @@ export const AuthView: React.FC = () => {
             className="w-14 h-14 mx-auto rounded-xl"
           />
           <h1 className="text-white font-black text-xl tracking-tight">Tilt Filter</h1>
-          <p className="text-xs text-slate-400">{mode === 'signin' ? 'Sign in to your account' : 'Create your account'}</p>
+          <p className="text-xs text-slate-400">Sign in to your account</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDiscordSignIn}
+          disabled={discordLoading}
+          className="w-full py-2.5 rounded-lg bg-[#5865F2] hover:bg-[#4752C4] disabled:opacity-60 text-white font-black text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+        >
+          {discordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue with Discord'}
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--c-173752)]" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">or</span>
+          <div className="h-px flex-1 bg-[var(--c-173752)]" />
         </div>
 
         <form
@@ -124,26 +125,9 @@ export const AuthView: React.FC = () => {
             disabled={loading}
             className="w-full py-2.5 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-black font-black text-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : mode === 'signin' ? (
-              'Sign In'
-            ) : (
-              'Create Account'
-            )}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
           </button>
         </form>
-
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin');
-            setError(null);
-          }}
-          className="w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-        >
-          {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-        </button>
       </div>
     </div>
   );
