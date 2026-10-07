@@ -64,8 +64,20 @@ export default function App() {
       return;
     }
     supabase.auth.getSession().then(({ data }) => {
-      setAuthUser(data.session?.user ?? null);
-      setAuthLoading(false);
+      if (!data.session) {
+        setAuthUser(null);
+        setAuthLoading(false);
+        return;
+      }
+      // getSession() returns a cached JWT snapshot — its user_metadata can
+      // be stale (e.g. the Discord role check updates it moments after the
+      // token was issued). getUser() always hits the server for the
+      // current truth, so a refresh can't bypass a 'denied' result just
+      // because it happened after the cached token was minted.
+      supabase.auth.getUser().then(({ data: freshData }) => {
+        setAuthUser(freshData.user ?? data.session?.user ?? null);
+        setAuthLoading(false);
+      });
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUser(session?.user ?? null);
@@ -546,6 +558,38 @@ export default function App() {
   }
   if (isSupabaseConfigured && !authUser) {
     return <AuthView />;
+  }
+  // Persisted result from the last Discord role check (stamped by the
+  // check-discord-role function) — authoritative on EVERY load, not just
+  // right after a fresh sign-in. Without this, a page refresh right after
+  // being denied would let someone straight in: discordGate is just local
+  // React state and resets to null on reload, since a refresh restores the
+  // existing session without firing a new SIGNED_IN event to re-check.
+  // Accounts that have never been through a Discord check at all (the
+  // field is simply absent, not false) are unaffected — e.g. Travis's own
+  // pre-existing email account.
+  if (isSupabaseConfigured && authUser.user_metadata?.discord_role_verified === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--c-060f17)] px-4">
+        <div className="w-full max-w-sm p-6 bg-[var(--c-081522)] border border-[var(--c-173752)] rounded-2xl text-center space-y-3">
+          <h2 className="text-white font-black text-lg">Premium Discord role required</h2>
+          <p className="text-xs text-slate-400">
+            We couldn't find an active premium role on your Discord account. Make sure you've joined the server and
+            your membership is active, then sign out and try again.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              setDiscordGate(null);
+              await supabase?.auth.signOut();
+            }}
+            className="text-xs font-bold text-sky-400 hover:text-sky-300 cursor-pointer"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
   }
   if (isSupabaseConfigured && discordGate === 'checking') {
     return (
