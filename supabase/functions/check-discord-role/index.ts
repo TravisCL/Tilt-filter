@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
     return json({ access: false, reason: "missing discord token" }, 400);
   }
 
+  console.log("[check-discord-role] checking guild", DISCORD_GUILD_ID, "for role", DISCORD_PREMIUM_ROLE_ID, "user", userId);
+
   const memberRes = await fetch(
     `https://discord.com/api/users/@me/guilds/${DISCORD_GUILD_ID}/member`,
     { headers: { Authorization: `Bearer ${discordAccessToken}` } },
@@ -55,6 +57,8 @@ Deno.serve(async (req) => {
 
   if (!memberRes.ok) {
     // Not a member of the server at all (404), or token lacked the scope.
+    const bodyText = await memberRes.text().catch(() => "");
+    console.log("[check-discord-role] discord API error", memberRes.status, bodyText);
     await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: { discord_role_verified: false, discord_verified_at: new Date().toISOString() },
     });
@@ -62,6 +66,7 @@ Deno.serve(async (req) => {
   }
 
   const member = await memberRes.json();
+  console.log("[check-discord-role] discord member response", JSON.stringify(member));
   const roles: string[] = member.roles ?? [];
   const hasRole = roles.includes(DISCORD_PREMIUM_ROLE_ID);
 
