@@ -94,6 +94,14 @@ export default function App() {
         supabase
           .functions.invoke('check-discord-role', {
             body: { discordAccessToken: session.provider_token },
+            // Explicit, rather than relying on the SDK to auto-attach the
+            // current session's token — calling invoke() synchronously
+            // inside this callback can race ahead of the SDK persisting
+            // the just-arrived session internally, which was causing the
+            // function to see no Authorization header at all ("Auth
+            // session missing!"). The token is right here on the event
+            // itself, so there's no need to depend on that timing.
+            headers: { Authorization: `Bearer ${session.access_token}` },
           })
           .then(({ data, error }) => {
             if (error || !data?.access) {
