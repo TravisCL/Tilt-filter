@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
   const jwt = authHeader.replace(/^Bearer\s+/i, "");
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(jwt);
   if (userError || !userData?.user) {
+    console.log("[check-discord-role] getUser failed:", userError?.message ?? "no user returned");
     return json({ access: false, reason: "not signed in" }, 401);
   }
   const userId = userData.user.id;
