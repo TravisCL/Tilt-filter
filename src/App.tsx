@@ -73,7 +73,11 @@ export default function App() {
       // Only a fresh Discord OAuth completion carries a provider_token —
       // this never fires for plain email/password sign-ins or session
       // refreshes, matching the "re-verified on each fresh sign-in" design.
-      if (event === 'SIGNED_IN' && session?.provider_token && session.user.app_metadata?.provider === 'discord') {
+      // (Deliberately NOT checking app_metadata.provider === 'discord' here —
+      // that field reflects the FIRST provider an account ever signed up
+      // with, not today's sign-in method, so it stays stale for any account
+      // that originally registered a different way.)
+      if (event === 'SIGNED_IN' && session?.provider_token) {
         setDiscordGate('checking');
         supabase
           .functions.invoke('check-discord-role', {

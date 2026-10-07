@@ -13,22 +13,39 @@ const DISCORD_PREMIUM_ROLE_ID = Deno.env.get("DISCORD_PREMIUM_ROLE_ID") ?? "";
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Called directly from the browser (supabase.functions.invoke), so the
+// preflight OPTIONS request browsers send before a cross-origin POST with
+// an Authorization header needs an explicit 2xx response — otherwise the
+// browser never sends the real POST at all.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function json(body: Record<string, unknown>, status: number) {
+  return Response.json(body, { status, headers: CORS_HEADERS });
+}
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const jwt = authHeader.replace(/^Bearer\s+/i, "");
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(jwt);
   if (userError || !userData?.user) {
-    return Response.json({ access: false, reason: "not signed in" }, { status: 401 });
+    return json({ access: false, reason: "not signed in" }, 401);
   }
   const userId = userData.user.id;
 
   const { discordAccessToken } = await req.json();
   if (!discordAccessToken) {
-    return Response.json({ access: false, reason: "missing discord token" }, { status: 400 });
+    return json({ access: false, reason: "missing discord token" }, 400);
   }
 
   const memberRes = await fetch(
@@ -41,7 +58,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: { discord_role_verified: false, discord_verified_at: new Date().toISOString() },
     });
-    return Response.json({ access: false, reason: "not a member of the server" }, { status: 200 });
+    return json({ access: false, reason: "not a member of the server" }, 200);
   }
 
   const member = await memberRes.json();
@@ -52,5 +69,5 @@ Deno.serve(async (req) => {
     user_metadata: { discord_role_verified: hasRole, discord_verified_at: new Date().toISOString() },
   });
 
-  return Response.json({ access: hasRole, reason: hasRole ? null : "missing premium role" }, { status: 200 });
+  return json({ access: hasRole, reason: hasRole ? null : "missing premium role" }, 200);
 });
