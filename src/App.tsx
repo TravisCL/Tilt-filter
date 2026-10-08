@@ -496,9 +496,23 @@ export default function App() {
       const updatedAccounts = (prev.accounts || []).map((acc) => {
         if (acc.id === tradeToDelete.accountId && typeof tradeToDelete.pnl === 'number') {
           const revertedBal = (acc.currentBalance ?? acc.size) - tradeToDelete.pnl;
+          // highWaterMark only ever gets raised (never lowered) as trades
+          // come in, so deleting a trade that had set a new peak left it
+          // permanently inflated. Replay the account's remaining trades in
+          // order to find its real historical peak instead.
+          const acctTrades = remainingTrades
+            .filter((t) => t.accountId === acc.id && typeof t.pnl === 'number')
+            .sort((a, b) => a.orderNumber - b.orderNumber);
+          let runningBal = acc.size ?? 0;
+          let peak = runningBal;
+          for (const t of acctTrades) {
+            runningBal += t.pnl as number;
+            if (runningBal > peak) peak = runningBal;
+          }
           return {
             ...acc,
             currentBalance: revertedBal,
+            highWaterMark: Math.max(peak, revertedBal),
           };
         }
         return acc;
