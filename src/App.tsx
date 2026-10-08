@@ -37,6 +37,8 @@ import type { User } from '@supabase/supabase-js';
 // gets seeded with someone else's cached local data. See bootstrap effect.
 const LOCAL_DATA_OWNER_KEY = 'tilt_filter_local_data_owner';
 
+const WHOP_CHECKOUT_URL = 'https://whop.com/trading-with-travis/twt-vip-tilt-filter-app/';
+
 export default function App() {
   const [state, setState] = useState<AppState>(loadAppState);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -618,6 +620,14 @@ export default function App() {
             We couldn't find an active premium role on your Discord account. Make sure you've joined the server and
             your membership is active, then sign out and try again.
           </p>
+          <a
+            href={WHOP_CHECKOUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full py-2.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-black font-black text-sm transition-colors cursor-pointer"
+          >
+            Get VIP Access
+          </a>
           <button
             type="button"
             onClick={async () => {
@@ -649,6 +659,14 @@ export default function App() {
             We couldn't find an active premium role on your Discord account. Make sure you've joined the server and
             your membership is active, then try again.
           </p>
+          <a
+            href={WHOP_CHECKOUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full py-2.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-black font-black text-sm transition-colors cursor-pointer"
+          >
+            Get VIP Access
+          </a>
           <button
             type="button"
             onClick={async () => {
