@@ -357,7 +357,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   );
   const blownAccounts = state.accounts.filter((acc) => acc.status === 'blown');
 
-  const { todayPnl, weekPnl, monthPnl } = computePnlRollups(state.trades || [], getESTDate());
+  // Deleting an account doesn't delete its trades (on delete set null —
+  // trade history is kept even though the account is gone), so without
+  // this filter a deleted account's old PnL keeps showing up in these
+  // totals even though the account itself no longer exists anywhere in
+  // the UI.
+  const existingAccountIds = new Set(state.accounts.map((a) => a.id));
+  const tradesWithLiveAccount = (state.trades || []).filter((t) => existingAccountIds.has(t.accountId));
+  const { todayPnl, weekPnl, monthPnl } = computePnlRollups(tradesWithLiveAccount, getESTDate());
 
   const handleSetActive = (id: string) => {
     onUpdateState((prev) => ({
