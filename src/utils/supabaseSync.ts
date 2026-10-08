@@ -445,6 +445,25 @@ export function scheduleSupabasePush(state: AppState) {
 }
 
 /**
+ * Fires a still-debouncing push immediately instead of waiting out the
+ * remaining delay. Call this on page unload/refresh — otherwise a user who
+ * deletes something and refreshes right away can land inside the 800ms
+ * debounce window: the delete never reached Supabase, so the pull on
+ * reload re-downloads the old row and it looks like the delete didn't
+ * work, even though the local change was correct.
+ */
+export function flushPendingPush(state: AppState) {
+  if (!supabase || !pushTimer) return;
+  clearTimeout(pushTimer);
+  pushTimer = null;
+  pushInFlight = pushStateToSupabase(state)
+    .catch((e) => console.error('[Supabase] flush push failed:', e))
+    .finally(() => {
+      pushInFlight = null;
+    });
+}
+
+/**
  * Resolves once any currently scheduled (debouncing) or in-flight push has
  * finished. Realtime-driven pulls must await this first — otherwise a pull
  * can land with stale data from BEFORE our own most recent local write and

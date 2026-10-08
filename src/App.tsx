@@ -23,6 +23,7 @@ import {
   pullStateFromSupabase,
   pushStateToSupabase,
   scheduleSupabasePush,
+  flushPendingPush,
   mergePulledIntoState,
   subscribeToSupabaseRealtime,
   waitForPendingPush,
@@ -47,6 +48,7 @@ export default function App() {
   const hasMountedRef = useRef<boolean>(false);
   const lastTradeSubmitRef = useRef<{ time: number; fingerprint: string }>({ time: 0, fingerprint: '' });
   const supabaseBootstrappedRef = useRef<boolean>(false);
+  const stateRef = useRef<AppState>(state);
 
   // Auth: every table is RLS-locked to auth.uid() now, so nothing here
   // should run against Supabase until a user is actually signed in.
@@ -269,6 +271,7 @@ export default function App() {
 
   // Broadcast state changes and save to local storage (skip initial mount to avoid racing existing windows)
   useEffect(() => {
+    stateRef.current = state;
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       return;
@@ -280,6 +283,22 @@ export default function App() {
     broadcastStateChange(state);
     scheduleSupabasePush(state);
   }, [state]);
+
+  // A delete (or any change) that's still inside the 800ms debounce window
+  // when the user refreshes never reaches Supabase — the reload's pull then
+  // re-downloads the stale pre-delete row, making it look like the delete
+  // silently failed. Flush immediately on unload so a quick refresh can't
+  // outrace the debounced push.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const flush = () => flushPendingPush(stateRef.current);
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, []);
 
   const handleSelectView = (view: AppState['currentView']) => {
     setState((prev) => ({ ...prev, currentView: view }));
