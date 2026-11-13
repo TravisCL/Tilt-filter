@@ -460,6 +460,9 @@ export function sanitizeAppState(parsed: any): AppState {
     tiltScore: typeof parsed.tiltScore === 'number' ? parsed.tiltScore : 0,
     tiltTab: typeof parsed.tiltTab === 'number' ? parsed.tiltTab : 0,
     rules: sanitizedRules,
+    disabledQuestions: Array.isArray(parsed.disabledQuestions)
+      ? parsed.disabledQuestions.filter((id: any) => typeof id === 'string' && id !== 'q4')
+      : [],
     systemTags: sanitizedSystemTags.length > 0 ? sanitizedSystemTags : DEFAULT_SYSTEM_TAGS,
     dailyScoreboard: mergedScoreboard,
     emotionalTracker: sanitizedEmotionalTracker,

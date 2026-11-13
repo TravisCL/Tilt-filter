@@ -221,6 +221,7 @@ function appMetaToRow(s: AppState, userId: string) {
     current_view: s.currentView,
     active_account_id: s.activeAccountId,
     rules: s.rules,
+    disabled_questions: s.disabledQuestions ?? [],
     system_tags: s.systemTags ?? null,
     emotional_tracker: s.emotionalTracker,
     clean_streak: s.cleanStreak,
@@ -252,6 +253,7 @@ export interface PulledState {
     currentView?: AppState['currentView'];
     activeAccountId?: string;
     rules?: AppState['rules'];
+    disabledQuestions?: string[];
     systemTags?: string[];
     emotionalTracker?: AppState['emotionalTracker'];
     cleanStreak?: number;
@@ -306,6 +308,7 @@ export async function pullStateFromSupabase(): Promise<PulledState | null> {
             currentView: metaRow.current_view ?? undefined,
             activeAccountId: metaRow.active_account_id ?? undefined,
             rules: metaRow.rules ?? undefined,
+            disabledQuestions: Array.isArray(metaRow.disabled_questions) ? metaRow.disabled_questions : undefined,
             systemTags: metaRow.system_tags ?? undefined,
             emotionalTracker: metaRow.emotional_tracker ?? undefined,
             cleanStreak: metaRow.clean_streak ?? undefined,
@@ -343,6 +346,7 @@ export function mergePulledIntoState(pulled: PulledState, prev: AppState): AppSt
       ? {
           activeAccountId: pulled.meta.activeAccountId || prev.activeAccountId,
           rules: pulled.meta.rules && pulled.meta.rules.length > 0 ? pulled.meta.rules : prev.rules,
+          disabledQuestions: pulled.meta.disabledQuestions ?? prev.disabledQuestions,
           systemTags: pulled.meta.systemTags && pulled.meta.systemTags.length > 0 ? pulled.meta.systemTags : prev.systemTags,
           emotionalTracker: pulled.meta.emotionalTracker || prev.emotionalTracker,
           cleanStreak: pulled.meta.cleanStreak ?? prev.cleanStreak,

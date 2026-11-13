@@ -134,12 +134,14 @@ export interface CompletedTrade {
   emotionalState?: LossFeeling;
   tiltRisk?: TiltRiskLevel;
   screenshotUrl?: string;
+  // A rule/question the user removed from their checklist is stored as
+  // `undefined` (never `false`) so it is not counted as "missed".
   checklistAnswers: {
-    rule1: boolean;
-    rule2: boolean;
-    rule3: boolean;
+    rule1?: boolean;
+    rule2?: boolean;
+    rule3?: boolean;
     q4CalculatedRisk: boolean;
-    q5NotFomo: boolean;
+    q5NotFomo?: boolean;
   };
   ruleNotes?: Record<string, string>;
   notes?: string;
@@ -220,6 +222,10 @@ export interface AppState {
   accounts: TradingAccount[];
   activeAccountId: string;
   rules: RuleItem[];
+  /** Checklist question ids the user chose to remove (rule ids like 'r1', or 'q5').
+   * Q4 (Risk) is mandatory and never appears here. Kept separate from `rules` so
+   * removed rules aren't resurrected by the empty-rules -> defaults fallback. */
+  disabledQuestions?: string[];
   systemTags?: string[];
   trades: CompletedTrade[];
   deskMessages: DeskMessage[];

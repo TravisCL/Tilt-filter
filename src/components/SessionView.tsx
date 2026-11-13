@@ -56,6 +56,7 @@ import { broadcastTradeUpdated, broadcastStateChange } from '../utils/syncServic
 import { getESTDate } from '../utils/dailyRollover';
 import { getNoTiltStats } from '../utils/tierProgression';
 import { postAoiToDiscord } from '../utils/discordWebhook';
+import { getActiveChecklist, computeRulesHeld, buildChecklistAnswers, addDisabled, removeDisabled } from '../utils/checklist';
 
 interface SessionViewProps {
   state: AppState;
@@ -414,9 +415,13 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const [q5NotFomo, setQ5NotFomo] = useState<boolean | null>(null);
   const [activeRuleFocus, setActiveRuleFocus] = useState<string>('r1');
 
+  // Questions the user removed from their checklist (Q4 Risk is mandatory, never removable)
+  const { disabledQuestions, activeRules, q5Enabled } = getActiveChecklist(state.rules, state.disabledQuestions);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+
   // Question list helper for the sequential control box
   const checklistQuestions = [
-    ...state.rules.map((r, idx) => ({
+    ...activeRules.map((r, idx) => ({
       id: r.id,
       stepNum: idx + 1,
       title: `Rule ${idx + 1}`,
@@ -426,20 +431,24 @@ export const SessionView: React.FC<SessionViewProps> = ({
     })),
     {
       id: 'q4',
-      stepNum: state.rules.length + 1,
-      title: `Question ${state.rules.length + 1}: Risk Sizing`,
+      stepNum: activeRules.length + 1,
+      title: `Question ${activeRules.length + 1}: Risk Sizing`,
       shortTitle: 'Q4 Risk',
       text: 'Have you calculated your risk?',
       type: 'q4' as const,
     },
-    {
-      id: 'q5',
-      stepNum: state.rules.length + 2,
-      title: `Question ${state.rules.length + 2}: Emotional Filter`,
-      shortTitle: 'Q5 FOMO',
-      text: 'This is not a revenge or FOMO click',
-      type: 'q5' as const,
-    },
+    ...(q5Enabled
+      ? [
+          {
+            id: 'q5',
+            stepNum: activeRules.length + 2,
+            title: `Question ${activeRules.length + 2}: Emotional Filter`,
+            shortTitle: 'Q5 FOMO',
+            text: 'This is not a revenge or FOMO click',
+            type: 'q5' as const,
+          },
+        ]
+      : []),
   ];
 
   const questionOrder = checklistQuestions.map((q) => q.id);
@@ -449,6 +458,38 @@ export const SessionView: React.FC<SessionViewProps> = ({
   );
   const currentQuestion = checklistQuestions[currentQuestionIndex] || checklistQuestions[0];
   const totalQuestions = checklistQuestions.length;
+
+  // If the focused question was removed (or never existed), fall back to the first active one
+  useEffect(() => {
+    if (!checklistQuestions.some((q) => q.id === activeRuleFocus)) {
+      setActiveRuleFocus(checklistQuestions[0]?.id ?? 'q4');
+    }
+  }, [activeRuleFocus, checklistQuestions.map((q) => q.id).join(',')]);
+
+  // Remove an optional question from this user's checklist (Q4 Risk is never removable)
+  const handleRemoveQuestion = (id: string) => {
+    if (id === 'q4') return;
+    onUpdateState((prev) => ({
+      ...prev,
+      disabledQuestions: addDisabled(prev.disabledQuestions, id),
+    }));
+    if (id === 'q5') setQ5NotFomo(null);
+    else setRuleCheckboxes((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setOverriddenRules((prev) => ({ ...prev, [id]: false }));
+    setOverridePromptFor(null);
+    setConfirmRemoveId(null);
+  };
+
+  const handleRestoreQuestion = (id: string) => {
+    onUpdateState((prev) => ({
+      ...prev,
+      disabledQuestions: removeDisabled(prev.disabledQuestions, id),
+    }));
+  };
 
   const getCurrentStatus = (qId: string): boolean | null => {
     if (qId === 'q4') return q4Risk;
@@ -510,7 +551,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
     setConsolidatedNote('');
     setOptionalTakeProfitInput('');
     setCustomRiskInput('');
-    setActiveRuleFocus(state.rules[0]?.id || 'r1');
+    setActiveRuleFocus(activeRules[0]?.id || 'q4');
   };
 
   // Calculator State - Dynamically connected to active account or manual entry
@@ -701,11 +742,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const acceptedRisk = explicitRiskAmount;
 
   // Global check if all rules in the pre-trade checklist and emotional filter are met
-  const isAllRulesMet =
-    state.rules.length > 0 &&
-    state.rules.every((r) => ruleCheckboxes[r.id] === true) &&
-    q4Risk === true &&
-    q5NotFomo === true;
+  const isAllRulesMet = computeRulesHeld(activeRules, q5Enabled, ruleCheckboxes, q4Risk, q5NotFomo);
 
   // Helper to check if a specific step is resolved (YES or confirmed override)
   const isStepResolved = (stepId: string): boolean => {
@@ -742,8 +779,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
 
   // Helper to determine the first unverified question in sequence
   const getFirstUnverifiedQuestion = () => {
-    for (let i = 0; i < state.rules.length; i++) {
-      const rule = state.rules[i];
+    for (let i = 0; i < activeRules.length; i++) {
+      const rule = activeRules[i];
       const ans = ruleCheckboxes[rule.id];
       const isOverridden = overriddenRules[rule.id] === true;
       if (ans === undefined || ans === null || (ans === false && !isOverridden)) {
@@ -764,21 +801,22 @@ export const SessionView: React.FC<SessionViewProps> = ({
     ) {
       return {
         id: 'q4',
-        stepNum: state.rules.length + 1,
-        title: `Question ${state.rules.length + 1} (Risk)`,
+        stepNum: activeRules.length + 1,
+        title: `Question ${activeRules.length + 1} (Risk)`,
         text: 'Have you calculated your risk?',
         isNoUnconfirmed: q4Risk === false && !overriddenRules['q4'],
       };
     }
     if (
-      q5NotFomo === undefined ||
-      q5NotFomo === null ||
-      (q5NotFomo === false && !overriddenRules['q5'])
+      q5Enabled &&
+      (q5NotFomo === undefined ||
+        q5NotFomo === null ||
+        (q5NotFomo === false && !overriddenRules['q5']))
     ) {
       return {
         id: 'q5',
-        stepNum: state.rules.length + 2,
-        title: `Question ${state.rules.length + 2} (FOMO)`,
+        stepNum: activeRules.length + 2,
+        title: `Question ${activeRules.length + 2} (FOMO)`,
         text: 'This is not a revenge or FOMO click',
         isNoUnconfirmed: q5NotFomo === false && !overriddenRules['q5'],
       };
@@ -844,8 +882,8 @@ export const SessionView: React.FC<SessionViewProps> = ({
     }
 
     // 1. Enforce verifying setup rules (Rule 1, Rule 2, Rule 3...) sequentially
-    for (let i = 0; i < state.rules.length; i++) {
-      const rule = state.rules[i];
+    for (let i = 0; i < activeRules.length; i++) {
+      const rule = activeRules[i];
       const ans = ruleCheckboxes[rule.id];
       const isOverridden = overriddenRules[rule.id] === true;
 
@@ -914,7 +952,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
     }
 
     // 3. Enforce Question 5: Emotional Filter (This is not a revenge or FOMO click)
-    if (q5NotFomo === undefined || q5NotFomo === null) {
+    if (q5Enabled && (q5NotFomo === undefined || q5NotFomo === null)) {
       setActiveRuleFocus('q5');
       setOverridePromptFor(null);
       const q5El =
@@ -926,7 +964,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       return;
     }
 
-    if (q5NotFomo === false && !overriddenRules['q5']) {
+    if (q5Enabled && q5NotFomo === false && !overriddenRules['q5']) {
       setActiveRuleFocus('q5');
       setOverridePromptFor('q5');
       const q5El =
@@ -972,7 +1010,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
     setOverridePromptFor(null);
     setQ4Risk(null);
     setQ5NotFomo(null);
-    setActiveRuleFocus('r1');
+    setActiveRuleFocus(activeRules[0]?.id || 'q4');
     setConsolidatedNote('');
     setRuleNotes({});
     setTradeInPosition(false);
@@ -1046,10 +1084,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       ? `${selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality === 'A' ? 'A' : 'B'} — ${activeNote.slice(0, 32)}`
       : `${selectedQuality === 'A_PLUS' ? 'A+ ' : selectedQuality === 'A' ? 'A ' : 'B '}Setup`;
 
-    const allRulesMet =
-      state.rules.every((r) => ruleCheckboxes[r.id] === true) &&
-      q4Risk === true &&
-      q5NotFomo === true;
+    const allRulesMet = computeRulesHeld(activeRules, q5Enabled, ruleCheckboxes, q4Risk, q5NotFomo);
 
     const rMult = Number((winAmount / (acceptedRisk || 1)).toFixed(2));
 
@@ -1076,13 +1111,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       direction: tradeDirection || undefined,
       entryPrice: entryPriceInput ? parseFloat(entryPriceInput) : undefined,
       exitPrice: exitPriceInput ? parseFloat(exitPriceInput) : undefined,
-      checklistAnswers: {
-        rule1: !!ruleCheckboxes.r1,
-        rule2: !!ruleCheckboxes.r2,
-        rule3: !!ruleCheckboxes.r3,
-        q4CalculatedRisk: q4Risk === true,
-        q5NotFomo: q5NotFomo === true,
-      },
+      checklistAnswers: buildChecklistAnswers(disabledQuestions, ruleCheckboxes, q4Risk, q5NotFomo),
       ruleNotes: {
         consolidated: activeNote,
         overridden: Object.keys(overriddenRules).filter((k) => overriddenRules[k]).join(', '),
@@ -1138,10 +1167,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       ? `${selectedQuality === 'A_PLUS' ? 'A+' : selectedQuality === 'A' ? 'A' : 'B'} — ${activeNote.slice(0, 32)}`
       : `${selectedQuality === 'A_PLUS' ? 'A+ ' : selectedQuality === 'A' ? 'A ' : 'B '}Setup`;
 
-    const allRulesMet =
-      state.rules.every((r) => ruleCheckboxes[r.id] === true) &&
-      q4Risk === true &&
-      q5NotFomo === true;
+    const allRulesMet = computeRulesHeld(activeRules, q5Enabled, ruleCheckboxes, q4Risk, q5NotFomo);
 
     const tiltRiskLevel: TiltRiskLevel =
       feeling === 'feel_like_chasing'
@@ -1177,13 +1203,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
       direction: tradeDirection || undefined,
       entryPrice: entryPriceInput ? parseFloat(entryPriceInput) : undefined,
       exitPrice: exitPriceInput ? parseFloat(exitPriceInput) : undefined,
-      checklistAnswers: {
-        rule1: !!ruleCheckboxes.r1,
-        rule2: !!ruleCheckboxes.r2,
-        rule3: !!ruleCheckboxes.r3,
-        q4CalculatedRisk: q4Risk === true,
-        q5NotFomo: q5NotFomo === true,
-      },
+      checklistAnswers: buildChecklistAnswers(disabledQuestions, ruleCheckboxes, q4Risk, q5NotFomo),
       ruleNotes: {
         consolidated: activeNote,
         overridden: Object.keys(overriddenRules).filter((k) => overriddenRules[k]).join(', '),
@@ -1856,7 +1876,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 <span>FILTER CONTROL BOX</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                Before you click Buy, it has to go through the filter. 3 of 3 on your rules. Risk in Q4. Revenge/FOMO on Q5.
+                Before you click Buy, it has to go through the filter.{activeRules.length > 0 ? ` ${activeRules.length} of ${activeRules.length} on your rules.` : ''} Risk in Q4.{q5Enabled ? ' Revenge/FOMO on Q5.' : ''}
               </p>
             </div>
 
@@ -1917,7 +1937,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               </div>
 
               {/* Step indicator pips */}
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, totalQuestions)}, minmax(0, 1fr))` }}>
                 {checklistQuestions.map((q, idx) => {
                   const status = getCurrentStatus(q.id);
                   const isCurrent = activeRuleFocus === q.id;
@@ -2026,7 +2046,61 @@ export const SessionView: React.FC<SessionViewProps> = ({
                     )}
                   </div>
                 )}
+
+                {/* Remove this question from the user's checklist (Q4 Risk is mandatory) */}
+                {currentQuestion.type !== 'q4' && (
+                  confirmRemoveId === currentQuestion.id ? (
+                    <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-300">
+                      <span>Remove from your checklist? You can restore it anytime.</span>
+                      <button
+                        type="button"
+                        id="confirm-remove-question-btn"
+                        onClick={() => handleRemoveQuestion(currentQuestion.id)}
+                        className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-bold cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemoveId(null)}
+                        className="px-2 py-0.5 rounded bg-[var(--c-0e2233)] border border-[var(--c-204a69)] text-slate-300 font-bold cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      id="remove-question-btn"
+                      onClick={() => setConfirmRemoveId(currentQuestion.id)}
+                      className="pt-1 text-[10px] font-bold text-slate-500 hover:text-rose-300 underline underline-offset-2 cursor-pointer"
+                    >
+                      Remove this question
+                    </button>
+                  )
+                )}
               </div>
+
+              {/* Restore removed questions */}
+              {disabledQuestions.length > 0 && (
+                <div id="restore-removed-questions" className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
+                  <span className="font-bold">Removed:</span>
+                  {disabledQuestions.map((id) => {
+                    const label = id === 'q5' ? 'Q5 FOMO' : `“${state.rules.find((r) => r.id === id)?.text ?? id}”`;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => handleRestoreQuestion(id)}
+                        className="px-2 py-0.5 rounded bg-[var(--c-0d2338)] border border-[var(--c-1c4464)] text-sky-300 hover:text-white font-bold cursor-pointer"
+                        title="Restore this question"
+                      >
+                        + Restore {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Action Area: Yes/No Buttons or "Take It Anyway?" Override Prompt */}
               {overridePromptFor === currentQuestion.id ? (
@@ -2110,7 +2184,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                         <ArrowRight className="w-3 h-3" />
                       </span>
                     ) : (
-                      <span className="text-sky-400 font-bold">Step 5 of 5 reached</span>
+                      <span className="text-sky-400 font-bold">Step {totalQuestions} of {totalQuestions} reached</span>
                     )}
                   </div>
                 </div>
@@ -2628,7 +2702,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               )}
 
               {/* Notes + Tags stay hidden until Q5 is answered (progressive disclosure) */}
-              {q5NotFomo !== null && (
+              {(q5Enabled ? q5NotFomo !== null : isAllPreTradeCompleted) && (
               <>
               {/* Optional Trade Notes Input */}
               <div className="space-y-2 pt-2.5 border-t border-[var(--c-162f3c)]">

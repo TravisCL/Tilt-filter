@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Shield, RotateCcw, AlertTriangle, CheckCircle2, RefreshCw, Webhook } from 'lucide-react';
 import { AppState } from '../types';
 import { getNoTiltStats } from '../utils/tierProgression';
+import { getActiveChecklist, addDisabled, removeDisabled } from '../utils/checklist';
 
 interface ProfileViewProps {
   state: AppState;
@@ -130,6 +131,70 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state, onUpdateState, 
             <RotateCcw className="w-4 h-4" />
             <span>Refresh Everything</span>
           </button>
+        </div>
+      </div>
+
+      {/* PRE-TRADE CHECKLIST QUESTIONS — remove/restore optional questions (Risk is mandatory) */}
+      <div id="checklist-questions-settings" className="p-6 bg-[var(--c-0c1318)] border border-[var(--c-1a2e38)] rounded-2xl space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <Shield className="w-4 h-4 text-sky-400" />
+            <span>Checklist Questions</span>
+          </h3>
+          <p className="text-xs text-slate-400">
+            Choose which pre-trade questions you want in your Filter Control Box. Risk (Q4) and the
+            calculator are always required. Removed questions don&apos;t count as &quot;missed&quot; in your stats.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          {(() => {
+            const { disabledQuestions } = getActiveChecklist(state.rules, state.disabledQuestions);
+            const items = [
+              ...state.rules.map((r, i) => ({ id: r.id, label: `Rule ${i + 1}`, text: r.text })),
+              { id: 'q5', label: 'Q5 FOMO', text: 'This is not a revenge or FOMO click' },
+            ];
+            return (
+              <>
+                {items.map((it) => {
+                  const removed = disabledQuestions.includes(it.id);
+                  return (
+                    <div key={it.id} className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">{it.label}</div>
+                        <div className={`text-xs font-bold truncate ${removed ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{it.text}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateState((prev) => ({
+                            ...prev,
+                            disabledQuestions: removed
+                              ? removeDisabled(prev.disabledQuestions, it.id)
+                              : addDisabled(prev.disabledQuestions, it.id),
+                          }))
+                        }
+                        className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer ${
+                          removed
+                            ? 'bg-sky-500/20 border-sky-500/50 text-sky-300'
+                            : 'bg-rose-500/10 border-rose-500/40 text-rose-300'
+                        }`}
+                      >
+                        {removed ? 'Restore' : 'Remove'}
+                      </button>
+                    </div>
+                  );
+                })}
+                <div className="p-3 bg-[var(--c-081216)] border border-[var(--c-142831)] rounded-xl flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Q4 Risk</div>
+                    <div className="text-xs font-bold text-slate-200">Have you calculated your risk?</div>
+                  </div>
+                  <span className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-[var(--c-1c4464)] text-slate-400">Required</span>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
